@@ -1,0 +1,514 @@
+
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mijoro Boutique — Version Pro</title>
+
+  <!-- Preconnect: fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Main styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body aria-busy="true">
+  <!-- Loader -->
+  <div id="loader" aria-hidden="false" role="status" aria-label="Chargement">
+    <img class="loader-logo" src="https://i.ibb.co/p6CWgYWd/Logo.png" alt="Logo Mijoro" width="92" height="92" decoding="async">
+    <div class="loader-text">Mijoro</div>
+  </div>
+
+  <!-- Sections -->
+  <section id="home" class="active" aria-label="Accueil">
+    <!-- Slideshow -->
+    <div class="slideshow" aria-label="Promotion">
+      <div class="slide-track" id="slide-track">
+        <div class="slide">
+          <a href="https://ibb.co/ymNw7Ws1">
+            <img src="https://i.ibb.co/DP1xT5Ky/8b7e15f5dd5dd2290ac52af728cc12c3.jpg"
+                 alt="Offre promo 1" width="1280" height="720" decoding="async" fetchpriority="high">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://imgbb.com/">
+            <img src="https://i.ibb.co/B5vcHVZX/ddce6f18e3cdf72f038584cdb034bbd0.jpg"
+                 alt="Offre promo 2" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://ibb.co/8gD78RxK">
+            <img src="https://i.ibb.co/60RWsptn/Havadio-20251010-172140-0000.png"
+                 alt="Offre promo 3" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://ibb.co/95cwBFt">
+            <img src="https://i.ibb.co/jXbVqcR/c7b9cb0a30d688e2d15aeb3b91f0a4f5.jpg"
+                 alt="Offre promo 4" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://ibb.co/v6sk0VS8">
+            <img src="https://i.ibb.co/cSbQ4kjd/5f55046950fb4c960c17b1a6cc8b7622.jpg"
+                 alt="Offre promo 5" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://imgbb.com/">
+            <img src="https://i.ibb.co/60q2XJV5/f2a5df8abf76e0fc0ce03765431b8519.jpg"
+                 alt="Offre promo 6" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+      </div>
+      <div class="slide-dots" id="slide-dots" aria-hidden="true"></div>
+    </div>
+
+    <h1 id="home-title">Tongasoa ATO amin'ny boutique anay!</h1>
+    <p id="home-sub">Découvre des eBooks, vidéos et apps/jeux pour t’aider à réussir en ligne.</p>
+  </section>
+
+  <!-- Shop section -->
+  <section id="shop" aria-label="Boutique - Produits numériques">
+    <h2>Nos Produits Numériques</h2>
+
+    <!-- Filters (section toolbar) -->
+    <div class="filters" id="shop-filters" role="toolbar" aria-label="Filtrer les produits">
+      <button type="button" class="filter-btn active" data-filter="all">Tous</button>
+      <button type="button" class="filter-btn" data-filter="ebooks">Ebooks</button>
+      <button type="button" class="filter-btn" data-filter="videos">Vidéos</button>
+      <button type="button" class="filter-btn" data-filter="vip">VIP</button>
+      <button type="button" class="filter-btn" data-filter="promo">Promo</button>
+      <button type="button" class="filter-btn" data-filter="free">Gratuit</button>
+    </div>
+
+    <!-- Products list (PATCH: vertical) -->
+    <div class="products-section" aria-live="polite">
+      <div
+        id="products-row"
+        class="products-row"
+        role="list"
+        aria-label="Liste des produits — défilement vertical">
+      </div>
+    </div>
+  </section>
+
+  <!-- Shop popup (overlay) -->
+  <div id="shop-popup" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1">
+    <button type="button" class="close-popup" aria-label="Fermer" onclick="closeShop()"><i class="fa-solid fa-xmark"></i></button>
+
+    <div class="filters" aria-hidden="false" id="filters">
+      <button type="button" class="filter-btn active" data-category="ebooks" onclick="filterByCategory('ebooks')">eBooks</button>
+      <button type="button" class="filter-btn" data-category="apps" onclick="filterByCategory('apps')">Apps/Jeux</button>
+      <button type="button" class="filter-btn" data-category="videos" onclick="filterByCategory('videos')">Vidéos</button>
+    </div>
+
+    <div class="search">
+      <label for="search" class="sr-only">Recherche produits</label>
+      <input id="search" placeholder="Rechercher..." aria-label="Recherche produits" oninput="onSearchInput()" autocomplete="off" inputmode="search">
+    </div>
+
+    <div id="products-box" aria-live="polite"></div>
+    <div class="pagination" id="pagination" role="navigation" aria-label="Pagination"></div>
+  </div>
+
+  <!-- Cart panel + drawer -->
+  <div id="cart-panel" aria-live="polite">
+    <button id="cart-toggle" title="Voir le panier" aria-label="Voir le panier"><i class="fa-solid fa-basket-shopping"></i></button>
+    <button type="button" title="Vider le panier" onclick="clearCart()" aria-label="Vider le panier"><i class="fa-solid fa-trash"></i></button>
+    <div>Cart: <strong id="cart-count">0</strong> • Total: <strong id="cart-total">0 AR</strong></div>
+  </div>
+
+  <div id="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+    <div id="cart-list"></div>
+    <div class="cart-footer">
+      <div>Total: <strong id="cart-total-drawer">0 AR</strong></div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="param-btn" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Vider</button>
+        <button type="button" class="param-btn" onclick="checkoutWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Commander</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom menu -->
+  <div class="bottom-menu" role="navigation" aria-label="Menu bas">
+    <button type="button" class="menu-btn menu-home active" onclick="showSection('home', this)"><i class="fa-solid fa-house"></i><span>Home</span></button>
+    <button type="button" class="menu-btn menu-shop" onclick="showSection('shop', this)"><i class="fa-solid fa-store"></i><span>Shop</span></button>
+    <button type="button" class="menu-btn menu-param" onclick="toggleParamFixed()"><i class="fa-solid fa-gear"></i><span>Paramètre</span></button>
+  </div>
+
+  <!-- Param fixed (right) -->
+  <aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="https://i.ibb.co/zTvNMMQd/743c16d58accff74c1c37793816bd25f.jpg" alt="param" style="width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,.06)">
+      <div>
+        <h4 style="margin-bottom:4px">Paramètres</h4>
+        <small style="color:#ddd">Personnalisez votre expérience</small>
+      </div>
+    </div>
+
+
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mijoro Boutique — Version Pro</title>
+
+  <!-- Preconnect: fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Fonts + Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Main styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- SEO -->
+  <meta name="description" content="Mijoro Boutique — eBooks, vidéos, apps/jeux numériques. Commande rapide via WhatsApp." />
+  <link rel="canonical" href="https://mijoro.example.com/" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Mijoro Boutique — Version Pro" />
+  <meta property="og:description" content="eBooks, vidéos, apps/jeux numériques. Commande WhatsApp en un clic." />
+  <meta property="og:image" content="https://i.ibb.co/p6CWgYWd/Logo.png" />
+  <meta property="og:url" content="https://mijoro.example.com/" />
+  <meta property="og:site_name" content="Mijoro Boutique" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Mijoro Boutique — Version Pro" />
+  <meta name="twitter:description" content="eBooks, vidéos, apps/jeux numériques. Commande WhatsApp en un clic." />
+  <meta name="twitter:image" content="https://i.ibb.co/p6CWgYWd/Logo.png" />
+
+  <!-- Theme color (Android/iOS) -->
+  <meta name="theme-color" content="#0b0b0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Icons/Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="https://i.ibb.co/p6CWgYWd/Logo.png" />
+  <link rel="apple-touch-icon" href="https://i.ibb.co/p6CWgYWd/Logo.png" />
+
+  <!-- Optional PWA hooks -->
+  <!-- <link rel="manifest" href="/manifest.webmanifest"> -->
+
+  <!-- Preload hero image (optional performance) -->
+  <link rel="preload" as="image" href="https://i.ibb.co/DP1xT5Ky/8b7e15f5dd5dd2290ac52af728cc12c3.jpg" imagesrcset="https://i.ibb.co/DP1xT5Ky/8b7e15f5dd5dd2290ac52af728cc12c3.jpg 1280w" imagesizes="100vw">
+
+  <!-- Fallback raha tsy mandeha ny JS: esorina ny loader + aseho ny menu/sections -->
+  <noscript>
+    <style>
+      #loader{ display:none !important; }
+      .bottom-menu{ display:flex !important; }
+      section{ display:block !important; }
+    </style>
+  </noscript>
+</head>
+
+<body aria-busy="false">
+  <!-- Loader -->
+  <div id="loader" aria-hidden="false" role="status" aria-label="Chargement">
+    <img class="loader-logo" src="https://i.ibb.co/p6CWgYWd/Logo.png" alt="Logo Mijoro" width="92" height="92" decoding="async">
+    <div class="loader-text">Mijoro</div>
+  </div>
+
+  <!-- Sections: Home -->
+  <section id="home" class="active" aria-label="Accueil" aria-hidden="false">
+    <!-- Slideshow -->
+    <div class="slideshow" aria-label="Promotion">
+      <div class="slide-track" id="slide-track">
+        <div class="slide">
+          <a href="https://ibb.co/ymNw7Ws1">
+            <img src="https://i.ibb.co/DP1xT5Ky/8b7e15f5dd5dd2290ac52af728cc12c3.jpg"
+                 alt="Offre promo 1" width="1280" height="720" decoding="async" fetchpriority="high">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://imgbb.com/">
+            <img src="https://i.ibb.co/B5vcHVZX/ddce6f18e3cdf72f038584cdb034bbd0.jpg"
+                 alt="Offre promo 2" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://ibb.co/8gD78RxK">
+            <img src="https://i.ibb.co/60RWsptn/Havadio-20251010-172140-0000.png"
+                 alt="Offre promo 3" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://ibb.co/95cwBFt">
+            <img src="https://i.ibb.co/jXbVqcR/c7b9cb0a30d688e2d15aeb3b91f0a4f5.jpg"
+                 alt="Offre promo 4" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://ibb.co/v6sk0VS8">
+            <img src="https://i.ibb.co/cSbQ4kjd/5f55046950fb4c960c17b1a6cc8b7622.jpg"
+                 alt="Offre promo 5" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+        <div class="slide">
+          <a href="https://imgbb.com/">
+            <img src="https://i.ibb.co/60q2XJV5/f2a5df8abf76e0fc0ce03765431b8519.jpg"
+                 alt="Offre promo 6" width="1280" height="720" loading="lazy" decoding="async" fetchpriority="low">
+          </a>
+        </div>
+      </div>
+      <div class="slide-dots" id="slide-dots" aria-hidden="true"></div>
+    </div>
+
+    <h1 id="home-title">Tongasoa ATO amin'ny boutique anay!</h1>
+    <p id="home-sub">Découvre des eBooks, vidéos et apps/jeux pour t’aider à réussir en ligne.</p>
+  </section>
+
+  <!-- Shop section -->
+  <section id="shop" aria-label="Boutique - Produits numériques" aria-hidden="true">
+    <h2>Nos Produits Numériques</h2>
+
+    <!-- Filters (section toolbar) -->
+    <div class="filters" id="shop-filters" role="toolbar" aria-label="Filtrer les produits">
+      <button type="button" class="filter-btn active" data-filter="all">Tous</button>
+      <button type="button" class="filter-btn" data-filter="ebooks">Ebooks</button>
+      <button type="button" class="filter-btn" data-filter="videos">Vidéos</button>
+      <button type="button" class="filter-btn" data-filter="vip">VIP</button>
+      <button type="button" class="filter-btn" data-filter="promo">Promo</button>
+      <button type="button" class="filter-btn" data-filter="free">Gratuit</button>
+    </div>
+
+    <!-- Products list (vertical) -->
+    <div class="products-section" aria-live="polite">
+      <div
+        id="products-row"
+        class="products-row"
+        role="list"
+        aria-label="Liste des produits — défilement vertical">
+      </div>
+    </div>
+  </section>
+
+  <!-- Shop popup (overlay) -->
+  <div id="shop-popup" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1">
+    <button type="button" class="close-popup" aria-label="Fermer" onclick="closeShop()"><i class="fa-solid fa-xmark"></i></button>
+
+    <div class="filters" aria-hidden="false" id="filters" role="toolbar" aria-label="Filtres Produits (popup)">
+      <button type="button" class="filter-btn active" data-category="ebooks" onclick="filterByCategory && filterByCategory('ebooks')">eBooks</button>
+      <button type="button" class="filter-btn" data-category="apps" onclick="filterByCategory && filterByCategory('apps')">Apps/Jeux</button>
+      <button type="button" class="filter-btn" data-category="videos" onclick="filterByCategory && filterByCategory('videos')">Vidéos</button>
+    </div>
+
+    <div class="search">
+      <label for="search" class="sr-only">Recherche produits</label>
+      <input id="search" placeholder="Rechercher..." aria-label="Recherche produits" autocomplete="off" inputmode="search">
+    </div>
+
+    <div id="products-box" aria-live="polite"></div>
+    <div class="pagination" id="pagination" role="navigation" aria-label="Pagination"></div>
+  </div>
+
+  <!-- Cart panel + drawer -->
+  <div id="cart-panel" aria-live="polite">
+    <button id="cart-toggle" title="Voir le panier" aria-label="Voir le panier"><i class="fa-solid fa-basket-shopping"></i></button>
+    <button type="button" title="Vider le panier" onclick="clearCart()" aria-label="Vider le panier"><i class="fa-solid fa-trash"></i></button>
+    <div>Cart: <strong id="cart-count">0</strong> • Total: <strong id="cart-total">0 AR</strong></div>
+  </div>
+
+  <div id="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+    <div id="cart-list"></div>
+    <div class="cart-footer">
+      <div>Total: <strong id="cart-total-drawer">0 AR</strong></div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="param-btn" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Vider</button>
+        <button type="button" class="param-btn" onclick="checkoutWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Commander</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom menu -->
+  <div class="bottom-menu" role="navigation" aria-label="Menu bas">
+    <button type="button" class="menu-btn menu-home active" onclick="showSection('home', this)"><i class="fa-solid fa-house"></i><span>Home</span></button>
+    <button type="button" class="menu-btn menu-shop" onclick="showSection('shop', this)"><i class="fa-solid fa-store"></i><span>Shop</span></button>
+    <button type="button" class="menu-btn menu-param" onclick="toggleParamFixed()"><i class="fa-solid fa-gear"></i><span>Paramètre</span></button>
+  </div>
+
+  <!-- Param fixed (right) -->
+  <aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="https://i.ibb.co/zTvNMMQd/743c16d58accff74c1c37793816bd25f.jpg" alt="param" style="width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,.06)">
+      <div>
+        <h4 style="margin-bottom:4px">Paramètres</h4>
+        <small style="color:#ddd">Personnalisez votre expérience</small>
+      </div>
+    </div>
+
+    <!-- Langue -->
+    <div>
+      <h4>Langue</h4>
+      <div class="option-grid" id="lang-options">
+        <button type="button" class="option-card" data-lang="mg" onclick="selectLang('mg')">
+          <div class="option-icon icon-mg">🇲🇬</div>
+          <div class="option-texts">
+            <div class="option-title">Malagasy</div>
+            <div class="option-sub">Lazao amin’ny fiteny gasy</div>
+          </div>
+        </button>
+        <button type="button" class="option-card" data-lang="fr" onclick="selectLang('fr')">
+          <div class="option-icon icon-fr">🇫🇷</div>
+          <div class="option-texts">
+            <div class="option-title">Français</div>
+            <div class="option-sub">Interface en français</div>
+          </div>
+        </button>
+        <button type="button" class="option-card" data-lang="en" onclick="selectLang('en')">
+          <div class="option-icon icon-en">🇬🇧</div>
+          <div class="option-texts">
+            <div class="option-title">English</div>
+            <div class="option-sub">English interface</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Thème -->
+    <div>
+      <h4>Thème</h4>
+      <div class="option-grid" id="theme-options">
+        <button type="button" class="option-card" data-theme="dark" onclick="selectTheme('dark')">
+          <div class="option-icon icon-dark"><i class="fa-solid fa-moon"></i></div>
+          <div class="option-texts">
+            <div class="option-title">Sombre</div>
+            <div class="option-sub">Recommandé (défaut)</div>
+          </div>
+        </button>
+        <button type="button" class="option-card" data-theme="light" onclick="selectTheme('light')">
+          <div class="option-icon icon-light"><i class="fa-solid fa-sun"></i></div>
+          <div class="option-texts">
+            <div class="option-title">Clair</div>
+            <div class="option-sub">Plus lumineux</div>
+          </div>
+        </button>
+        <!-- Rose/Jaune/Marron dia ho injection avy amin'ny app.js -->
+      </div>
+    </div>
+
+    <!-- About/Contact/Quit -->
+    <div class="row" style="justify-content:space-between">
+      <button type="button" class="param-btn" onclick="openInfo('about')"><i class="fa-solid fa-circle-info"></i> À propos</button>
+      <button type="button" class="param-btn" onclick="openInfo('contact')"><i class="fa-solid fa-envelope"></i> Contact</button>
+      <button type="button" class="param-btn" onclick="openQuitModal()"><i class="fa-solid fa-right-from-bracket"></i> Quit</button>
+    </div>
+  </aside>
+
+  <!-- Quit modal -->
+  <div id="quit-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="quit-title">
+    <div class="modal-card" role="document">
+      <h3 id="quit-title">Voulez-vous quitter l’application ?</h3>
+      <p style="margin:8px 0 12px">Tsy ho very ny angon-drakitrao.</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:8px">
+        <button type="button" class="param-btn" onclick="closeQuitModal()">Annuler</button>
+        <button type="button" class="param-btn" style="background:#ef4444;border-color:#ef4444" onclick="quitApp()">Quitter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info modal -->
+  <div id="info-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="info-title">
+    <div class="info-card" role="document">
+      <h3 id="info-title">Informations</h3>
+      <div id="info-content"></div>
+      <div class="info-actions">
+        <button type="button" class="param-btn" onclick="closeInfo()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader Guard (fallback manery hanala loader sy haneho UI de base) -->
+  <script>
+  (function(){
+    var MAX_WAIT_MS = 8000;   // hard fallback
+    var SOFT_WAIT_MS = 400;   // reveal kely haingana
+
+    function qs(s){ return document.querySelector(s); }
+
+    function hideLoader(){
+      var l = qs('#loader');
+      if (!l) return;
+      l.classList.add('fade-out');
+      l.setAttribute('aria-hidden','true');
+      l.style.pointerEvents = 'none';
+      setTimeout(function(){ l.style.display = 'none'; }, 500);
+    }
+
+    function revealBaseUI(){
+      try {
+        document.body.setAttribute('aria-busy', 'false');
+
+        // Ataovy azo antoka fa miseho ny HOME
+        var home = document.getElementById('home');
+        if (home){
+          home.classList.add('active');
+          home.setAttribute('aria-hidden', 'false');
+          home.style.display = '';
+          home.style.visibility = 'visible';
+          home.style.opacity = '1';
+        }
+
+        // Asehoy ny bottom menu
+        var bm = qs('.bottom-menu');
+        if (bm){
+          var cs = window.getComputedStyle(bm);
+          if (cs.display === 'none') bm.style.display = 'flex';
+          bm.style.visibility = 'visible';
+          bm.style.opacity = '1';
+          bm.style.pointerEvents = 'auto';
+          if (!bm.style.position || bm.style.position === 'static') bm.style.position = 'fixed';
+          bm.style.zIndex = '1300';
+        }
+      } catch (_){}
+    }
+
+    function onReady(cb){
+      if (document.readyState === 'complete' || document.readyState === 'interactive') cb();
+      else document.addEventListener('DOMContentLoaded', cb, { once: true });
+    }
+
+    onReady(function(){
+      // Soft reveal haingana ho an'ny UI de base
+      setTimeout(revealBaseUI, SOFT_WAIT_MS);
+
+      // Hard fallback: esory an-keriny ny loader
+      setTimeout(function(){
+        hideLoader();
+        revealBaseUI();
+      }, MAX_WAIT_MS);
+    });
+  })();
+  </script>
+
+  <!-- iOS 100vh Patch (optional) -->
+  <script>
+  (function(){
+    function setVH(){
+      var vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', vh + 'px');
+    }
+    window.addEventListener('resize', setVH);
+    window.addEventListener('orientationchange', setVH);
+    setVH();
+  })();
+  </script>
+
+  <!-- App script -->
+  <script src="app.js" defer></script>
+
+  <!-- Optionnel: DevTools mini (Eruda) raha mila Console ao anaty pejy amin'ny mobile
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+  -->
+</body>
+</html>
