@@ -2,15 +2,12 @@
    SAFETY / DEBUG / POLYFILLS
    ================================ */
 (function safetyInit(){
-  // Polyfill: CSS.escape (protection navigateur sans support)
   if (!window.CSS || typeof window.CSS.escape !== 'function') {
     window.CSS = window.CSS || {};
     window.CSS.escape = function (value) {
       return String(value).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
     };
   }
-
-  // Logs errors (compat)
   window.addEventListener('error', function(e){
     console.error('[App Error]', e && e.message, e && e.filename, e && e.lineno, e && e.colno, e && e.error);
   });
@@ -18,7 +15,6 @@
     console.error('[Unhandled Promise]', e && e.reason);
   });
 
-  // Kill-switch Loader: esory foana na dia misy crash aza
   (function safeHideLoader(){
     function hide() {
       var loader = document.getElementById('loader');
@@ -34,11 +30,10 @@
     else {
       document.addEventListener('DOMContentLoaded', function(){ setTimeout(hide, 500); });
       window.addEventListener('load', hide, { once: true });
-      setTimeout(hide, 3000); // killswitch
+      setTimeout(hide, 3000);
     }
   })();
 
-  // Fallback: ataovy active ny home raha sendra very
   document.addEventListener('DOMContentLoaded', function(){
     var home = document.getElementById('home');
     if (home && !home.classList.contains('active')) {
@@ -47,14 +42,13 @@
     }
   });
 
-  // Stub: raha antsoina nefa tsy mbola voadefina (hisorohana crash)
   if (typeof window.closeShop !== 'function') window.closeShop = function(){};
 })();
 
 /* ================================
    CONSTANTES + HELPERS
    ================================ */
-var WHATSAPP_PHONE_INTL = '261333106055'; // 0333106055 => MG +261
+var WHATSAPP_PHONE_INTL = '261333106055';
 
 function escapeHtml(s){
   if (s == null) return '';
@@ -120,6 +114,7 @@ function buyOrRead(product){
   openWhatsAppMessage(buildWAProductMessage(product, isFree ? 'read' : 'buy'));
 }
 
+/* ================================
    LIKES (localStorage)
    ================================ */
 var LIKE_KEY = 'likes:v1';
@@ -164,7 +159,6 @@ function toggleLike(id){
   likeState.counts.set(id, count);
   saveLikes(likeState);
 
-  // Update UI
   try {
     var safeSel = '[data-id="' + window.CSS.escape(id) + '"] .icon-like';
     var nodes = document.querySelectorAll(safeSel);
@@ -210,19 +204,103 @@ function badgeIconFor(cat){
 var THEME_KEY = 'settings:theme';
 var LANG_KEY  = 'settings:lang';
 
+// --- Add: translations + localisation helper ---
+var TRANSLATIONS = {
+  fr: {
+    "home_title": "Tongasoa ATO amin'ny boutique anay!",
+    "home_sub": "Découvre des eBooks, vidéos et apps/jeux pour t’aider à réussir en ligne.",
+    "filter_all": "Tous",
+    "filter_ebooks": "Ebooks",
+    "filter_videos": "Vidéos",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Gratuit",
+    "shop_no_products": "Aucun produit trouvé.",
+    "search_placeholder": "Rechercher...",
+    "cart_label": "Cart",
+    "cart_total": "Total",
+    "param_settings": "Paramètres",
+    "param_language": "Langue",
+    "param_theme": "Thème",
+    "about": "À propos",
+    "contact": "Contact",
+    "quit": "Quit"
+  },
+  en: {
+    "home_title": "Welcome to our boutique!",
+    "home_sub": "Discover eBooks, videos and apps/games to help you succeed online.",
+    "filter_all": "All",
+    "filter_ebooks": "Ebooks",
+    "filter_videos": "Videos",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Free",
+    "shop_no_products": "No products found.",
+    "search_placeholder": "Search...",
+    "cart_label": "Cart",
+    "cart_total": "Total",
+    "param_settings": "Settings",
+    "param_language": "Language",
+    "param_theme": "Theme",
+    "about": "About",
+    "contact": "Contact",
+    "quit": "Quit"
+  },
+  mg: {
+    "home_title": "Tongasoa ato amin'ny boutique!",
+    "home_sub": "Jereo ny eBooks, vidéos ary apps/jeux hanampy anao hiroso amin'ny aterineto.",
+    "filter_all": "Rehetra",
+    "filter_ebooks": "eBooks",
+    "filter_videos": "Vidéos",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Maimaim-poana",
+    "shop_no_products": "Tsy misy vokatra hita.",
+    "search_placeholder": "Mitadiava...",
+    "cart_label": "Panier",
+    "cart_total": "Total",
+    "param_settings": "Paramètres",
+    "param_language": "Langue",
+    "param_theme": "Thème",
+    "about": "À propos",
+    "contact": "Contact",
+    "quit": "Quit"
+  }
+};
+
+function localizePage(lang) {
+  try {
+    var dict = TRANSLATIONS[lang] || TRANSLATIONS['fr'];
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var key = el.getAttribute('data-i18n');
+      if (!key) continue;
+      var txt = dict[key];
+      if (txt == null) continue;
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        if (el.getAttribute('data-i18n-placeholder') !== null) {
+          el.placeholder = txt;
+        } else {
+          el.value = txt;
+        }
+      } else {
+        el.textContent = txt;
+      }
+    }
+    var search = document.getElementById('search');
+    if (search && dict['search_placeholder']) search.setAttribute('aria-label', dict['search_placeholder']);
+  } catch (err) { console.error('[localizePage error]', err); }
+}
+
 function applyTheme(theme){
   try {
     var allowed = ['dark','light','rose','jaune','marron'];
     var t = (allowed.indexOf(theme) !== -1) ? theme : 'dark';
-
-    // Dataset + body class
     document.documentElement.setAttribute('data-theme', t);
-
     var cls = ['theme-dark','theme-light','theme-rose','theme-jaune','theme-marron'];
     for (var i=0;i<cls.length;i++){ document.body.classList.remove(cls[i]); }
     document.body.classList.add('theme-' + t);
-
-    // UI active state (option-card)
     var btns = document.querySelectorAll('#theme-options .option-card');
     for (var j=0;j<btns.length;j++){
       var b = btns[j];
@@ -248,13 +326,13 @@ function applyLang(lang){
   try {
     var l = (['mg','fr','en'].indexOf(lang) !== -1) ? lang : 'fr';
     document.documentElement.lang = l;
-
     var btns = document.querySelectorAll('#lang-options .option-card');
     for (var i=0;i<btns.length;i++){
       var b = btns[i];
       var val = b.getAttribute('data-lang');
       b.classList.toggle('active', val === l);
     }
+    localizePage(l);
   } catch (err) {
     console.error('[applyLang error]', err);
   }
@@ -269,7 +347,6 @@ function selectLang(lang){
   }
 }
 
-// Init settings on load (theme + lang)
 document.addEventListener('DOMContentLoaded', function(){
   try {
     var theme = 'dark';
@@ -290,11 +367,9 @@ document.addEventListener('DOMContentLoaded', function(){
 document.addEventListener('DOMContentLoaded', function(){
   var wrap = document.getElementById('theme-options');
   if (!wrap) return;
-
   var needRose   = !wrap.querySelector('[data-theme="rose"]');
   var needJaune  = !wrap.querySelector('[data-theme="jaune"]');
   var needMarron = !wrap.querySelector('[data-theme="marron"]');
-
   var html = '';
   if (needRose) {
     html += '' +
@@ -326,10 +401,7 @@ document.addEventListener('DOMContentLoaded', function(){
       '  </div>' +
       '</button>';
   }
-
   if (html) wrap.insertAdjacentHTML('beforeend', html);
-
-  // Bind all theme buttons (including existing dark/light)
   var allBtns = wrap.querySelectorAll('.option-card[data-theme]');
   for (var i=0;i<allBtns.length;i++){
     (function(btn){
@@ -339,6 +411,8 @@ document.addEventListener('DOMContentLoaded', function(){
     })(allBtns[i]);
   }
 });
+
+/* ================================
    Données Produits (fallback raha tsy misy window.products)
    ================================ */
 var products = (window.products && Array.isArray(window.products))
@@ -390,11 +464,9 @@ var FALLBACK_IMG = 'https://via.placeholder.com/600x400?text=Produit';
 function renderProducts(filter, search) {
   try {
     var row = document.getElementById('products-row');
-    var box = document.getElementById('products-box'); // popup grid
-
+    var box = document.getElementById('products-box');
     var normalizedFilter = normalizeCategory(filter || 'all');
     var q = (search || '').toLowerCase();
-
     var filtered = (products || []).filter(function(prod){
       var cat = normalizeCategory(prod.category);
       var catOk = (normalizedFilter === 'all') || (cat === normalizedFilter);
@@ -405,7 +477,6 @@ function renderProducts(filter, search) {
       var searchOk = !q || text.indexOf(q) !== -1;
       return catOk && searchOk;
     });
-
     function makeActions(p){
       var isFree = Number(p.price) === 0;
       return '' +
@@ -416,7 +487,6 @@ function renderProducts(filter, search) {
         '  </button>' +
         '</div>';
     }
-
     function makeLike(p){
       var liked = isLiked(p.id);
       var likeCnt = getLikeCount(p.id);
@@ -426,12 +496,10 @@ function renderProducts(filter, search) {
         '  <span class="like-count">' + String(likeCnt) + '</span>' +
         '</div>';
     }
-
     function makeBadge(p){
       var cat = normalizeCategory(p.category);
       return '<span class="' + badgeClassFor(cat) + '">' + badgeIconFor(cat) + ' ' + escapeHtml(cat || 'produit') + '</span>';
     }
-
     function makeCard(p, compact){
       var imgUrl = escapeAttr((p.image && p.image.url) ? p.image.url : FALLBACK_IMG);
       var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
@@ -441,7 +509,6 @@ function renderProducts(filter, search) {
       var likeBtn = makeLike(p);
       var titleSafe = escapeHtml(p.title || 'Produit');
       var descShort = escapeHtml(p.description_short || '');
-
       if (compact) {
         return '' +
           '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
@@ -456,7 +523,6 @@ function renderProducts(filter, search) {
                likeBtn +
           '</div>';
       }
-
       return '' +
         '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
         '<div style="padding:8px 4px; flex:1; display:flex; flex-direction:column; justify-content:space-between">' +
@@ -476,12 +542,10 @@ function renderProducts(filter, search) {
         '  </div>' +
         '</div>';
     }
-
-    // Vertical list (section principale)
     if (row) {
       row.innerHTML = '';
       if (filtered.length === 0) {
-        row.innerHTML = '<div style="color:#ddd;padding:12px">Aucun produit trouvé.</div>';
+        row.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
       } else {
         var frag = document.createDocumentFragment();
         for (var i=0;i<filtered.length;i++){
@@ -497,12 +561,10 @@ function renderProducts(filter, search) {
         row.appendChild(frag);
       }
     }
-
-    // Popup grid
     if (box) {
       box.innerHTML = '';
       if (filtered.length === 0) {
-        box.innerHTML = '<div style="color:#ddd;padding:12px">Aucun produit trouvé.</div>';
+        box.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
       } else {
         var grid = document.createElement('div');
         grid.className = 'products-grid';
@@ -520,7 +582,6 @@ function renderProducts(filter, search) {
         box.appendChild(grid);
       }
     }
-
     bindProductActions();
   } catch (err) {
     console.error('[renderProducts error]', err);
@@ -540,20 +601,16 @@ function bindProductActions(){
         var id = card.getAttribute('data-id');
         var p = null;
         for (var i=0;i<(products||[]).length;i++){ if (products[i].id === id){ p = products[i]; break; } }
-
         var isInfo = tgt.closest ? tgt.closest('.icon-info') : null;
         var isBuy  = tgt.closest ? tgt.closest('.icon-buy')  : null;
         var isLike = tgt.closest ? tgt.closest('.icon-like') : null;
-
         if (isInfo){ if (p && typeof showProduct === 'function') showProduct(id); return; }
         if (isBuy){ if (p) buyOrRead(p); return; }
         if (isLike){ if (id) toggleLike(id); return; }
       });
     }
-
     var row = document.getElementById('products-row');
     if (row && !row._bound) { handler(row); row._bound = true; }
-
     var box = document.getElementById('products-box');
     if (box && !box._bound) { handler(box); box._bound = true; }
   } catch (err) {
@@ -566,10 +623,7 @@ function bindProductActions(){
    ================================ */
 document.addEventListener('DOMContentLoaded', function(){
   try {
-    // Initial render
     renderProducts('all', '');
-
-    // Filters (section toolbar)
     var toolbar = document.getElementById('shop-filters');
     if (toolbar) {
       toolbar.addEventListener('click', function(e){
@@ -583,8 +637,6 @@ document.addEventListener('DOMContentLoaded', function(){
         renderProducts(f, sVal);
       });
     }
-
-    // Search (popup)
     var search = document.getElementById('search');
     if (search) {
       var t = null;
@@ -600,8 +652,6 @@ document.addEventListener('DOMContentLoaded', function(){
         }, 200);
       });
     }
-
-    // Popup filters
     var popupFilters = document.getElementById('filters');
     if (popupFilters) {
       popupFilters.addEventListener('click', function(e){
@@ -619,12 +669,13 @@ document.addEventListener('DOMContentLoaded', function(){
     console.error('[Filters/Search init error]', err);
   }
 });
+
+/* ================================
    PANIER (persistant) + Drawer + Checkout WhatsApp
    ================================ */
 var CART_KEY = 'cart:v1';
-var cartItems = new Map(); // id -> { id,title,price,qty,image }
+var cartItems = new Map();
 
-/* Storage helpers */
 function loadCartFromStorage() {
   try {
     var raw = localStorage.getItem(CART_KEY);
@@ -662,8 +713,6 @@ function cartArrayToMap(arr) {
     });
   }
 }
-
-/* Cart operations */
 function addToCart(p){
   try {
     if(!p || !p.id) return;
@@ -677,8 +726,6 @@ function addToCart(p){
       image: (p.image && p.image.url) ? p.image.url : ''
     });
     updateCartUI();
-
-    // Pulse amin'ny menu Shop
     var shopBtn = document.querySelector('.menu-shop');
     if (shopBtn){
       shopBtn.classList.add('pulse');
@@ -707,8 +754,6 @@ function clearCart(){
   try { cartItems.clear(); updateCartUI(); }
   catch (err) { console.error('[clearCart error]', err); }
 }
-
-/* Totals */
 function cartTotals(){
   var count = 0, total = 0;
   cartItems.forEach(function(item){
@@ -717,19 +762,15 @@ function cartTotals(){
   });
   return { count: count, total: total };
 }
-
-/* Update UI (panel + drawer) */
 function updateCartUI(){
   try {
     var totals = cartTotals();
     var count = totals.count;
     var total = totals.total;
-
     var countEl = document.getElementById('cart-count');
     var totalEl = document.getElementById('cart-total');
     if (countEl) countEl.textContent = String(count);
     if (totalEl) totalEl.textContent = fmtPrice(total);
-
     var drawer = document.getElementById('cart-list');
     var totalDrawer = document.getElementById('cart-total-drawer');
     if (drawer && totalDrawer){
@@ -764,14 +805,11 @@ function updateCartUI(){
       }
       totalDrawer.textContent = fmtPrice(total);
     }
-
     saveCartToStorage(cartMapToArray());
   } catch (err) {
     console.error('[updateCartUI error]', err);
   }
 }
-
-/* Drawer toggle + actions */
 (function initCartDrawer(){
   try {
     var toggle = document.getElementById('cart-toggle');
@@ -798,8 +836,6 @@ function updateCartUI(){
     console.error('[initCartDrawer error]', err);
   }
 })();
-
-/* Init cart from storage on load */
 document.addEventListener('DOMContentLoaded', function(){
   try {
     var initial = loadCartFromStorage();
@@ -809,8 +845,6 @@ document.addEventListener('DOMContentLoaded', function(){
     console.error('[Cart init error]', err);
   }
 });
-
-/* Checkout WhatsApp */
 function checkoutWhatsApp(){
   try {
     if(cartItems.size === 0){
@@ -830,9 +864,6 @@ function checkoutWhatsApp(){
   }
 }
 
-/* ================================
-   Helper: Antoka fa tsy misarona ny bottom menu
-   ================================ */
 function __ensureBottomMenuClickable(){
   var bm = document.querySelector('.bottom-menu');
   if (bm){
@@ -840,11 +871,11 @@ function __ensureBottomMenuClickable(){
     bm.style.zIndex = '3200';
   }
 }
-
-/* Rehefa vita ny load, antoka fa cliquable ny bottom menu */
 document.addEventListener('DOMContentLoaded', function(){
   __ensureBottomMenuClickable();
 });
+
+/* ================================
    Slideshow (auto + dots + touch)
    ================================ */
 (function initSlideshow(){
@@ -852,15 +883,12 @@ document.addEventListener('DOMContentLoaded', function(){
     var track = document.getElementById('slide-track');
     var dotsWrap = document.getElementById('slide-dots');
     if (!track) return;
-
     var slides = Array.prototype.slice.call(track.children || []);
     var count = slides.length;
     if (count === 0) return;
-
     var index = 0;
     var timer = null;
-    var DURATION = 5000; // 5s
-
+    var DURATION = 5000;
     if (dotsWrap) {
       dotsWrap.innerHTML = '';
       for (var i = 0; i < count; i++){
@@ -874,7 +902,6 @@ document.addEventListener('DOMContentLoaded', function(){
         })(i);
       }
     }
-
     function updateUI(){
       track.style.transform = 'translateX(' + (-index * 100) + '%)';
       if (dotsWrap){
@@ -891,14 +918,12 @@ document.addEventListener('DOMContentLoaded', function(){
     function start(){ if (timer) clearInterval(timer); timer = setInterval(next, DURATION); }
     function stop(){ if (timer) { clearInterval(timer); timer = null; } }
     function restart(){ stop(); start(); }
-
     var startX = null;
     track.addEventListener('touchstart', function(e){
       var t0 = (e.touches && e.touches[0]) ? e.touches[0].clientX : null;
       startX = t0;
       stop();
     }, { passive: true });
-
     track.addEventListener('touchend', function(e){
       var t1 = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : null;
       if (startX != null && t1 != null){
@@ -908,10 +933,8 @@ document.addEventListener('DOMContentLoaded', function(){
       startX = null;
       start();
     }, { passive: true });
-
     track.addEventListener('mouseenter', stop);
     track.addEventListener('mouseleave', start);
-
     updateUI(); start();
   } catch (err) {
     console.error('[initSlideshow error]', err);
@@ -922,14 +945,6 @@ document.addEventListener('DOMContentLoaded', function(){
    Navigation sections (Home/Shop) + Home fixe + Overlays safety
    ================================ */
 var SECTION_IDS = ['home', 'shop'];
-
-function __ensureBottomMenuClickable(){
-  var bm = document.querySelector('.bottom-menu');
-  if (bm){
-    bm.style.pointerEvents = 'auto';
-    bm.style.zIndex = '3200';
-  }
-}
 function __ensureOverlaysHidden(){
   try {
     var popup = document.getElementById('shop-popup');
@@ -944,14 +959,10 @@ function __ensureOverlaysHidden(){
     }
   } catch(_){}
 }
-
 function showSection(id, btn){
   try {
     if (SECTION_IDS.indexOf(id) === -1) return;
-
     if (typeof closeParamFixed === 'function') closeParamFixed();
-
-    // Toggle sections
     for (var i=0;i<SECTION_IDS.length;i++){
       var secId = SECTION_IDS[i];
       var sec = document.getElementById(secId);
@@ -960,14 +971,10 @@ function showSection(id, btn){
       sec.classList.toggle('active', active);
       sec.setAttribute('aria-hidden', String(!active));
     }
-
-    // Toggle menu active state
     var menuBtns = document.querySelectorAll('.bottom-menu .menu-btn');
     for (var j=0;j<menuBtns.length;j++){ menuBtns[j].classList.remove('active'); }
     var targetBtn = btn || document.querySelector('.bottom-menu .menu-' + id);
     if (targetBtn && targetBtn.classList) targetBtn.classList.add('active');
-
-    // HOME fixe: tsy scroll amin'ny pejy
     var homeEl = document.getElementById('home');
     if (homeEl){
       if (id === 'home'){
@@ -978,8 +985,6 @@ function showSection(id, btn){
         document.body.style.overflow = '';
       }
     }
-
-    // Focus + scroll behavior (tsy mi-scroll raha home)
     var activeSec = document.getElementById(id);
     if (activeSec) {
       var heading = activeSec.querySelector('h1, h2');
@@ -992,16 +997,12 @@ function showSection(id, btn){
         activeSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
-
-    // Safety: menu bas cliquable + overlays tsy manarona
     __ensureBottomMenuClickable();
     __ensureOverlaysHidden();
   } catch (err) {
     console.error('[showSection error]', err);
   }
 }
-
-// Ensure Home fixe amin'ny load voalohany
 document.addEventListener('DOMContentLoaded', function(){
   try {
     var homeEl = document.getElementById('home');
@@ -1017,32 +1018,22 @@ document.addEventListener('DOMContentLoaded', function(){
    Param panel: toggle/close + click-outside
    ================================ */
 var __paramOpen = false;
-
 function toggleParamFixed(){
   try {
     var el = document.getElementById('param-fixed');
     if(!el) return;
-
     __paramOpen = !__paramOpen;
-
-    // Esory inert raha manokatra
     if (__paramOpen){
       el.removeAttribute('inert');
     }
-
     el.classList.toggle('hidden', !__paramOpen);
     el.setAttribute('aria-hidden', String(!__paramOpen));
-
     if (__paramOpen){
       document.body.classList.add('param-open');
       var first = el.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
       if (first && first.focus) first.focus({ preventScroll:true });
-
-      // Safety: antoka ambony izy
       el.style.zIndex = '5000';
       el.style.pointerEvents = 'auto';
-
-      // Raha misokatra ny shop-popup dia akatona (overlay conflict)
       var popup = document.getElementById('shop-popup');
       if (popup && popup.classList && popup.classList.contains('show')) closeShop();
     } else {
@@ -1050,7 +1041,6 @@ function toggleParamFixed(){
       el.style.pointerEvents = 'none';
       document.body.classList.remove('param-open');
     }
-
     __ensureBottomMenuClickable();
   } catch (err) {
     console.error('[toggleParamFixed error]', err);
@@ -1071,16 +1061,12 @@ function closeParamFixed(){
     console.error('[closeParamFixed error]', err);
   }
 }
-
-// Aza avela hikatona avy hatrany rehefa tsindrina ao anatiny (stopPropagation)
 document.addEventListener('DOMContentLoaded', function(){
   var panel = document.getElementById('param-fixed');
   if (panel) {
     panel.addEventListener('click', function(e){ e.stopPropagation(); });
   }
 });
-
-// Click-outside: akatona raha ivelan'ny panel sy tsy ilay trigger
 document.addEventListener('click', function(e){
   try {
     var panel = document.getElementById('param-fixed');
@@ -1103,7 +1089,6 @@ function openInfo(type){
     var content = document.getElementById('info-content');
     var title = document.getElementById('info-title');
     if (!modal || !content || !title) return;
-
     var html = '';
     var t = 'Informations';
     if (type === 'about'){
@@ -1119,13 +1104,10 @@ function openInfo(type){
     } else {
       html = '<p>Informations générales de l’application.</p>';
     }
-
     title.textContent = t;
     content.innerHTML = html;
-
     modal.classList.add('show');
     modal.setAttribute('aria-hidden','false');
-
     var focusEl = modal.querySelector('.info-actions .param-btn');
     if (!focusEl) focusEl = modal.querySelector('button');
     if (focusEl && focusEl.focus) focusEl.focus({ preventScroll:true });
@@ -1143,7 +1125,6 @@ function closeInfo(){
     console.error('[closeInfo error]', err);
   }
 }
-// Fermeture au clic hors carte
 document.addEventListener('click', function(e){
   try {
     var modal = document.getElementById('info-modal');
@@ -1155,14 +1136,12 @@ document.addEventListener('click', function(e){
     console.warn('[info-modal click-outside]', err);
   }
 });
-
 function openQuitModal(){
   try {
     var modal = document.getElementById('quit-modal');
     if (!modal) return;
     modal.classList.add('show');
     modal.setAttribute('aria-hidden','false');
-
     var btn = modal.querySelector('button.param-btn');
     if (btn && btn.focus) btn.focus({ preventScroll:true });
   } catch (err) {
@@ -1199,7 +1178,6 @@ function openShop(){
     popup.classList.add('show');
     popup.setAttribute('aria-hidden','false');
     popup.style.pointerEvents = 'auto';
-
     var s = document.getElementById('search');
     if (s && s.focus) s.focus({ preventScroll:true });
   } catch (err) {
@@ -1228,13 +1206,11 @@ function showProduct(id){
       if (products[i].id === id){ p = products[i]; break; }
     }
     if (!p) return;
-
     var title = p.title || 'Produit';
     var img = escapeAttr((p.image && p.image.url) ? p.image.url : 'https://via.placeholder.com/600x400?text=Produit');
     var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
     var cat = normalizeCategory(p.category);
     var badge = '<span class="' + badgeClassFor(cat) + '">' + badgeIconFor(cat) + ' ' + escapeHtml(cat || 'produit') + '</span>';
-
     var safeId = escapeAttr(p.id);
     var html = '' +
       '<div style="display:grid; gap:10px;">' +
@@ -1254,18 +1230,14 @@ function showProduct(id){
       '    </div>' +
       '  </div>' +
       '</div>';
-
     var modal = document.getElementById('info-modal');
     var content = document.getElementById('info-content');
     var titleEl = document.getElementById('info-title');
     if (!modal || !content || !titleEl) return;
-
     titleEl.textContent = 'Détails du produit';
     content.innerHTML = html;
-
     modal.classList.add('show');
     modal.setAttribute('aria-hidden','false');
-
     var closeBtn = modal.querySelector('.info-actions .param-btn');
     if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll:true });
   } catch (err) {

@@ -1,4 +1,4 @@
-
+/* ================================
    Theme variables
    ================================ */
 :root{
@@ -22,6 +22,39 @@
 
   /* Haben'ny menu ambany ho an'ny home fixe */
   --bm-space: 96px;
+}
+
+/* ================================
+   Theme variants (override for theme switch)
+   ================================ */
+body.theme-dark { }
+body.theme-light {
+  --bg-card: rgba(255,255,255,0.95);
+  --popup-bg: rgba(255,255,255,0.95);
+  --text: #111;
+  --accent: #ff9800;
+  --menu-home: #2563eb; --menu-home-h: #1d4ed8;
+  --menu-shop: #16a34a; --menu-shop-h: #15803d;
+}
+body.theme-jaune {
+  --accent: #f59e0b;
+  --bg-card: rgba(255,243,205,0.14);
+  --popup-bg: rgba(15,12,8,0.92);
+  --text: #fff;
+  --menu-home: #b45309; --menu-home-h: #92400e;
+  --menu-shop: #b45309; --menu-shop-h: #92400e;
+}
+body.theme-rose {
+  --accent: #fb7185;
+  --bg-card: rgba(251,113,133,0.09);
+  --popup-bg: rgba(10,6,10,0.88);
+  --text: #fff;
+}
+body.theme-marron {
+  --accent: #8b5e3c;
+  --bg-card: rgba(139,94,60,0.12);
+  --popup-bg: rgba(10,6,10,0.85);
+  --text: #fff;
 }
 
 /* ================================
@@ -55,13 +88,13 @@ body{
    Sections
    ================================ */
 section{
-  position:relative; z-index:1; /* hisorohana overlay manarona ny menu */
+  position:relative; z-index:1;
   max-width:980px;margin:48px auto;padding:48px;border-radius:var(--radius);
   background:var(--bg-card); backdrop-filter: blur(6px);
   box-shadow:0 6px 30px rgba(0,0,0,.45);
   display:none;
   opacity:0;
-  transition:opacity .45s;     /* opacity-only (esory transform mba tsy hiteraka stacking context) */
+  transition:opacity .45s;
   content-visibility:auto; contain-intrinsic-size:800px 600px;
 }
 section.active{display:block; opacity:1}
@@ -105,9 +138,9 @@ p{color:#eee;line-height:1.5}
 /* ================================
    Products (vertical grid, mobile-first)
    ================================ */
-.products-section { 
-  margin-top:18px; 
-  padding-bottom:80px; /* hisorohana ny fanakonan'ny bottom menu */
+.products-section {
+  margin-top:18px;
+  padding-bottom:80px;
 }
 .products-row{
   display:grid !important;
@@ -157,7 +190,6 @@ p{color:#eee;line-height:1.5}
   .products-row{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* Popup products grid */
 .products-grid{
   display:grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -172,11 +204,15 @@ p{color:#eee;line-height:1.5}
   background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
 }
 .badge i{font-size:12px}
-.badge-ebooks{ background: color-mix(in srgb, var(--cat-ebooks) 20%, transparent); border-color: color-mix(in srgb, var(--cat-ebooks) 30%, transparent); }
-.badge-videos{ background: color-mix(in srgb, var(--cat-videos) 20%, transparent); border-color: color-mix(in srgb, var(--cat-videos) 30%, transparent); }
+.badge-ebooks{ background-color: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.16); }
+.badge-videos{ background-color: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.16); }
 .badge-vip{ background: rgba(234,179,8,.18); border-color: rgba(234,179,8,.36); color:#fff;}
 .badge-promo{ background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.36); color:#fff;}
 .badge-free{ background: rgba(59,130,246,.18); border-color: rgba(59,130,246,.36); color:#fff;}
+@supports (color: color-mix(in srgb, black 10%, white 90%)) {
+  .badge-ebooks{ background: color-mix(in srgb, var(--cat-ebooks) 20%, transparent); border-color: color-mix(in srgb, var(--cat-ebooks) 30%, transparent); }
+  .badge-videos{ background: color-mix(in srgb, var(--cat-videos) 20%, transparent); border-color: color-mix(in srgb, var(--cat-videos) 30%, transparent); }
+}
 
 /* ================================
    Icon buttons (info/buy) + Patch look in cards
@@ -280,7 +316,7 @@ p{color:#eee;line-height:1.5}
   bottom:12px;display:flex;gap:12px;
   background:rgba(15,23,42,.65);
   padding:10px 14px;border-radius:28px;
-  z-index:3200;                 /* ambony mba hihazona click */
+  z-index:3200;
   backdrop-filter: blur(6px);
   pointer-events:auto;
 }
@@ -304,8 +340,6 @@ p{color:#eee;line-height:1.5}
   outline-offset: 2px;
   box-shadow: 0 10px 24px rgba(0,0,0,.28), 0 0 0 4px rgba(255,255,255,.12) inset;
 }
-
-/* Pulse ho an'ny .menu-shop rehefa nisy nampidirina tao anaty cart */
 @keyframes pulseOnce {
   0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
   40% { transform: scale(1.06); box-shadow: 0 0 0 8px rgba(255,255,255,0.18); }
@@ -368,11 +402,11 @@ p{color:#eee;line-height:1.5}
 }
 
 /* Icons for language/theme chips */
-.icon-mg{ background: linear-gradient(135deg,#ef4444,#22c55e) }   /* 🇲🇬 */
-.icon-fr{ background: linear-gradient(135deg,#2563eb,#ef4444) }   /* 🇫🇷 */
-.icon-en{ background: linear-gradient(135deg,#111827,#3b82f6) }   /* 🇬🇧 */
-.icon-dark{ background: linear-gradient(135deg,#0f172a,#334155) } /* Moon */
-.icon-light{ background: linear-gradient(135deg,#f59e0b,#fde68a); color:#111 } /* Sun */
+.icon-mg{ background: linear-gradient(135deg,#ef4444,#22c55e) }
+.icon-fr{ background: linear-gradient(135deg,#2563eb,#ef4444) }
+.icon-en{ background: linear-gradient(135deg,#111827,#3b82f6) }
+.icon-dark{ background: linear-gradient(135deg,#0f172a,#334155) }
+.icon-light{ background: linear-gradient(135deg,#f59e0b,#fde68a); color:#111 }
 
 /* ================================
    Modals (Quit / Info)
