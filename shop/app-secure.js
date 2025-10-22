@@ -1,11 +1,16 @@
+// alert('JS ready'); // Esory rehefa OK
+window.addEventListener('error', (e) => {
+  console.error('JS error: ', e?.message || e);
+});
+
 // ========= CONFIG =========
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw'; // Fenoy!
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
 const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
 
 // Buckets
-const BUCKET_MEDIA = 'Media'; // sary/video/PDF (M lehibe)
-const BUCKET_APPS  = 'apps';  // app binaries (kely)
+const BUCKET_MEDIA = 'Media';
+const BUCKET_APPS  = 'apps';
 
 // ========= INIT =========
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -23,8 +28,9 @@ const els = {
   cancelBtn: document.getElementById('cancelBtn'),
   imageFile: document.getElementById('imageFile'),
   mediaFile: document.getElementById('mediaFile'),
-  appFile: document.getElementById('appFile'),
+  appFile: document.getElementById('appFile')
 };
+
 const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const loginEmail = document.getElementById('loginEmail');
@@ -42,13 +48,11 @@ async function initAuth() {
   try {
     const { data } = await supabase.auth.getSession();
     session = data.session;
-  } catch (e) { console.error('getSession error:', e); }
-
+  } catch (e) { console.error('getSession error: ', e.message); }
   computeIsOwner();
   reflectUI();
-  await render();
 
-  supabase.auth.onAuthStateChange((_e, s) => {
+  supabase.auth.onAuthStateChange((_event, s) => {
     session = s;
     computeIsOwner();
     reflectUI();
@@ -62,19 +66,18 @@ function computeIsOwner() {
 }
 
 function reflectUI() {
-  if (!els.loginBtn) return console.warn('loginBtn not found in HTML');
+  if (!els.loginBtn) return console.warn('No loginBtn in HTML');
   els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
   if (els.addBtn) els.addBtn.hidden = !isOwner;
 }
 
-// Open/close login modal
+// ========= LOGIN MODAL =========
 els.loginBtn?.addEventListener('click', async () => {
   if (session) {
     await supabase.auth.signOut();
     return;
   }
   if (!loginModal?.showModal) {
-    // fallback prompt if <dialog> not supported
     const email = prompt('Owner email:', OWNER_EMAIL);
     const password = prompt('Password:');
     if (!email || !password) return;
@@ -86,40 +89,40 @@ els.loginBtn?.addEventListener('click', async () => {
   loginPass.value = '';
   loginModal.showModal();
 });
-
 closeLogin?.addEventListener('click', () => loginModal?.close());
 cancelLogin?.addEventListener('click', () => loginModal?.close());
 
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = (loginEmail?.value || '').trim();
-  const password = loginPass?.value || '';
-  if (!email || !password) { alert('Fenoy email sy password'); return; }
+  const email = (loginEmail.value || '').trim();
+  const password = loginPass.value || '';
+  if (!email || !password) return alert('Fenoy email sy password');
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    alert('Login failed: ' + error.message);
-  } else {
-    loginModal?.close();
-    alert('Logged in as: ' + (email));
-    session = supabase.auth.getSession();
-    computeIsOwner();
-    reflectUI();
-    await render();
+  if (error) alert('Login failed: ' + error.message);
+  else {
+    loginModal.close();
+    const { data } = await supabase.auth.getUser();
+    alert('Logged in as: ' + (data?.user?.email || 'unknown'));
   }
 });
 
 // ========= DB HELPERS =========
 async function listProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { console.error('listProducts error:', error); return []; }
-  return data || [];
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('listProducts error:', err.message);
+    return [];
+  }
 }
 
 async function saveProduct(p) {
-  if (!isOwner || !session) { alert('Owner only'); return; }
+  if (!isOwner || !session) return alert('Owner only');
   const payload = {
     title: p.title, type: p.type, is_free: p.is_free,
     price: p.price, promo: p.promo, is_vip: p.is_vip,
@@ -130,32 +133,35 @@ async function saveProduct(p) {
     screenshots: p.screenshots || [],
     owner: session.user.id
   };
-  let err;
-  if (p.id) {
-    ({ error: err } = await supabase.from('products').update(payload).eq('id', p.id));
-  } else {
-    ({ error: err } = await supabase.from('products').insert(payload));
-  }
-  if (err) alert('Save product error: ' + err.message);
-}// ========= STORAGE (UPLOADS) =========
+  try {
+    if (p.id) {
+      await supabase.from('products').update(payload).eq('id', p.id);
+    } else {
+      await supabase.from('products').insert(payload);
+    }
+  } catch (err) { console.error('Save product error:', err.message); }
+}
+
+async function removeProduct(id) {
+  if (!isOwner || !session) return alert('Owner only');
+  try {
+    await supabase.from('products').delete().eq('id', id);
+  } catch (err) { console.error('Delete error:', err.message); }
+}
+
+// ========= STORAGE UPLOAD =========
 async function uploadToBucket(bucket, path, file) {
-  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
   if (error) throw error;
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
 
-async function uploadImage(file) {
-  const path = `images/${Date.now()}-${file.name}`;
-  return uploadToBucket(BUCKET_MEDIA, path, file);
-}
-
+async function uploadImage(file) { return uploadToBucket(BUCKET_MEDIA, `images/${Date.now()}-${file.name}`, file); }
 async function uploadMedia(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
   const folder = ext === 'pdf' ? 'pdfs' : 'videos';
-  const path = `${folder}/${Date.now()}-${file.name}`;
-  return uploadToBucket(BUCKET_MEDIA, path, file);
+  return uploadToBucket(BUCKET_MEDIA, `${folder}/${Date.now()}-${file.name}`, file);
 }
-
 async function uploadAppFile(file) {
   const path = `binaries/${Date.now()}-${file.name}`;
   const url = await uploadToBucket(BUCKET_APPS, path, file);
@@ -165,174 +171,195 @@ async function uploadAppFile(file) {
 // File input listeners
 els.imageFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try {
-    const url = await uploadImage(f);
-    els.form.elements['image_url'].value = url;
-    alert('Image uploaded');
-  } catch (err){ alert('Upload failed: ' + err.message); }
+  try { els.form.elements['image_url'].value = await uploadImage(f); alert('Image uploaded'); } 
+  catch (err){ alert('Upload failed: ' + err.message); }
 });
-
 els.mediaFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try {
-    const url = await uploadMedia(f);
-    els.form.elements['media_url'].value = url;
-    alert('Media uploaded');
-  } catch (err){ alert('Upload failed: ' + err.message); }
+  try { els.form.elements['media_url'].value = await uploadMedia(f); alert('Media uploaded'); } 
+  catch (err){ alert('Upload failed: ' + err.message); }
 });
-
 els.appFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try {
+  try { 
     const info = await uploadAppFile(f);
     els.form.elements['file_url'].value = info.url;
     els.form.elements['file_type'].value = info.type;
     els.form.elements['file_size'].value = info.size;
-    alert('App file uploaded');
+    alert('App file uploaded'); 
   } catch (err){ alert('Upload failed: ' + err.message); }
+});// ========= RENDER =========
+async function render() {
+  const products = await listProducts();
+
+  // Apply search + filter
+  const filtered = products.filter(p => {
+    const matchFilter = filter === 'all' || (
+      (filter === 'free' && p.is_free) ||
+      (filter === 'promo' && p.promo > 0) ||
+      (filter === 'vip' && p.is_vip) ||
+      (filter === 'ebook' && p.type === 'ebook') ||
+      (filter === 'video' && p.type === 'video') ||
+      (filter === 'app' && p.type === 'app')
+    );
+    const searchStr = (p.title + ' ' + (p.tags || []).join(',')).toLowerCase();
+    const matchSearch = q ? searchStr.includes(q.toLowerCase()) : true;
+    return matchFilter && matchSearch;
+  });
+
+  els.grid.innerHTML = '';
+  if (!filtered.length) {
+    els.empty.hidden = false;
+    return;
+  } else els.empty.hidden = true;
+
+  filtered.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    thumb.style.backgroundImage = p.image_url ? `url(${p.image_url})` : 'linear-gradient(45deg,#0f1730,#0b1220)';
+    card.appendChild(thumb);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'title-row';
+    titleRow.innerHTML = `<strong>${p.title}</strong>`;
+    if (p.promo) titleRow.innerHTML += `<span class="badge">-${p.promo}%</span>`;
+    body.appendChild(titleRow);
+
+    const typeRow = document.createElement('div');
+    typeRow.innerHTML = `<small>${p.type.toUpperCase()} ${p.is_free?'• FREE':''} ${p.is_vip?'• VIP':''}</small>`;
+    body.appendChild(typeRow);
+
+    const priceRow = document.createElement('div');
+    if (!p.is_free) priceRow.innerHTML = `<strong>${p.price} $</strong>`;
+    body.appendChild(priceRow);
+
+    if (p.description) {
+      const desc = document.createElement('p');
+      desc.style.fontSize='12px';
+      desc.textContent = p.description;
+      body.appendChild(desc);
+    }
+
+    // Tags
+    if (p.tags?.length) {
+      const tagsRow = document.createElement('div');
+      tagsRow.style.marginTop = '6px';
+      p.tags.forEach(t => {
+        const tspan = document.createElement('span');
+        tspan.className = 'badge';
+        tspan.textContent = t;
+        tagsRow.appendChild(tspan);
+      });
+      body.appendChild(tagsRow);
+    }
+
+    // Actions
+    if (isOwner) {
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn';
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = () => openModal(p);
+      actions.appendChild(editBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn danger';
+      delBtn.textContent = 'Delete';
+      delBtn.onclick = async () => {
+        if (confirm('Delete this product?')) {
+          await removeProduct(p.id);
+          render();
+        }
+      };
+      actions.appendChild(delBtn);
+
+      body.appendChild(actions);
+    }
+
+    card.appendChild(body);
+    els.grid.appendChild(card);
+  });
+}
+
+// ========= FILTERS =========
+els.chips.forEach(c => {
+  c.addEventListener('click', () => {
+    els.chips.forEach(ch => ch.classList.remove('active'));
+    c.classList.add('active');
+    filter = c.dataset.filter;
+    render();
+  });
 });
 
-// ========= FILTERS + SEARCH =========
-els.chips.forEach(c => c.addEventListener('click', () => {
-  els.chips.forEach(x => x.classList.remove('active'));
-  c.classList.add('active'); filter = c.dataset.filter || 'all'; render();
-}));
-
-let st; 
-els.search?.addEventListener('input', () => {
-  clearTimeout(st); 
-  st = setTimeout(()=>{ 
-    q = els.search.value.trim().toLowerCase(); 
-    render(); 
-  }, 150);
-});
-
-// Reset filters button
-document.getElementById('resetFilters')?.addEventListener('click', () => {
-  filter = 'all'; q = '';
-  els.chips.forEach(c => c.classList.remove('active'));
-  els.chips.find(c => (c.dataset.filter||'')==='all')?.classList.add('active');
-  if (els.search) els.search.value = '';
+els.search.addEventListener('input', e => {
+  q = e.target.value.trim();
   render();
 });
 
-// ========= MODAL ADD/EDIT =========
-document.getElementById('addBtn')?.addEventListener('click', () => openModal('add'));
+document.getElementById('resetFilters')?.addEventListener('click', () => {
+  filter = 'all';
+  q = '';
+  els.search.value = '';
+  els.chips.forEach(ch => ch.classList.remove('active'));
+  els.chips.find(ch => ch.dataset.filter==='all')?.classList.add('active');
+  render();
+});
+
+// ========= MODAL =========
+function openModal(p=null) {
+  els.modal.showModal();
+  if (!p) {
+    els.form.reset();
+    els.form.elements['id'].value = '';
+    return;
+  }
+  for (const key in p) {
+    if (els.form.elements[key]) {
+      els.form.elements[key].value = p[key];
+    }
+  }
+}
+
 els.closeBtn?.addEventListener('click', () => els.modal.close());
 els.cancelBtn?.addEventListener('click', () => els.modal.close());
 
-function openModal(mode='add', id=null, product=null) {
-  els.form.reset(); 
-  els.form.dataset.mode = mode;
-  document.getElementById('modalTitle').textContent = mode==='edit'?'Edit product':'Add product';
-  if (product) {
-    const f = els.form.elements;
-    f['id'].value = product.id; 
-    f['title'].value = product.title||''; 
-    f['type'].value = product.type||'ebook';
-    f['isFree'].checked = !!product.is_free; 
-    f['price'].value = Number(product.price||0); 
-    f['promo'].value = Number(product.promo||0);
-    f['isVIP'].checked = !!product.is_vip; 
-    f['image_url'].value = product.image_url||''; 
-    f['media_url'].value = product.media_url||'';
-    f['platform'].value = product.platform||''; 
-    f['version'].value = product.version||''; 
-    f['build_number'].value = product.build_number||'';
-    f['file_url'].value = product.file_url||''; 
-    f['file_type'].value = product.file_type||''; 
-    f['file_size'].value = product.file_size||'';
-    f['description'].value = product.description||''; 
-    f['tags'].value = (product.tags||[]).join(', ');
-  } else { 
-    els.form.elements['price'].value = 0; 
-    els.form.elements['promo'].value = 0; 
-  }
-
-  const sync = () => { 
-    const isFree = els.form.elements['isFree'].checked; 
-    els.form.elements['price'].disabled = isFree; 
-    if (isFree) els.form.elements['price'].value = 0; 
+// ========= FORM SUBMIT =========
+els.form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = els.form.elements;
+  const product = {
+    id: f['id'].value || null,
+    title: f['title'].value,
+    type: f['type'].value,
+    is_free: f['isFree'].checked,
+    price: parseFloat(f['price'].value) || 0,
+    promo: parseInt(f['promo'].value) || 0,
+    is_vip: f['isVIP'].checked,
+    image_url: f['image_url'].value || null,
+    media_url: f['media_url'].value || null,
+    description: f['description'].value || null,
+    tags: (f['tags'].value || '').split(',').map(t=>t.trim()).filter(Boolean),
+    platform: f['platform'].value || null,
+    version: f['version'].value || null,
+    build_number: f['build_number'].value || null,
+    file_url: f['file_url'].value || null,
+    file_type: f['file_type'].value || null,
+    file_size: f['file_size'].value || null
   };
-  els.form.elements['isFree'].addEventListener('change', sync, { once:true }); 
-  sync();
-  els.modal.showModal();
-}// ========= RENDER =========
-function matchFilters(p){
-  if (filter==='ebook' && p.type!=='ebook') return false;
-  if (filter==='video' && p.type!=='video') return false;
-  if (filter==='app' && p.type!=='app') return false;
-  if (filter==='free' && !p.is_free) return false;
-  if (filter==='promo' && !(Number(p.promo)>0)) return false;
-  if (filter==='vip' && !p.is_vip) return false;
-  if (q){
-    const hay = [p.title,p.description,(p.tags||[]).join(' '),p.type].filter(Boolean).join(' ').toLowerCase();
-    if(!hay.includes(q)) return false;
-  }
-  return true;
-}
+  await saveProduct(product);
+  els.modal.close();
+  render();
+});
 
-function priceText(p){
-  const base = p.is_free?0:Number(p.price||0);
-  const promo = Number(p.promo||0);
-  const final = Math.max(0, base - (base*promo)/100);
-  if (final===0) return 'GRATUIT';
-  if (promo>0 && final<base) return `$${final.toFixed(2)} (was $${base.toFixed(2)})`;
-  return `$${base.toFixed(2)}`;
-}
-
-async function render(){
-  const items = (await listProducts()).filter(matchFilters);
-  els.grid.innerHTML='';
-  if (!items.length){ 
-    els.empty.hidden=false; 
-    return; 
-  } 
-  els.empty.hidden=true;
-
-  for (const p of items){
-    const card = document.createElement('div'); card.className='card';
-    const thumb = document.createElement('div'); thumb.className='thumb'; 
-    if(p.image_url) thumb.style.backgroundImage=`url("${p.image_url}")`;
-
-    const body = document.createElement('div'); body.className='card-body';
-    const row = document.createElement('div'); row.className='title-row';
-    const h = document.createElement('h4'); h.textContent = p.title;
-
-    const badges = document.createElement('div');
-    const btype = document.createElement('span'); btype.className='badge'; btype.textContent=p.type.toUpperCase(); badges.appendChild(btype);
-    if (p.is_vip){ const b=document.createElement('span'); b.className='badge'; b.textContent='VIP'; badges.appendChild(b); }
-    if (p.is_free){ const b=document.createElement('span'); b.className='badge'; b.textContent='FREE'; badges.appendChild(b); }
-    if (p.type==='app' && p.platform){ const b=document.createElement('span'); b.className='badge'; b.textContent=p.platform.toUpperCase(); badges.appendChild(b); }
-    row.append(h,badges);
-
-    const desc = document.createElement('p'); desc.textContent = p.description||'';
-    const price = document.createElement('div'); price.textContent = priceText(p);
-
-    const actions = document.createElement('div'); actions.className='card-actions';
-    const openBtn = document.createElement('a'); openBtn.className='btn'; openBtn.target='_blank'; openBtn.rel='noopener';
-    if (p.type==='video' && p.media_url){ openBtn.textContent='Play'; openBtn.href=p.media_url; }
-    else if (p.type==='ebook' && p.media_url?.toLowerCase().endsWith('.pdf')){ openBtn.textContent='Read PDF'; openBtn.href=p.media_url; }
-    else if (p.type==='app' && p.file_url){ openBtn.textContent='Download'; openBtn.href=p.file_url; openBtn.setAttribute('download',''); }
-    else { openBtn.textContent='Open'; openBtn.href=p.media_url || p.image_url || '#'; }
-    actions.appendChild(openBtn);
-
-    if (isOwner){
-      const edit = document.createElement('button'); edit.className='btn'; edit.textContent='Edit'; edit.onclick=()=>openModal('edit', p.id, p);
-      const del = document.createElement('button'); del.className='btn'; del.textContent='Delete'; del.onclick=async()=>{ 
-        if(confirm(`Supprimer "${p.title}" ?`)){ 
-          await removeProduct(p.id); 
-          await render(); 
-        } 
-      };
-      actions.append(edit,del);
-    }
-
-    body.append(row,desc,price); 
-    card.append(thumb,body,actions); 
-    els.grid.appendChild(card);
-  }
-}
-
-// ========= START =========
-initAuth().then(render);
+// ========= INIT =========
+els.addBtn?.addEventListener('click', () => openModal());
+initAuth();
+render();
