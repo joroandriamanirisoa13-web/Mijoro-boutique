@@ -205,6 +205,13 @@ els.chips.forEach(c => c.addEventListener('click', () => {
 let st; els.search?.addEventListener('input', () => {
   clearTimeout(st); st = setTimeout(()=>{ q = els.search.value.trim().toLowerCase(); render(); }, 150);
 });
+filter = 'all'; q = '';
+  els.chips.forEach(c => c.classList.remove('active'));
+  els.chips.find(c => (c.dataset.filter||'')==='all')?.classList.add('active');
+  if (els.search) els.search.value = '';
+  render();
+});
+
 
 // ========= MODAL ADD/EDIT =========
 document.getElementById('addBtn')?.addEventListener('click', () => openModal('add'));
@@ -318,11 +325,5 @@ async function render(){
 // ========= START =========
 initAuth().then(render);
 
-  filter = 'all'; q = '';
-  els.chips.forEach(c => c.classList.remove('active'));
-  els.chips.find(c => (c.dataset.filter||'')==='all')?.classList.add('active');
-  if (els.search) els.search.value = '';
-  render();
-});
 
 
