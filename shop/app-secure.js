@@ -43,7 +43,11 @@ let filter = 'all';
 let q = '';
 
 // ========= AUTH =========
-async function initAuth() {
+async function initAuth()
+
+  alert('Logged in as: ' + (data?.user?.email || 'NO SESSION'));
+});
+ {
   try {
     session = (await supabase.auth.getSession()).data.session;
   } catch (e) {
