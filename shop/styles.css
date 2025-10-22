@@ -31,3 +31,24 @@ body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:
 .form-grid input,.form-grid select,.form-grid textarea{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
 .inline{display:flex;gap:8px;align-items:center}
 @media(max-width:720px){.form-grid{grid-template-columns:1fr}}
+
+:root{
+  --bg:#0b1220; 
+  --card:#0f172a;
+  --text:#e8eefb;   /* mazava kokoa */
+  --muted:#b6c2d9;  /* mazava kokoa */
+  --primary:#6366f1;
+  --border:#3a4a6a;
+}
+body{background:var(--bg);color:var(--text)}
+.search, input, select, textarea{
+  background:#0e1a33 !important;
+  color:#f2f6ff !important;
+  border:1px solid var(--border) !important;
+}
+.btn{background:#0e1a33;border-color:var(--border);color:#f2f6ff}
+.btn.primary{background:var(--primary)}
+.badge{background:#0e1a33;border-color:var(--border);color:#f2f6ff}
+.empty{color:var(--muted)}
+/* Dialog higher z-index & centered */
+.modal{z-index: 9999}
