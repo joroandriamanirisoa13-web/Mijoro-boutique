@@ -1,387 +1,225 @@
-// ========= APP SECURE JS - PARTIE 1/2 =========
+/* ================================
+   Mijoro Boutique - styles
+   ========================= */
 
-// Debug / ready
-window.addEventListener('error', (e) => {
-  console.error('JS error:', e?.message || e);
-});
-
-// ========= CONFIG =========
-const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
-const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
-
-// Buckets
-const BUCKET_MEDIA = 'Media';
-const BUCKET_APPS  = 'apps';
-
-// ========= INIT =========
-if (!SUPABASE_ANON_KEY) {
-  alert("Tsy mbola feno ny SUPABASE_ANON_KEY ao amin'ny app-secure.js");
+:root{
+  --bg:#0b1220;
+  --card:#0f172a;
+  --text:#e8eefb;     
+  --muted:#b6c2d9;    
+  --primary:#6366f1;  
+  --border:#3a4a6a;
+  --chip:#13203f;
+  --danger:#ef4444;
 }
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const els = {
-  grid: document.getElementById('grid'),
-  empty: document.getElementById('empty'),
-  loginBtn: document.getElementById('loginBtn'),
-  addBtn: document.getElementById('addBtn'),
-  chips: Array.from(document.querySelectorAll('.chip')),
-  search: document.getElementById('searchInput'),
-  modal: document.getElementById('modal'),
-  form: document.getElementById('form'),
-  closeBtn: document.getElementById('closeBtn'),
-  cancelBtn: document.getElementById('cancelBtn'),
-  imageFile: document.getElementById('imageFile'),
-  mediaFile: document.getElementById('mediaFile'),
-  appFile: document.getElementById('appFile'),
-};
-
-const loginModal = document.getElementById('loginModal');
-const loginForm = document.getElementById('loginForm');
-const loginEmail = document.getElementById('loginEmail');
-const loginPass = document.getElementById('loginPass');
-const closeLogin = document.getElementById('closeLogin');
-const cancelLogin = document.getElementById('cancelLogin');
-
-let session = null;
-let isOwner = false;
-let filter = 'all';
-let q = '';
-
-// ========= AUTH =========
-async function initAuth() {
-  try {
-    const storedSession = localStorage.getItem('supabase_session');
-    if (storedSession) {
-      session = JSON.parse(storedSession);
-    } else {
-      const { data } = await supabase.auth.getSession();
-      session = data.session;
-    }
-  } catch (e) {
-    console.error('getSession error:', e.message);
-  }
-
-  computeIsOwner();
-  reflectUI();
-  render();
-
-  supabase.auth.onAuthStateChange((_e, s) => {
-    session = s;
-    if (session) localStorage.setItem('supabase_session', JSON.stringify(session));
-    else localStorage.removeItem('supabase_session');
-    computeIsOwner();
-    reflectUI();
-    render();
-  });
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
 }
 
-function computeIsOwner() {
-  const email = session?.user?.email || '';
-  isOwner = email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+/* Top bar */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg, #0f1730 0%, #0b1220 100%);
+}
+.topbar h1{
+  margin:0;
+  font-size:22px;
 }
 
-function reflectUI() {
-  if (!els.loginBtn) return;
-  els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
-  if (els.addBtn) els.addBtn.hidden = !isOwner;
+/* Buttons */
+.btn{
+  background:#0e1a33;
+  color:var(--text);
+  border:1px solid var(--border);
+  padding:8px 12px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.btn:hover{filter:brightness(1.1)}
+.btn.primary{
+  background:var(--primary);
+  border-color:transparent;
+  color:white;
+}
+.btn.danger{
+  background:var(--danger);
+  border-color:transparent;
+  color:white;
+}
+.icon-btn{
+  background:transparent;
+  border:none;
+  color:var(--text);
+  font-size:18px;
+  cursor:pointer;
 }
 
-// Login modal logic
-els.loginBtn?.addEventListener('click', async () => {
-  if (session) {
-    await supabase.auth.signOut();
-    localStorage.removeItem('supabase_session');
-    return;
-  }
-  loginEmail.value = OWNER_EMAIL;
-  loginPass.value = '';
-  loginModal.showModal();
-});
+/* Filters + search */
+.filters{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  background:var(--chip);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:6px 10px;
+  border-radius:999px;
+  cursor:pointer;
+  font-size:14px;
+}
+.chip.active{outline:2px solid var(--primary)}
 
-closeLogin?.addEventListener('click', () => loginModal?.close());
-cancelLogin?.addEventListener('click', () => loginModal?.close());
-
-loginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = (loginEmail?.value || '').trim();
-  const password = loginPass?.value || '';
-  if (!email || !password) { alert('Fenoy email sy password'); return; }
-  const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) alert('Login failed: ' + error.message);
-  else {
-    loginModal?.close();
-    session = data.session;
-    localStorage.setItem('supabase_session', JSON.stringify(session));
-    computeIsOwner();
-    reflectUI();
-    render();
-  }
-});
-
-// ========= DB HELPERS =========
-async function listProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { console.error('listProducts error:', error.message); return []; }
-  return data || [];
+.search{
+  width:100%;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:#0e1a33;
+  color:#f2f6ff;
 }
 
-async function saveProduct(p) {
-  if (!isOwner || !session) { alert('Owner only'); return; }
-  const payload = {
-    title: p.title, type: p.type, is_free: p.is_free,
-    price: p.price, promo: p.promo, is_vip: p.is_vip,
-    image_url: p.image_url || null, media_url: p.media_url || null,
-    description: p.description || null, tags: p.tags || [],
-    platform: p.platform || null, version: p.version || null, build_number: p.build_number || null,
-    file_url: p.file_url || null, file_size: p.file_size || null, file_type: p.file_type || null,
-    screenshots: p.screenshots || [],
-    owner: session.user.id
-  };
-  let err;
-  if (p.id) {
-    ({ error: err } = await supabase.from('products').update(payload).eq('id', p.id));
-  } else {
-    ({ error: err } = await supabase.from('products').insert(payload));
-  }
-  if (err) alert('Save product error: ' + err.message);
-}// ========= APP SECURE JS - PARTIE 2/2 =========
-
-// ========= RENDER =========
-let productsCache = [];
-
-async function render() {
-  productsCache = await listProducts();
-  updateGrid();
+/* Grid & cards */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:16px;
+  padding:16px;
+}
+.empty{
+  padding:16px;
+  color:var(--muted);
 }
 
-function updateGrid() {
-  const filtered = productsCache.filter(p => {
-    // filter par type
-    if (filter !== 'all' && filter !== 'free' && filter !== 'promo' && filter !== 'vip') {
-      if (p.type !== filter) return false;
-    }
-    // free / promo / vip
-    if (filter === 'free' && !p.is_free) return false;
-    if (filter === 'promo' && (!p.promo || p.promo <= 0)) return false;
-    if (filter === 'vip' && !p.is_vip) return false;
-    // search
-    if (q) {
-      const qLower = q.toLowerCase();
-      const inTitle = (p.title || '').toLowerCase().includes(qLower);
-      const inTags = (p.tags || []).some(t => t.toLowerCase().includes(qLower));
-      if (!inTitle && !inTags) return false;
-    }
-    return true;
-  });
-
-  els.grid.innerHTML = '';
-  if (!filtered.length) {
-    els.empty.hidden = false;
-    return;
-  }
-  els.empty.hidden = true;
-
-  filtered.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'card';
-
-    const thumb = document.createElement('div');
-    thumb.className = 'thumb';
-    if (p.image_url) thumb.style.backgroundImage = `url('${p.image_url}')`;
-    card.appendChild(thumb);
-
-    const body = document.createElement('div');
-    body.className = 'card-body';
-
-    const titleRow = document.createElement('div');
-    titleRow.className = 'title-row';
-    const h3 = document.createElement('h3');
-    h3.textContent = p.title;
-    titleRow.appendChild(h3);
-    body.appendChild(titleRow);
-
-    const badges = document.createElement('div');
-    if (p.is_free) addBadge(badges, 'Free');
-    if (p.promo && p.promo > 0) addBadge(badges, 'Promo');
-    if (p.is_vip) addBadge(badges, 'VIP');
-    body.appendChild(badges);
-
-    const desc = document.createElement('p');
-    desc.textContent = p.description || '';
-    body.appendChild(desc);
-
-    // preview for media
-    if (p.media_url) {
-      if (p.type === 'video') {
-        const vid = document.createElement('video');
-        vid.controls = true;
-        vid.src = p.media_url;
-        vid.style.width = '100%';
-        vid.style.marginTop = '8px';
-        body.appendChild(vid);
-      } else if (p.type === 'ebook') {
-        const a = document.createElement('a');
-        a.href = p.media_url;
-        a.target = '_blank';
-        a.textContent = 'Preview PDF';
-        body.appendChild(a);
-      }
-    }
-
-    // tags
-    if (p.tags && p.tags.length) {
-      const tagRow = document.createElement('div');
-      tagRow.style.marginTop = '6px';
-      p.tags.forEach(t => addBadge(tagRow, t, false));
-      body.appendChild(tagRow);
-    }
-
-    card.appendChild(body);
-
-    // actions if owner
-    if (isOwner) {
-      const actions = document.createElement('div');
-      actions.className = 'card-actions';
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn';
-      editBtn.textContent = 'Edit';
-      editBtn.onclick = () => openModal(p);
-      actions.appendChild(editBtn);
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn danger';
-      delBtn.textContent = 'Delete';
-      delBtn.onclick = async () => {
-        if (!confirm('Delete product?')) return;
-        const { error } = await supabase.from('products').delete().eq('id', p.id);
-        if (error) alert('Delete failed: ' + error.message);
-        else render();
-      };
-      actions.appendChild(delBtn);
-
-      card.appendChild(actions);
-    }
-
-    els.grid.appendChild(card);
-  });
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  min-height:260px;
+}
+.thumb{
+  height:150px;
+  background:#0b1220;
+  background-size:cover;
+  background-position:center;
+}
+.card-body{padding:12px}
+.title-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+}
+.badge{
+  font-size:12px;
+  padding:2px 6px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:#0e1a33;
+  color:#f2f6ff;
+  margin-left:4px;
+}
+.card-actions{
+  display:flex;
+  gap:8px;
+  padding:12px;
+  border-top:1px solid var(--border);
 }
 
-function addBadge(parent, text, outline = true) {
-  const b = document.createElement('span');
-  b.className = 'badge';
-  b.textContent = text;
-  if (!outline) b.style.border = 'none';
-  parent.appendChild(b);
+/* Dialog / Modal */
+.modal{
+  border:none;
+  border-radius:12px;
+  max-width:920px;
+  width:96%;
+  padding:0;
+  background:var(--card);
+  color:var(--text);
+  z-index:9999;
+}
+.modal::backdrop{
+  background:rgba(2,6,23,0.65);
+}
+.modal-header, .modal-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+}
+.modal-footer{
+  border-bottom:none;
+  border-top:1px solid var(--border);
+  justify-content:flex-end;
+  gap:8px;
+}
+.modal-body{padding:12px 16px}
+
+/* Form */
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:12px;
+}
+.form-grid .full{grid-column:1 / -1}
+.form-grid label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:14px;
+}
+input, select, textarea{
+  background:#0e1a33;
+  color:#f2f6ff;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px 10px;
+}
+.inline{display:flex;align-items:center;gap:8px}
+
+@media (max-width:720px){
+  .form-grid{grid-template-columns:1fr}
 }
 
-// ========= FILTERS & SEARCH =========
-els.chips.forEach(chip => {
-  chip.addEventListener('click', () => {
-    els.chips.forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    filter = chip.dataset.filter;
-    updateGrid();
-  });
-});
-
-els.search.addEventListener('input', e => {
-  q = e.target.value.trim();
-  updateGrid();
-});
-
-document.getElementById('resetFilters')?.addEventListener('click', () => {
-  q = '';
-  filter = 'all';
-  els.search.value = '';
-  els.chips.forEach(c => c.classList.remove('active'));
-  els.chips.find(c => c.dataset.filter === 'all')?.classList.add('active');
-  updateGrid();
-});
-
-// ========= MODAL ADD/EDIT PRODUCT =========
-function openModal(p) {
-  if (!p) p = {};
-  els.form.reset();
-  for (let key in p) {
-    if (!p.hasOwnProperty(key)) continue;
-    const el = els.form.elements[key];
-    if (el) {
-      if (el.type === 'checkbox') el.checked = !!p[key];
-      else if (el.tagName === 'SELECT') el.value = p[key] || '';
-      else el.value = p[key];
-    }
-  }
-  els.modal.showModal();
+/* Preview video/pdf */
+.preview-container{
+  margin-top:8px;
+}
+.preview-video, .preview-pdf{
+  width:100%;
+  max-height:200px;
+  border-radius:8px;
+  margin-top:6px;
+  background:#0b1220;
 }
 
-els.closeBtn.addEventListener('click', () => els.modal.close());
-els.cancelBtn.addEventListener('click', () => els.modal.close());
+/* Small helpers */
+a{color:#9cb6ff}
+a:hover{color:#c3d3ff}
 
-els.form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const f = els.form.elements;
-  const product = {
-    id: f.id.value || null,
-    title: f.title.value.trim(),
-    type: f.type.value,
-    is_free: f.isFree.checked,
-    price: parseFloat(f.price.value) || 0,
-    promo: parseInt(f.promo.value) || 0,
-    is_vip: f.isVIP.checked,
-    image_url: f.image_url.value,
-    media_url: f.media_url.value,
-    platform: f.platform.value,
-    version: f.version.value,
-    build_number: f.build_number.value,
-    file_url: f.file_url.value,
-    file_type: f.file_type.value,
-    file_size: f.file_size.value,
-    description: f.description.value,
-    tags: (f.tags.value || '').split(',').map(t => t.trim()).filter(Boolean),
-  };
-
-  await saveProduct(product);
-  els.modal.close();
-  render();
-});
-
-// ========= FILE UPLOAD HELPERS =========
-async function uploadFile(file, bucket) {
-  if (!file) return null;
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}_${Math.random().toString(36).substr(2,6)}.${fileExt}`;
-  const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
-  if (error) { alert('Upload failed: ' + error.message); return null; }
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-  return urlData.publicUrl;
+/* Login modal tweaks */
+#loginModal input{
+  font-size:14px;
+  padding:10px;
 }
-
-// Auto-fill URLs when selecting files
-els.imageFile?.addEventListener('change', async (e) => {
-  const url = await uploadFile(e.target.files[0], BUCKET_MEDIA);
-  if (url) els.form.elements['image_url'].value = url;
-});
-
-els.mediaFile?.addEventListener('change', async (e) => {
-  const url = await uploadFile(e.target.files[0], BUCKET_MEDIA);
-  if (url) els.form.elements['media_url'].value = url;
-});
-
-els.appFile?.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const url = await uploadFile(file, BUCKET_APPS);
-  if (url) {
-    els.form.elements['file_url'].value = url;
-    els.form.elements['file_type'].value = file.type;
-    els.form.elements['file_size'].value = file.size;
-  }
-});
-
-// ========= INIT =========
-initAuth();
+#loginModal button.btn{
+  min-width:80px;
+}
