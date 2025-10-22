@@ -1,7 +1,5 @@
-// alert('JS ready'); // Esory rehefa OK
-window.addEventListener('error', (e) => {
-  console.error('JS error: ', e?.message || e);
-});
+// ========= DEBUG =========
+window.addEventListener('error', e => console.error('JS error:', e?.message || e));
 
 // ========= CONFIG =========
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
@@ -13,6 +11,9 @@ const BUCKET_MEDIA = 'Media';
 const BUCKET_APPS  = 'apps';
 
 // ========= INIT =========
+if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('APETRAHO')) {
+  alert("Fenoy ny SUPABASE_ANON_KEY ao amin'ny app-secure.js");
+}
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const els = {
@@ -28,9 +29,8 @@ const els = {
   cancelBtn: document.getElementById('cancelBtn'),
   imageFile: document.getElementById('imageFile'),
   mediaFile: document.getElementById('mediaFile'),
-  appFile: document.getElementById('appFile')
+  appFile: document.getElementById('appFile'),
 };
-
 const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const loginEmail = document.getElementById('loginEmail');
@@ -48,9 +48,10 @@ async function initAuth() {
   try {
     const { data } = await supabase.auth.getSession();
     session = data.session;
-  } catch (e) { console.error('getSession error: ', e.message); }
+  } catch (e) { console.error('getSession error:', e); }
   computeIsOwner();
   reflectUI();
+  render();
 
   supabase.auth.onAuthStateChange((_event, s) => {
     session = s;
@@ -66,63 +67,46 @@ function computeIsOwner() {
 }
 
 function reflectUI() {
-  if (!els.loginBtn) return console.warn('No loginBtn in HTML');
+  if (!els.loginBtn) return console.warn('loginBtn tsy hita ao amin\'ny HTML');
   els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
   if (els.addBtn) els.addBtn.hidden = !isOwner;
 }
 
-// ========= LOGIN MODAL =========
+// Open/close login modal
 els.loginBtn?.addEventListener('click', async () => {
   if (session) {
     await supabase.auth.signOut();
     return;
   }
-  if (!loginModal?.showModal) {
-    const email = prompt('Owner email:', OWNER_EMAIL);
-    const password = prompt('Password:');
-    if (!email || !password) return;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert('Login failed: ' + error.message);
-    return;
-  }
   loginEmail.value = OWNER_EMAIL;
   loginPass.value = '';
-  loginModal.showModal();
+  loginModal?.showModal();
 });
 closeLogin?.addEventListener('click', () => loginModal?.close());
 cancelLogin?.addEventListener('click', () => loginModal?.close());
 
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = (loginEmail.value || '').trim();
+  const email = loginEmail.value.trim();
   const password = loginPass.value || '';
-  if (!email || !password) return alert('Fenoy email sy password');
+  if (!email || !password) { alert('Fenoy email sy password'); return; }
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) alert('Login failed: ' + error.message);
-  else {
-    loginModal.close();
-    const { data } = await supabase.auth.getUser();
-    alert('Logged in as: ' + (data?.user?.email || 'unknown'));
-  }
+  else loginModal?.close();
 });
 
 // ========= DB HELPERS =========
 async function listProducts() {
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('listProducts error:', err.message);
-    return [];
-  }
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('listProducts error:', error.message); return []; }
+  return data || [];
 }
 
 async function saveProduct(p) {
-  if (!isOwner || !session) return alert('Owner only');
+  if (!isOwner || !session) { alert('Owner only'); return; }
   const payload = {
     title: p.title, type: p.type, is_free: p.is_free,
     price: p.price, promo: p.promo, is_vip: p.is_vip,
@@ -133,34 +117,30 @@ async function saveProduct(p) {
     screenshots: p.screenshots || [],
     owner: session.user.id
   };
-  try {
-    if (p.id) {
-      await supabase.from('products').update(payload).eq('id', p.id);
-    } else {
-      await supabase.from('products').insert(payload);
-    }
-  } catch (err) { console.error('Save product error:', err.message); }
+  let err;
+  if (p.id) {
+    ({ error: err } = await supabase.from('products').update(payload).eq('id', p.id));
+  } else {
+    ({ error: err } = await supabase.from('products').insert(payload));
+  }
+  if (err) alert('Save product error: ' + err.message);
 }
 
-async function removeProduct(id) {
-  if (!isOwner || !session) return alert('Owner only');
-  try {
-    await supabase.from('products').delete().eq('id', id);
-  } catch (err) { console.error('Delete error:', err.message); }
-}
-
-// ========= STORAGE UPLOAD =========
+// ========= STORAGE (UPLOADS) =========
 async function uploadToBucket(bucket, path, file) {
-  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
   if (error) throw error;
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
-
-async function uploadImage(file) { return uploadToBucket(BUCKET_MEDIA, `images/${Date.now()}-${file.name}`, file); }
+async function uploadImage(file) {
+  const path = `images/${Date.now()}-${file.name}`;
+  return uploadToBucket(BUCKET_MEDIA, path, file);
+}
 async function uploadMedia(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
   const folder = ext === 'pdf' ? 'pdfs' : 'videos';
-  return uploadToBucket(BUCKET_MEDIA, `${folder}/${Date.now()}-${file.name}`, file);
+  const path = `${folder}/${Date.now()}-${file.name}`;
+  return uploadToBucket(BUCKET_MEDIA, path, file);
 }
 async function uploadAppFile(file) {
   const path = `binaries/${Date.now()}-${file.name}`;
@@ -168,16 +148,15 @@ async function uploadAppFile(file) {
   return { url, size: file.size, type: file.type || 'application/octet-stream' };
 }
 
-// File input listeners
 els.imageFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try { els.form.elements['image_url'].value = await uploadImage(f); alert('Image uploaded'); } 
-  catch (err){ alert('Upload failed: ' + err.message); }
+  try { const url = await uploadImage(f); els.form.elements['image_url'].value = url; } 
+  catch(err){ alert('Upload failed: ' + err.message); }
 });
 els.mediaFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try { els.form.elements['media_url'].value = await uploadMedia(f); alert('Media uploaded'); } 
-  catch (err){ alert('Upload failed: ' + err.message); }
+  try { const url = await uploadMedia(f); els.form.elements['media_url'].value = url; } 
+  catch(err){ alert('Upload failed: ' + err.message); }
 });
 els.appFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
@@ -186,153 +165,81 @@ els.appFile?.addEventListener('change', async (e) => {
     els.form.elements['file_url'].value = info.url;
     els.form.elements['file_type'].value = info.type;
     els.form.elements['file_size'].value = info.size;
-    alert('App file uploaded'); 
-  } catch (err){ alert('Upload failed: ' + err.message); }
+  } 
+  catch(err){ alert('Upload failed: ' + err.message); }
 });// ========= RENDER =========
 async function render() {
-  const products = await listProducts();
+  let products = await listProducts();
 
-  // Apply search + filter
-  const filtered = products.filter(p => {
-    const matchFilter = filter === 'all' || (
-      (filter === 'free' && p.is_free) ||
-      (filter === 'promo' && p.promo > 0) ||
-      (filter === 'vip' && p.is_vip) ||
-      (filter === 'ebook' && p.type === 'ebook') ||
-      (filter === 'video' && p.type === 'video') ||
-      (filter === 'app' && p.type === 'app')
-    );
-    const searchStr = (p.title + ' ' + (p.tags || []).join(',')).toLowerCase();
-    const matchSearch = q ? searchStr.includes(q.toLowerCase()) : true;
-    return matchFilter && matchSearch;
-  });
+  // Apply search & filter
+  if (filter !== 'all') products = products.filter(p => p.type === filter || (filter === 'free' && p.is_free) || (filter === 'promo' && p.promo > 0) || (filter === 'vip' && p.is_vip));
+  if (q) products = products.filter(p => (p.title||'').toLowerCase().includes(q) || (p.tags||[]).some(t => t.toLowerCase().includes(q)));
 
   els.grid.innerHTML = '';
-  if (!filtered.length) {
-    els.empty.hidden = false;
-    return;
-  } else els.empty.hidden = true;
+  if (!products.length) { els.empty.hidden = false; return; }
+  els.empty.hidden = true;
 
-  filtered.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'card';
-
-    const thumb = document.createElement('div');
-    thumb.className = 'thumb';
-    thumb.style.backgroundImage = p.image_url ? `url(${p.image_url})` : 'linear-gradient(45deg,#0f1730,#0b1220)';
+  products.forEach(p => {
+    const card = document.createElement('div'); card.className = 'card';
+    const thumb = document.createElement('div'); thumb.className = 'thumb';
+    if (p.image_url) thumb.style.backgroundImage = `url(${p.image_url})`;
     card.appendChild(thumb);
 
-    const body = document.createElement('div');
-    body.className = 'card-body';
+    const body = document.createElement('div'); body.className = 'card-body';
+    const titleRow = document.createElement('div'); titleRow.className = 'title-row';
+    const h3 = document.createElement('h3'); h3.textContent = p.title;
+    titleRow.appendChild(h3);
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'title-row';
-    titleRow.innerHTML = `<strong>${p.title}</strong>`;
-    if (p.promo) titleRow.innerHTML += `<span class="badge">-${p.promo}%</span>`;
+    // badges
+    const badgeContainer = document.createElement('div');
+    if (p.is_free) { const b = document.createElement('span'); b.className='badge'; b.textContent='Free'; badgeContainer.appendChild(b);}
+    if (p.promo) { const b = document.createElement('span'); b.className='badge'; b.textContent=`Promo ${p.promo}%`; badgeContainer.appendChild(b);}
+    if (p.is_vip) { const b = document.createElement('span'); b.className='badge'; b.textContent='VIP'; badgeContainer.appendChild(b);}
+    titleRow.appendChild(badgeContainer);
+
     body.appendChild(titleRow);
 
-    const typeRow = document.createElement('div');
-    typeRow.innerHTML = `<small>${p.type.toUpperCase()} ${p.is_free?'• FREE':''} ${p.is_vip?'• VIP':''}</small>`;
-    body.appendChild(typeRow);
+    const desc = document.createElement('p'); desc.textContent = p.description || '';
+    body.appendChild(desc);
 
-    const priceRow = document.createElement('div');
-    if (!p.is_free) priceRow.innerHTML = `<strong>${p.price} $</strong>`;
-    body.appendChild(priceRow);
-
-    if (p.description) {
-      const desc = document.createElement('p');
-      desc.style.fontSize='12px';
-      desc.textContent = p.description;
-      body.appendChild(desc);
+    // media preview
+    if (p.media_url) {
+      const ext = p.media_url.split('.').pop().toLowerCase();
+      if (ext === 'pdf') {
+        const a = document.createElement('a'); a.href=p.media_url; a.textContent='View PDF'; a.target='_blank'; body.appendChild(a);
+      } else {
+        const video = document.createElement('video'); video.src=p.media_url; video.controls=true; video.style.width='100%'; body.appendChild(video);
+      }
     }
 
-    // Tags
-    if (p.tags?.length) {
-      const tagsRow = document.createElement('div');
-      tagsRow.style.marginTop = '6px';
-      p.tags.forEach(t => {
-        const tspan = document.createElement('span');
-        tspan.className = 'badge';
-        tspan.textContent = t;
-        tagsRow.appendChild(tspan);
-      });
-      body.appendChild(tagsRow);
-    }
-
-    // Actions
-    if (isOwner) {
-      const actions = document.createElement('div');
-      actions.className = 'card-actions';
-
-      const editBtn = document.createElement('button');
-      editBtn.className = 'btn';
-      editBtn.textContent = 'Edit';
-      editBtn.onclick = () => openModal(p);
-      actions.appendChild(editBtn);
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn danger';
-      delBtn.textContent = 'Delete';
-      delBtn.onclick = async () => {
-        if (confirm('Delete this product?')) {
-          await removeProduct(p.id);
-          render();
-        }
-      };
-      actions.appendChild(delBtn);
-
-      body.appendChild(actions);
+    // tags
+    if (p.tags && p.tags.length) {
+      const tagRow = document.createElement('div'); tagRow.style.marginTop='6px';
+      p.tags.forEach(t => { const s=document.createElement('span'); s.className='badge'; s.textContent=t; tagRow.appendChild(s); });
+      body.appendChild(tagRow);
     }
 
     card.appendChild(body);
+
+    // actions
+    if (isOwner) {
+      const actions = document.createElement('div'); actions.className='card-actions';
+      const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.textContent='Edit';
+      editBtn.addEventListener('click',()=>openEditModal(p));
+      actions.appendChild(editBtn);
+      card.appendChild(actions);
+    }
+
     els.grid.appendChild(card);
   });
 }
 
-// ========= FILTERS =========
-els.chips.forEach(c => {
-  c.addEventListener('click', () => {
-    els.chips.forEach(ch => ch.classList.remove('active'));
-    c.classList.add('active');
-    filter = c.dataset.filter;
-    render();
-  });
-});
-
-els.search.addEventListener('input', e => {
-  q = e.target.value.trim();
-  render();
-});
-
-document.getElementById('resetFilters')?.addEventListener('click', () => {
-  filter = 'all';
-  q = '';
-  els.search.value = '';
-  els.chips.forEach(ch => ch.classList.remove('active'));
-  els.chips.find(ch => ch.dataset.filter==='all')?.classList.add('active');
-  render();
-});
-
 // ========= MODAL =========
-function openModal(p=null) {
-  els.modal.showModal();
-  if (!p) {
-    els.form.reset();
-    els.form.elements['id'].value = '';
-    return;
-  }
-  for (const key in p) {
-    if (els.form.elements[key]) {
-      els.form.elements[key].value = p[key];
-    }
-  }
-}
+els.addBtn?.addEventListener('click',()=>openEditModal());
+els.closeBtn?.addEventListener('click',()=>els.modal.close());
+els.cancelBtn?.addEventListener('click',()=>els.modal.close());
 
-els.closeBtn?.addEventListener('click', () => els.modal.close());
-els.cancelBtn?.addEventListener('click', () => els.modal.close());
-
-// ========= FORM SUBMIT =========
-els.form?.addEventListener('submit', async (e) => {
+els.form?.addEventListener('submit', async e => {
   e.preventDefault();
   const f = els.form.elements;
   const product = {
@@ -340,26 +247,64 @@ els.form?.addEventListener('submit', async (e) => {
     title: f['title'].value,
     type: f['type'].value,
     is_free: f['isFree'].checked,
-    price: parseFloat(f['price'].value) || 0,
-    promo: parseInt(f['promo'].value) || 0,
+    price: parseFloat(f['price'].value)||0,
+    promo: parseInt(f['promo'].value)||0,
     is_vip: f['isVIP'].checked,
-    image_url: f['image_url'].value || null,
-    media_url: f['media_url'].value || null,
-    description: f['description'].value || null,
-    tags: (f['tags'].value || '').split(',').map(t=>t.trim()).filter(Boolean),
-    platform: f['platform'].value || null,
-    version: f['version'].value || null,
-    build_number: f['build_number'].value || null,
-    file_url: f['file_url'].value || null,
-    file_type: f['file_type'].value || null,
-    file_size: f['file_size'].value || null
+    image_url: f['image_url'].value,
+    media_url: f['media_url'].value,
+    description: f['description'].value,
+    tags: (f['tags'].value||'').split(',').map(t=>t.trim()).filter(Boolean),
+    platform: f['platform'].value,
+    version: f['version'].value,
+    build_number: f['build_number'].value,
+    file_url: f['file_url'].value,
+    file_type: f['file_type'].value,
+    file_size: f['file_size'].value
   };
   await saveProduct(product);
   els.modal.close();
   render();
 });
 
+function openEditModal(p=null){
+  const f=els.form.elements;
+  els.modal.showModal();
+  if(!p){ els.form.reset(); f['id'].value=''; f['price'].value='0'; f['promo'].value='0'; return; }
+  f['id'].value = p.id||'';
+  f['title'].value = p.title||'';
+  f['type'].value = p.type||'ebook';
+  f['isFree'].checked = p.is_free||false;
+  f['price'].value = p.price||0;
+  f['promo'].value = p.promo||0;
+  f['isVIP'].checked = p.is_vip||false;
+  f['image_url'].value = p.image_url||'';
+  f['media_url'].value = p.media_url||'';
+  f['description'].value = p.description||'';
+  f['tags'].value = (p.tags||[]).join(', ');
+  f['platform'].value = p.platform||'';
+  f['version'].value = p.version||'';
+  f['build_number'].value = p.build_number||'';
+  f['file_url'].value = p.file_url||'';
+  f['file_type'].value = p.file_type||'';
+  f['file_size'].value = p.file_size||'';
+}
+
+// ========= FILTERS & SEARCH =========
+els.chips.forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    els.chips.forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    filter = chip.dataset.filter;
+    render();
+  });
+});
+els.search?.addEventListener('input',()=>{ q=els.search.value.toLowerCase(); render(); });
+document.getElementById('resetFilters')?.addEventListener('click',()=>{
+  filter='all'; q=''; els.search.value=''; els.chips.forEach(c=>c.classList.remove('active'));
+  els.chips.find(c=>c.dataset.filter==='all')?.classList.add('active');
+  render();
+});
+
 // ========= INIT =========
-els.addBtn?.addEventListener('click', () => openModal());
 initAuth();
 render();
