@@ -1,13 +1,13 @@
-
+/* =========================
    Mijoro Boutique - styles
    ========================= */
 
 :root{
   --bg:#0b1220;
   --card:#0f172a;
-  --text:#e8eefb;     /* mazava kokoa */
-  --muted:#b6c2d9;    /* mazava kokoa */
-  --primary:#6366f1;  /* indigo */
+  --text:#e8eefb;     
+  --muted:#b6c2d9;    
+  --primary:#6366f1;  
   --border:#3a4a6a;
   --chip:#13203f;
   --danger:#ef4444;
@@ -45,6 +45,7 @@ body{
   padding:8px 12px;
   border-radius:8px;
   cursor:pointer;
+  font-size:14px;
 }
 .btn:hover{filter:brightness(1.1)}
 .btn.primary{
@@ -104,6 +105,7 @@ body{
 .empty{
   padding:16px;
   color:var(--muted);
+  text-align:center;
 }
 
 .card{
@@ -195,10 +197,16 @@ input, select, textarea{
 }
 .inline{display:flex;align-items:center;gap:8px}
 
+/* Placeholder color */
+input::placeholder, textarea::placeholder{
+  color:var(--muted);
+}
+
+/* Responsive */
 @media (max-width:720px){
   .form-grid{grid-template-columns:1fr}
 }
 
 /* Small helpers */
-a{color:#9cb6ff}
-a:hover{color:#c3d3ff}
+a{color:#9cb6ff;text-decoration:none}
+a:hover{color:#c3d3ff;text-decoration:underline}
