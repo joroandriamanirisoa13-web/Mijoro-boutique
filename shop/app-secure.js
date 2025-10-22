@@ -317,3 +317,11 @@ async function render(){
 
 // ========= START =========
 initAuth().then(render);
+
+  filter = 'all'; q = '';
+  els.chips.forEach(c => c.classList.remove('active'));
+  els.chips.find(c => (c.dataset.filter||'')==='all')?.classList.add('active');
+  if (els.search) els.search.value = '';
+  render();
+});
+
