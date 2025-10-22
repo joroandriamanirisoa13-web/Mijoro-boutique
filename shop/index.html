@@ -33,7 +33,7 @@
     <p id="empty" class="empty" hidden>Tsisy produits.</p>
   </main>
 
-  <!-- Modal Add/Edit -->
+  <!-- Modal Add/Edit Product -->
   <dialog id="modal" class="modal">
     <form id="form" method="dialog">
       <div class="modal-header">
@@ -122,7 +122,34 @@
     </form>
   </dialog>
 
-  <!-- Libs -->
+  <!-- Login Modal (ILAY TSY MAINTSY MISY) -->
+  <dialog id="loginModal" class="modal">
+    <form id="loginForm" method="dialog">
+      <div class="modal-header">
+        <h3>Owner Login</h3>
+        <button type="button" class="icon-btn" id="closeLogin">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <label class="full">Email
+            <input id="loginEmail" type="email" placeholder="joroandriamanirisoa13@gmail.com" required />
+          </label>
+          <label class="full">Password
+            <input id="loginPass" type="password" placeholder="••••••••" required />
+          </label>
+        </div>
+        <p class="hint" style="color:#94a3b8;font-size:12px;margin-top:8px">
+          Owner ihany no mahazo miditra.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn primary">Login</button>
+        <button type="button" class="btn" id="cancelLogin">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Libs (Tsy ovaina filaharana) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="./app-secure.js"></script>
