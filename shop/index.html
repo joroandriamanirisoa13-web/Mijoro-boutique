@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mijoro Boutique</title>
-  <link rel="stylesheet" href="./shop-style.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <header class="topbar">
@@ -46,7 +46,11 @@
       <div class="modal-body">
         <div class="form-grid">
           <input type="hidden" name="id" />
-          <label>Title<input name="title" required /></label>
+
+          <label>Title
+            <input name="title" required />
+          </label>
+
           <label>Type
             <select name="type">
               <option value="ebook">eBook</option>
@@ -54,22 +58,37 @@
               <option value="app">App/Jeux</option>
             </select>
           </label>
-          <label>Gratuit<input type="checkbox" name="isFree"/></label>
-          <label>Price<input type="number" step="0.01" min="0" name="price" value="0"/></label>
-          <label>Promo (%)<input type="number" min="0" max="100" name="promo" value="0"/></label>
-          <label>VIP<input type="checkbox" name="isVIP"/></label>
+
+          <label>Gratuit
+            <input type="checkbox" name="isFree"/>
+          </label>
+
+          <label>Price
+            <input type="number" step="0.01" min="0" name="price" value="0"/>
+          </label>
+
+          <label>Promo (%)
+            <input type="number" min="0" max="100" name="promo" value="0"/>
+          </label>
+
+          <label>VIP
+            <input type="checkbox" name="isVIP"/>
+          </label>
+
           <label class="full">Image (cover)
             <div class="inline">
               <input name="image_url" type="url" placeholder="Auto-filled rehefa upload"/>
               <input type="file" id="imageFile" accept="image/*"/>
             </div>
           </label>
+
           <label class="full">Media (Video/PDF)
             <div class="inline">
               <input name="media_url" type="url" placeholder="Auto-filled rehefa upload"/>
               <input type="file" id="mediaFile" accept="video/*,.pdf"/>
             </div>
           </label>
+
           <label>Platform (raha App)
             <select name="platform">
               <option value="">--</option>
@@ -81,18 +100,31 @@
               <option value="web">Web</option>
             </select>
           </label>
-          <label>Version<input name="version" placeholder="1.0.0"/></label>
-          <label>Build #<input name="build_number" placeholder="100"/></label>
+
+          <label>Version
+            <input name="version" placeholder="1.0.0"/>
+          </label>
+
+          <label>Build #
+            <input name="build_number" placeholder="100"/>
+          </label>
+
           <label class="full">App file (APK/ZIP/EXE/DMG…)
             <div class="inline">
               <input name="file_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="appFile"/>
+              <input type="file" id="appFile" />
             </div>
             <input type="hidden" name="file_type"/>
             <input type="hidden" name="file_size"/>
           </label>
-          <label class="full">Description<textarea name="description" rows="3"></textarea></label>
-          <label class="full">Tags (comma separated)<input name="tags" placeholder="programming, react"/></label>
+
+          <label class="full">Description
+            <textarea name="description" rows="3"></textarea>
+          </label>
+
+          <label class="full">Tags (comma separated)
+            <input name="tags" placeholder="programming, react"/>
+          </label>
         </div>
       </div>
       <div class="modal-footer">
@@ -111,8 +143,12 @@
       </div>
       <div class="modal-body">
         <div class="form-grid">
-          <label class="full">Email<input id="loginEmail" type="email" placeholder="joroandriamanirisoa13@gmail.com" required /></label>
-          <label class="full">Password<input id="loginPass" type="password" placeholder="••••••••" required /></label>
+          <label class="full">Email
+            <input id="loginEmail" type="email" placeholder="joroandriamanirisoa13@gmail.com" required />
+          </label>
+          <label class="full">Password
+            <input id="loginPass" type="password" placeholder="••••••••" required />
+          </label>
         </div>
         <p class="hint" style="color:#94a3b8;font-size:12px;margin-top:8px">
           Owner ihany no mahazo miditra.
@@ -125,6 +161,7 @@
     </form>
   </dialog>
 
+  <!-- Libs (tsy ovaina) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="./app-secure.js"></script>
