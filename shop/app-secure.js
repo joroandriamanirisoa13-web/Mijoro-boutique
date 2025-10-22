@@ -1,11 +1,17 @@
 
+alert('JS ready'); // Esory rehefa OK
+window.addEventListener('error', (e) => {
+  alert('JS error: ' + (e?.message || e));
+});
+
+// ========= CONFIG =========
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw'; // Fenoy!
 const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
 
-// Buckets (mifanaraka amin'ny ao amin'ny Storage-nao)
-const BUCKET_MEDIA = 'Media'; // M lehibe (sary/video/PDF)
-const BUCKET_APPS  = 'apps';  // kely (app binaries)
+// Buckets
+const BUCKET_MEDIA = 'Media'; // sary/video/PDF (M lehibe)
+const BUCKET_APPS  = 'apps';  // app binaries (kely)
 
 // ========= INIT =========
 if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('APETRAHO')) {
@@ -28,8 +34,6 @@ const els = {
   mediaFile: document.getElementById('mediaFile'),
   appFile: document.getElementById('appFile'),
 };
-
-// Login modal elements
 const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const loginEmail = document.getElementById('loginEmail');
@@ -43,16 +47,11 @@ let filter = 'all';
 let q = '';
 
 // ========= AUTH =========
-async function initAuth()
-
-  alert('Logged in as: ' + (data?.user?.email || 'NO SESSION'));
-});
- {
+async function initAuth() {
   try {
-    session = (await supabase.auth.getSession()).data.session;
-  } catch (e) {
-    console.error('getSession error', e);
-  }
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  } catch (e) { alert('getSession error: ' + e.message); }
   computeIsOwner();
   reflectUI();
 
@@ -70,20 +69,19 @@ function computeIsOwner() {
 }
 
 function reflectUI() {
+  if (!els.loginBtn) return alert('TSY HITa loginBtn ao amin\'ny HTML');
   els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
-  els.addBtn.hidden = !isOwner;
+  if (els.addBtn) els.addBtn.hidden = !isOwner;
 }
 
 // Open/close login (modal + fallback prompt)
-els.loginBtn.addEventListener('click', async () => {
-  // Logout raha efa tafiditra
+els.loginBtn?.addEventListener('click', async () => {
   if (session) {
     await supabase.auth.signOut();
     return;
   }
   const supportsDialog = !!(loginModal && loginModal.showModal);
   if (!supportsDialog) {
-    // Fallback prompt (mobile sasany)
     const email = prompt('Owner email:', OWNER_EMAIL);
     const password = prompt('Password:');
     if (!email || !password) return;
@@ -91,7 +89,6 @@ els.loginBtn.addEventListener('click', async () => {
     if (error) alert('Login failed: ' + error.message);
     return;
   }
-  // Modal
   loginEmail.value = OWNER_EMAIL;
   loginPass.value = '';
   loginModal.showModal();
@@ -109,6 +106,8 @@ loginForm?.addEventListener('submit', async (e) => {
     alert('Login failed: ' + error.message + '\n- Hamarino: Email/Password, Email confirmed, Provider enabled');
   } else {
     loginModal?.close();
+    const { data } = await supabase.auth.getUser();
+    alert('Logged in as: ' + (data?.user?.email || 'unknown'));
   }
 });
 
@@ -118,7 +117,7 @@ async function listProducts() {
     .from('products')
     .select('*')
     .order('created_at', { ascending: false });
-  if (error) { console.error('listProducts error', error); return []; }
+  if (error) { alert('listProducts error: ' + error.message); return []; }
   return data || [];
 }
 
@@ -134,19 +133,19 @@ async function saveProduct(p) {
     screenshots: p.screenshots || [],
     owner: session.user.id
   };
+  let err;
   if (p.id) {
-    const { error } = await supabase.from('products').update(payload).eq('id', p.id);
-    if (error) throw error;
+    ({ error: err } = await supabase.from('products').update(payload).eq('id', p.id));
   } else {
-    const { error } = await supabase.from('products').insert(payload);
-    if (error) throw error;
+    ({ error: err } = await supabase.from('products').insert(payload));
   }
+  if (err) alert('Save product error: ' + err.message);
 }
 
 async function removeProduct(id) {
   if (!isOwner || !session) { alert('Owner only'); return; }
   const { error } = await supabase.from('products').delete().eq('id', id);
-  if (error) alert(error.message);
+  if (error) alert('Delete error: ' + error.message);
 }
 
 // ========= STORAGE (UPLOADS) =========
@@ -157,30 +156,35 @@ async function uploadToBucket(bucket, path, file) {
 }
 async function uploadImage(file) {
   const path = `images/${Date.now()}-${file.name}`;
-  return uploadToBucket(BUCKET_MEDIA, path, file); // Media
+  return uploadToBucket(BUCKET_MEDIA, path, file);
 }
 async function uploadMedia(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
   const folder = ext === 'pdf' ? 'pdfs' : 'videos';
   const path = `${folder}/${Date.now()}-${file.name}`;
-  return uploadToBucket(BUCKET_MEDIA, path, file); // Media
+  return uploadToBucket(BUCKET_MEDIA, path, file);
 }
 async function uploadAppFile(file) {
   const path = `binaries/${Date.now()}-${file.name}`;
-  const url = await uploadToBucket(BUCKET_APPS, path, file); // apps
+  const url = await uploadToBucket(BUCKET_APPS, path, file);
   return { url, size: file.size, type: file.type || 'application/octet-stream' };
 }
 
-// Wire input files
 els.imageFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try { els.form.elements['image_url'].value = await uploadImage(f); alert('Image uploaded'); }
-  catch (err){ console.error(err); alert('Upload failed: ' + err.message); }
+  try {
+    const url = await uploadImage(f);
+    els.form.elements['image_url'].value = url;
+    alert('Image uploaded');
+  } catch (err){ alert('Upload failed: ' + err.message); }
 });
 els.mediaFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
-  try { els.form.elements['media_url'].value = await uploadMedia(f); alert('Media uploaded'); }
-  catch (err){ console.error(err); alert('Upload failed: ' + err.message); }
+  try {
+    const url = await uploadMedia(f);
+    els.form.elements['media_url'].value = url;
+    alert('Media uploaded');
+  } catch (err){ alert('Upload failed: ' + err.message); }
 });
 els.appFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
@@ -190,7 +194,7 @@ els.appFile?.addEventListener('change', async (e) => {
     els.form.elements['file_type'].value = info.type;
     els.form.elements['file_size'].value = info.size;
     alert('App file uploaded');
-  } catch (err){ console.error(err); alert('Upload failed: ' + err.message); }
+  } catch (err){ alert('Upload failed: ' + err.message); }
 });
 
 // ========= FILTERS + SEARCH =========
@@ -251,8 +255,9 @@ els.form?.addEventListener('submit', async (e) => {
   if (!p.title) return alert('Title required');
   if (!['ebook','video','app'].includes(p.type)) return alert('Type invalid');
   if (p.promo<0 || p.promo>100) return alert('Promo 0–100');
-  try { await saveProduct(p); els.modal.close(); await render(); }
-  catch(err){ console.error(err); alert('Save failed: ' + (err.message||err)); }
+  await saveProduct(p);
+  els.modal.close();
+  await render();
 });
 
 // ========= RENDER =========
@@ -311,4 +316,4 @@ async function render(){
 }
 
 // ========= START =========
-initAuth().then(render).catch(err => console.error('init error', err));
+initAuth().then(render);
