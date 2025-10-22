@@ -325,14 +325,4 @@ initAuth().then(render);
   render();
 });
 
-  // esorina filtre rehetra
-  filter = 'all';
-  q = '';
-  // UI
-  els.chips.forEach(c => c.classList.remove('active'));
-  const allChip = els.chips.find(c => (c.dataset.filter||'') === 'all');
-  allChip?.classList.add('active');
-  if (els.search) els.search.value = '';
-  render();
-});
 
