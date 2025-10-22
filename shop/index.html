@@ -1,154 +1,45 @@
 <!DOCTYPE html>
-<html lang="mg">
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mijoro Boutique</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mijoro Boutique — Version Stable</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
+
+  <header>
     <h1>Mijoro Boutique</h1>
-    <div class="actions">
-      <button id="loginBtn" class="btn">🔒 Login</button>
-      <button id="addBtn" class="btn primary" hidden>+ Add product</button>
-    </div>
+    <button id="login-btn">Login</button>
   </header>
 
-  <section class="filters">
-    <div class="chips">
-      <button class="chip active" data-filter="all">All</button>
-      <button class="chip" data-filter="ebook">eBook</button>
-      <button class="chip" data-filter="video">Video</button>
-      <button class="chip" data-filter="app">App/Jeux</button>
-      <button class="chip" data-filter="free">Gratuit</button>
-      <button class="chip" data-filter="promo">Promo</button>
-      <button class="chip" data-filter="vip">VIP</button>
-    </div>
-    <div class="inline" style="gap:8px;margin-top:8px">
-      <input id="searchInput" class="search" placeholder="Search titre/tags..." />
-      <button id="resetFilters" class="btn">Reset</button>
-    </div>
-  </section>
-
   <main>
-    <div id="grid" class="grid"></div>
-    <p id="empty" class="empty" hidden>Tsisy produits.</p>
+    <section id="product-form" class="hidden">
+      <h2>Ajouter un produit</h2>
+      <form id="add-product-form">
+        <input type="text" id="name" placeholder="Nom du produit" required>
+        <input type="number" id="price" placeholder="Prix" required>
+        <input type="text" id="image_url" placeholder="Lien image (optionnel)">
+        <button type="submit">Ajouter</button>
+      </form>
+    </section>
+
+    <section id="product-list">
+      <h2>Produits disponibles</h2>
+      <div id="products-container" class="grid"></div>
+    </section>
   </main>
 
-  <!-- Modal Add/Edit Product -->
-  <dialog id="modal" class="modal">
-    <form id="form" method="dialog">
-      <div class="modal-header">
-        <h3 id="modalTitle">Add product</h3>
-        <button type="button" id="closeBtn" class="icon-btn" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <input type="hidden" name="id" />
-          <label>Title
-            <input name="title" required />
-          </label>
-          <label>Type
-            <select name="type">
-              <option value="ebook">eBook</option>
-              <option value="video">Video</option>
-              <option value="app">App/Jeux</option>
-            </select>
-          </label>
-          <label>Gratuit
-            <input type="checkbox" name="isFree"/>
-          </label>
-          <label>Price
-            <input type="number" step="0.01" min="0" name="price" value="0"/>
-          </label>
-          <label>Promo (%)
-            <input type="number" min="0" max="100" name="promo" value="0"/>
-          </label>
-          <label>VIP
-            <input type="checkbox" name="isVIP"/>
-          </label>
-          <label class="full">Image (cover)
-            <div class="inline">
-              <input name="image_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="imageFile" accept="image/*"/>
-            </div>
-          </label>
-          <label class="full">Media (Video/PDF)
-            <div class="inline">
-              <input name="media_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="mediaFile" accept="video/*,.pdf"/>
-            </div>
-          </label>
-          <label>Platform (raha App)
-            <select name="platform">
-              <option value="">--</option>
-              <option value="android">Android</option>
-              <option value="ios">iOS</option>
-              <option value="windows">Windows</option>
-              <option value="mac">macOS</option>
-              <option value="linux">Linux</option>
-              <option value="web">Web</option>
-            </select>
-          </label>
-          <label>Version
-            <input name="version" placeholder="1.0.0"/>
-          </label>
-          <label>Build #
-            <input name="build_number" placeholder="100"/>
-          </label>
-          <label class="full">App file (APK/ZIP/EXE/DMG…)
-            <div class="inline">
-              <input name="file_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="appFile" />
-            </div>
-            <input type="hidden" name="file_type"/>
-            <input type="hidden" name="file_size"/>
-          </label>
-          <label class="full">Description
-            <textarea name="description" rows="3"></textarea>
-          </label>
-          <label class="full">Tags (comma separated)
-            <input name="tags" placeholder="programming, react"/>
-          </label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn primary">Save</button>
-        <button type="button" class="btn" id="cancelBtn">Cancel</button>
-      </div>
-    </form>
-  </dialog>
+  <div id="login-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Connexion</h2>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Mot de passe" required>
+      <button id="submit-login">Se connecter</button>
+      <button id="close-modal">Fermer</button>
+    </div>
+  </div>
 
-  <!-- Login Modal -->
-  <dialog id="loginModal" class="modal">
-    <form id="loginForm" method="dialog">
-      <div class="modal-header">
-        <h3>Owner Login</h3>
-        <button type="button" class="icon-btn" id="closeLogin" aria-label="Close">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <label class="full">Email
-            <input id="loginEmail" type="email" placeholder="joroandriamanirisoa13@gmail.com" required />
-          </label>
-          <label class="full">Password
-            <input id="loginPass" type="password" placeholder="••••••••" required />
-          </label>
-        </div>
-        <p class="hint" style="color:#94a3b8;font-size:12px;margin-top:8px">
-          Owner ihany no mahazo miditra.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn primary">Login</button>
-        <button type="button" class="btn" id="cancelLogin">Cancel</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="./app-secure.js"></script>
+  <script src="app-secure.js"></script>
 </body>
 </html>
