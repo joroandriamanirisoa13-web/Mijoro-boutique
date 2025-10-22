@@ -5,9 +5,9 @@
 :root{
   --bg:#0b1220;
   --card:#0f172a;
-  --text:#e8eefb;     
-  --muted:#b6c2d9;    
-  --primary:#6366f1;  
+  --text:#e8eefb;
+  --muted:#b6c2d9;
+  --primary:#6366f1;
   --border:#3a4a6a;
   --chip:#13203f;
   --danger:#ef4444;
@@ -45,7 +45,6 @@ body{
   padding:8px 12px;
   border-radius:8px;
   cursor:pointer;
-  font-weight:500;
 }
 .btn:hover{filter:brightness(1.1)}
 .btn.primary{
@@ -83,7 +82,6 @@ body{
   border-radius:999px;
   cursor:pointer;
   font-size:14px;
-  font-weight:500;
 }
 .chip.active{outline:2px solid var(--primary)}
 
@@ -94,7 +92,6 @@ body{
   border:1px solid var(--border);
   background:#0e1a33;
   color:#f2f6ff;
-  font-weight:500;
 }
 
 /* Grid & cards */
@@ -107,7 +104,6 @@ body{
 .empty{
   padding:16px;
   color:var(--muted);
-  font-style:italic;
 }
 
 .card{
@@ -131,7 +127,6 @@ body{
   justify-content:space-between;
   align-items:center;
   gap:8px;
-  font-weight:600;
 }
 .badge{
   font-size:12px;
@@ -141,7 +136,6 @@ body{
   background:#0e1a33;
   color:#f2f6ff;
   margin-left:4px;
-  font-weight:500;
 }
 .card-actions{
   display:flex;
@@ -191,7 +185,6 @@ body{
   flex-direction:column;
   gap:6px;
   font-size:14px;
-  font-weight:500;
 }
 input, select, textarea{
   background:#0e1a33;
@@ -199,7 +192,6 @@ input, select, textarea{
   border:1px solid var(--border);
   border-radius:8px;
   padding:8px 10px;
-  font-weight:500;
 }
 .inline{display:flex;align-items:center;gap:8px}
 
@@ -208,5 +200,5 @@ input, select, textarea{
 }
 
 /* Small helpers */
-a{color:#9cb6ff; font-weight:500;}
-a:hover{color:#c3d3ff;}
+a{color:#9cb6ff}
+a:hover{color:#c3d3ff}
