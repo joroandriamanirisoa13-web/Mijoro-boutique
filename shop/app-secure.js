@@ -1,27 +1,23 @@
-// ========= CONFIG =========
-const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw'; // Fenoy!
-const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
-const BUCKET_MEDIA = 'Media';
-const BUCKET_APPS  = 'apps';
+/* ================================
+   Mijoro Boutique - app-secure.js
+   Patch final avec login + owner-only + produit persistence
+   ================================ */
 
-// ========= INIT =========
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const els = {
-  grid: document.getElementById('grid'),
-  empty: document.getElementById('empty'),
-  loginBtn: document.getElementById('loginBtn'),
-  addBtn: document.getElementById('addBtn'),
-  chips: Array.from(document.querySelectorAll('.chip')),
-  search: document.getElementById('searchInput'),
-  modal: document.getElementById('modal'),
-  form: document.getElementById('form'),
-  closeBtn: document.getElementById('closeBtn'),
-  cancelBtn: document.getElementById('cancelBtn'),
-  imageFile: document.getElementById('imageFile'),
-  mediaFile: document.getElementById('mediaFile'),
-  appFile: document.getElementById('appFile'),
-};
+const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
+const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
+
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* -------------------------
+   Elements DOM
+------------------------- */
+const loginBtn = document.getElementById('loginBtn');
+const addBtn = document.getElementById('addBtn');
+const grid = document.getElementById('grid');
+const emptyMsg = document.getElementById('empty');
+const modal = document.getElementById('modal');
+const form = document.getElementById('form');
 const loginModal = document.getElementById('loginModal');
 const loginForm = document.getElementById('loginForm');
 const loginEmail = document.getElementById('loginEmail');
@@ -29,224 +25,201 @@ const loginPass = document.getElementById('loginPass');
 const closeLogin = document.getElementById('closeLogin');
 const cancelLogin = document.getElementById('cancelLogin');
 
-let session = null;
-let isOwner = false;
-let filter = 'all';
-let q = '';
+/* -------------------------
+   State
+------------------------- */
+let user = null;
+let products = [];
 
-// ========= AUTH =========
-async function initAuth() {
-  // Try from localStorage
-  const saved = localStorage.getItem('supabase_session');
-  if (saved) {
-    try {
-      session = JSON.parse(saved);
-      isOwner = session.user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
-    } catch(e){ console.error('Invalid local session', e); }
-  }
-
-  // Reflect UI
-  reflectUI();
-  render();
-
-  // Listen for auth state changes
-  supabase.auth.onAuthStateChange((_event, s) => {
-    session = s;
-    if (session) localStorage.setItem('supabase_session', JSON.stringify(session));
-    else localStorage.removeItem('supabase_session');
-    isOwner = session?.user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
-    reflectUI();
-    render();
-  });
+/* -------------------------
+   Helpers
+------------------------- */
+function show(element){element.hidden = false;}
+function hide(element){element.hidden = true;}
+function isOwner(){return user && user.email === OWNER_EMAIL;}
+function renderProducts(){
+    grid.innerHTML = '';
+    if(!products.length){
+        show(emptyMsg);
+        return;
+    }
+    hide(emptyMsg);
+    products.forEach(p=>{
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb" style="background-image:url('${p.image_url || ''}')"></div>
+          <div class="card-body">
+            <div class="title-row">
+              <strong>${p.title}</strong>
+              <span class="badge">${p.type}</span>
+            </div>
+            <p>${p.description || ''}</p>
+          </div>
+          <div class="card-actions">
+            ${isOwner()?`<button class="btn edit" data-id="${p.id}">Edit</button>
+            <button class="btn danger delete" data-id="${p.id}">Delete</button>`:''}
+          </div>`;
+        grid.appendChild(card);
+    });
 }
 
-function reflectUI() {
-  if (!els.loginBtn) return;
-  els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
-  if (els.addBtn) els.addBtn.hidden = !isOwner;
+/* -------------------------
+   Load products
+------------------------- */
+async function loadProducts(){
+    const {data,error} = await supabase.from('products').select('*');
+    if(error){console.error(error); return;}
+    products = data;
+    renderProducts();
 }
 
-// Open/close login
-els.loginBtn?.addEventListener('click', async () => {
-  if (session) {
-    await supabase.auth.signOut();
-    return;
-  }
-  loginEmail.value = OWNER_EMAIL;
-  loginPass.value = '';
-  loginModal?.showModal();
+/* -------------------------
+   Login
+------------------------- */
+loginBtn.addEventListener('click',()=>loginModal.showModal());
+closeLogin.addEventListener('click',()=>loginModal.close());
+cancelLogin.addEventListener('click',()=>loginModal.close());
+
+loginForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const email = loginEmail.value.trim();
+    const pass = loginPass.value.trim();
+    // Simple owner check
+    if(email === OWNER_EMAIL && pass === 'ownerpassword'){ // <-- set your password
+        user = {email};
+        hide(loginBtn);
+        show(addBtn);
+        loginModal.close();
+        loadProducts();
+    } else {
+        alert('Invalid credentials!');
+    }
 });
 
-closeLogin?.addEventListener('click', () => loginModal?.close());
-cancelLogin?.addEventListener('click', () => loginModal?.close());
+/* -------------------------
+   Add / Edit produit
+------------------------- */
+addBtn.addEventListener('click',()=>{
+    form.reset();
+    modal.showModal();
+});
 
-loginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = (loginEmail?.value || '').trim();
-  const password = loginPass?.value || '';
-  if (!email || !password) { alert('Fenoy email sy password'); return; }
+form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    if(!isOwner()){alert('Only owner can save products'); return;}
+    const fd = new FormData(form);
+    const product = {};
+    fd.forEach((v,k)=>{product[k]=v;});
+    // convert checkbox values
+    product.isVIP = fd.get('isVIP')==='on';
+    product.isFree = fd.get('isFree')==='on';
+    // save to supabase
+    const {data,error} = await supabase.from('products').upsert(product).select();
+    if(error){console.error(error); return;}
+    products = data;
+    renderProducts();
+    modal.close();
+});
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    alert('Login failed: ' + error.message);
-    return;
-  }
+/* -------------------------
+   Delete
+------------------------- */
+grid.addEventListener('click',async e=>{
+    if(e.target.classList.contains('delete')){
+        if(!isOwner()) return;
+        const id = e.target.dataset.id;
+        const {error} = await supabase.from('products').delete().eq('id',id);
+        if(error){console.error(error); return;}
+        products = products.filter(p=>p.id!=id);
+        renderProducts();
+    } else if(e.target.classList.contains('edit')){
+        const id = e.target.dataset.id;
+        const p = products.find(x=>x.id==id);
+        if(!p) return;
+        // populate form
+        for(let key in p){
+            const input = form.querySelector(`[name=${key}]`);
+            if(input){
+                if(input.type==='checkbox') input.checked = p[key];
+                else input.value = p[key];
+            }
+        }
+        modal.showModal();
+    }
+});
 
-  session = data.session;
-  if (!session) { alert('Login failed'); return; }
+/* -------------------------
+   Init
+------------------------- */
+loadProducts();/* -------------------------
+   Filters & search
+------------------------- */
+const chips = document.querySelectorAll('.chip');
+const searchInput = document.getElementById('searchInput');
+const resetFilters = document.getElementById('resetFilters');
 
-  localStorage.setItem('supabase_session', JSON.stringify(session));
-  isOwner = session.user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
-  loginModal?.close();
-  reflectUI();
-  await render();
-});// ========= HELPER =========
-function byFilter(item) {
-  const matchesFilter = filter === 'all' || (filter === 'free' ? item.is_free : (item.tags||[]).includes(filter));
-  const matchesSearch = !q || (item.title?.toLowerCase().includes(q) || (item.tags||[]).join(',').toLowerCase().includes(q));
-  return matchesFilter && matchesSearch;
+function applyFilters() {
+    const filterType = document.querySelector('.chip.active').dataset.filter;
+    const search = searchInput.value.trim().toLowerCase();
+
+    const filtered = products.filter(p=>{
+        const matchesType = filterType==='all' || p.type===filterType || (filterType==='free' && p.isFree) || (filterType==='vip' && p.isVIP) || (filterType==='promo' && parseFloat(p.promo)>0);
+        const matchesSearch = !search || p.title.toLowerCase().includes(search) || (p.tags && p.tags.toLowerCase().includes(search));
+        return matchesType && matchesSearch;
+    });
+
+    grid.innerHTML = '';
+    if(!filtered.length){
+        show(emptyMsg);
+        return;
+    }
+    hide(emptyMsg);
+
+    filtered.forEach(p=>{
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb" style="background-image:url('${p.image_url || ''}')"></div>
+          <div class="card-body">
+            <div class="title-row">
+              <strong>${p.title}</strong>
+              <span class="badge">${p.type}</span>
+              ${p.isFree?'<span class="badge">Free</span>':''}
+              ${p.isVIP?'<span class="badge">VIP</span>':''}
+              ${p.promo>0?`<span class="badge">${p.promo}% Off</span>`:''}
+            </div>
+            <p>${p.description || ''}</p>
+            ${p.media_url ? `<div class="preview">${p.media_url.endsWith('.pdf') ? `<a href="${p.media_url}" target="_blank">Preview PDF</a>` : `<video src="${p.media_url}" controls width="100%"></video>`}</div>` : ''}
+          </div>
+          <div class="card-actions">
+            ${isOwner()?`<button class="btn edit" data-id="${p.id}">Edit</button>
+            <button class="btn danger delete" data-id="${p.id}">Delete</button>`:''}
+          </div>`;
+        grid.appendChild(card);
+    });
 }
 
-function formatPrice(p, promo) {
-  if (p <= 0) return 'Free';
-  if (promo > 0) return `$${(p*(1-promo/100)).toFixed(2)} (-${promo}%)`;
-  return `$${p.toFixed(2)}`;
-}
-
-// ========= FETCH & RENDER PRODUCTS =========
-async function listProducts() {
-  const { data, error } = await supabase.from('products').select('*').order('id', { ascending: false });
-  if (error) { console.error(error); return []; }
-  return data || [];
-}
-
-async function render() {
-  const all = await listProducts();
-  const filtered = all.filter(byFilter);
-
-  els.grid.innerHTML = '';
-  if (!filtered.length) {
-    els.empty.hidden = false;
-    return;
-  }
-  els.empty.hidden = true;
-
-  filtered.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `
-      <div class="thumb" style="background-image:url(${p.image_url || ''})"></div>
-      <div class="card-body">
-        <div class="title-row">
-          <strong>${p.title}</strong>
-          ${p.is_vip?'<span class="badge">VIP</span>':''}
-          ${p.is_free?'<span class="badge">FREE</span>':''}
-        </div>
-        <small>${p.tags||[]}</small>
-        <p>${p.description||''}</p>
-        <p>${formatPrice(p.price, p.promo)}</p>
-      </div>
-      ${isOwner?`<div class="card-actions">
-        <button class="btn" data-id="${p.id}" data-action="edit">Edit</button>
-        <button class="btn danger" data-id="${p.id}" data-action="delete">Delete</button>
-      </div>`:''}
-    `;
-    els.grid.appendChild(div);
-  });
-}
-
-// ========= FILTERS =========
-els.chips.forEach(c => {
-  c.addEventListener('click', () => {
-    els.chips.forEach(cc=>cc.classList.remove('active'));
-    c.classList.add('active');
-    filter = c.dataset.filter;
-    render();
-  });
-});
-els.search.addEventListener('input', e => { q = e.target.value.toLowerCase(); render(); });
-
-// ========= ADD / EDIT / DELETE =========
-els.addBtn?.addEventListener('click', () => {
-  els.form.reset();
-  els.modal.showModal();
+/* -------------------------
+   Event listeners filters/search
+------------------------- */
+chips.forEach(chip=>{
+    chip.addEventListener('click',()=>{
+        chips.forEach(c=>c.classList.remove('active'));
+        chip.classList.add('active');
+        applyFilters();
+    });
 });
 
-els.closeBtn?.addEventListener('click', () => els.modal.close());
-els.cancelBtn?.addEventListener('click', () => els.modal.close());
-
-els.form?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!isOwner) { alert('Owner only'); return; }
-
-  const form = e.target;
-  const id = form.id.value;
-  const values = {
-    title: form.title.value,
-    type: form.type.value,
-    is_free: form.isFree.checked,
-    price: parseFloat(form.price.value) || 0,
-    promo: parseInt(form.promo.value) || 0,
-    is_vip: form.isVIP.checked,
-    description: form.description.value,
-    tags: form.tags.value.split(',').map(t=>t.trim()).filter(Boolean),
-    image_url: form.image_url.value,
-    media_url: form.media_url.value,
-    platform: form.platform.value,
-    version: form.version.value,
-    build_number: form.build_number.value,
-    file_url: form.file_url.value
-  };
-
-  if (id) {
-    // UPDATE
-    const { error } = await supabase.from('products').update(values).eq('id', id);
-    if (error) { alert(error.message); return; }
-  } else {
-    // INSERT
-    const { error } = await supabase.from('products').insert([values]);
-    if (error) { alert(error.message); return; }
-  }
-
-  els.modal.close();
-  render();
+searchInput.addEventListener('input',applyFilters);
+resetFilters.addEventListener('click',()=>{
+    searchInput.value = '';
+    chips.forEach(c=>c.classList.remove('active'));
+    document.querySelector('.chip[data-filter="all"]').classList.add('active');
+    applyFilters();
 });
 
-// Delete product
-els.grid.addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action="delete"]');
-  if (!btn) return;
-  if (!isOwner) return;
-  const id = btn.dataset.id;
-  if (!confirm('Delete product?')) return;
-  const { error } = await supabase.from('products').delete().eq('id', id);
-  if (error) { alert(error.message); return; }
-  render();
-});
-
-// ========= UPLOADS =========
-async function uploadFile(file, bucket) {
-  if (!file) return '';
-  const fileName = `${Date.now()}_${file.name}`;
-  const { data, error } = await supabase.storage.from(bucket).upload(fileName, file);
-  if (error) { console.error(error); return ''; }
-  return supabase.storage.from(bucket).getPublicUrl(fileName).data.publicUrl;
-}
-
-// Auto-upload file inputs
-els.imageFile?.addEventListener('change', async e => {
-  const url = await uploadFile(e.target.files[0], 'media');
-  els.form.image_url.value = url;
-});
-els.mediaFile?.addEventListener('change', async e => {
-  const url = await uploadFile(e.target.files[0], BUCKET_MEDIA);
-  els.form.media_url.value = url;
-});
-els.appFile?.addEventListener('change', async e => {
-  const url = await uploadFile(e.target.files[0], BUCKET_APPS);
-  els.form.file_url.value = url;
-});
-
-// ========= INIT =========
-initAuth();
-render();
+/* -------------------------
+   Initial render with filters
+------------------------- */
+applyFilters();
