@@ -1,11 +1,14 @@
 
-const SUPABASE_URL = https://zogohkfzplcuonkkfoov.supabase.co
-const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw
-const supabase = createClient(supabaseUrl, supabaseKey)// fenoy
+const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw'; // Fenoy!
 const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
 
-// Init
+// ========= INIT =========
+if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('APETRAHO')) {
+  alert('Tsy mbola feno ny SUPABASE_ANON_KEY ao amin\'ny app-secure.js');
+}
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const els = {
   grid: document.getElementById('grid'),
   empty: document.getElementById('empty'),
@@ -21,45 +24,91 @@ const els = {
   mediaFile: document.getElementById('mediaFile'),
   appFile: document.getElementById('appFile'),
 };
+
+// Login modal elements
+const loginModal = document.getElementById('loginModal');
+const loginForm = document.getElementById('loginForm');
+const loginEmail = document.getElementById('loginEmail');
+const loginPass = document.getElementById('loginPass');
+const closeLogin = document.getElementById('closeLogin');
+const cancelLogin = document.getElementById('cancelLogin');
+
 let session = null;
 let isOwner = false;
 let filter = 'all';
 let q = '';
 
-// Auth
+// ========= AUTH =========
 async function initAuth() {
-  session = (await supabase.auth.getSession()).data.session;
+  try {
+    const res = await supabase.auth.getSession();
+    session = res.data.session;
+  } catch (e) {
+    console.error('getSession error', e);
+  }
   computeIsOwner();
   reflectUI();
+
   supabase.auth.onAuthStateChange((_e, s) => {
     session = s;
-    computeIsOwner(); reflectUI(); render();
+    computeIsOwner();
+    reflectUI();
+    render();
   });
 }
+
 function computeIsOwner() {
   const email = session?.user?.email || '';
   isOwner = email.toLowerCase() === OWNER_EMAIL.toLowerCase();
 }
+
 function reflectUI() {
   els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
   els.addBtn.hidden = !isOwner;
 }
+
+// Open/close login modal
 els.loginBtn.addEventListener('click', async () => {
-  if (session) { await supabase.auth.signOut(); return; }
-  const email = prompt('Email (Owner):', OWNER_EMAIL);
-  const pass = prompt('Password:');
-  if (!email || !pass) return;
-  const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-  if (error) alert(error.message);
+  if (session) {
+    await supabase.auth.signOut();
+    return;
+  }
+  if (!loginModal) {
+    alert('Tsy hita ny login modal. Havaozy ny index.html araka ny modely.');
+    return;
+  }
+  loginEmail.value = OWNER_EMAIL;
+  loginPass.value = '';
+  loginModal.showModal();
+});
+closeLogin?.addEventListener('click', () => loginModal.close());
+cancelLogin?.addEventListener('click', () => loginModal.close());
+
+// Submit login
+loginForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = loginEmail.value.trim();
+  const password = loginPass.value;
+  if (!email || !password) return;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    console.error('Login error:', error);
+    alert('Login failed: ' + error.message + '\n- Hamarino: Email/Password, Email confirmed, Provider enabled');
+  } else {
+    loginModal.close();
+  }
 });
 
-// DB helpers
+// ========= DB HELPERS =========
 async function listProducts() {
-  let req = supabase.from('products').select('*').order('created_at', { ascending: false });
-  const { data, error } = await req;
-  if (error) { console.error(error); return []; }
-  return data;
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('listProducts error', error); return []; }
+  return data || [];
 }
+
 async function saveProduct(p) {
   if (!isOwner || !session) { alert('Owner only'); return; }
   const payload = {
@@ -69,7 +118,8 @@ async function saveProduct(p) {
     description: p.description || null, tags: p.tags || [],
     platform: p.platform || null, version: p.version || null, build_number: p.build_number || null,
     file_url: p.file_url || null, file_size: p.file_size || null, file_type: p.file_type || null,
-    screenshots: p.screenshots || [], owner: session.user.id
+    screenshots: p.screenshots || [],
+    owner: session.user.id
   };
   if (p.id) {
     const { error } = await supabase.from('products').update(payload).eq('id', p.id);
@@ -79,13 +129,14 @@ async function saveProduct(p) {
     if (error) throw error;
   }
 }
+
 async function removeProduct(id) {
   if (!isOwner || !session) { alert('Owner only'); return; }
   const { error } = await supabase.from('products').delete().eq('id', id);
   if (error) alert(error.message);
 }
 
-// Storage uploads
+// ========= STORAGE (UPLOADS) =========
 async function uploadToBucket(bucket, path, file) {
   const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
   if (error) throw error;
@@ -106,17 +157,19 @@ async function uploadAppFile(file) {
   const url = await uploadToBucket('apps', path, file);
   return { url, size: file.size, type: file.type || 'application/octet-stream' };
 }
-els.imageFile.addEventListener('change', async (e) => {
+
+// Wire input files
+els.imageFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
   try { els.form.elements['image_url'].value = await uploadImage(f); alert('Image uploaded'); }
-  catch (err){ alert('Upload failed: ' + err.message); }
+  catch (err){ console.error(err); alert('Upload failed: ' + err.message); }
 });
-els.mediaFile.addEventListener('change', async (e) => {
+els.mediaFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
   try { els.form.elements['media_url'].value = await uploadMedia(f); alert('Media uploaded'); }
-  catch (err){ alert('Upload failed: ' + err.message); }
+  catch (err){ console.error(err); alert('Upload failed: ' + err.message); }
 });
-els.appFile.addEventListener('change', async (e) => {
+els.appFile?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0]; if (!f) return;
   try {
     const info = await uploadAppFile(f);
@@ -124,22 +177,23 @@ els.appFile.addEventListener('change', async (e) => {
     els.form.elements['file_type'].value = info.type;
     els.form.elements['file_size'].value = info.size;
     alert('App file uploaded');
-  } catch (err){ alert('Upload failed: ' + err.message); }
+  } catch (err){ console.error(err); alert('Upload failed: ' + err.message); }
 });
 
-// Filters + search
+// ========= FILTERS + SEARCH =========
 els.chips.forEach(c => c.addEventListener('click', () => {
   els.chips.forEach(x => x.classList.remove('active'));
   c.classList.add('active'); filter = c.dataset.filter || 'all'; render();
 }));
-let st; els.search.addEventListener('input', () => {
+let st; els.search?.addEventListener('input', () => {
   clearTimeout(st); st = setTimeout(()=>{ q = els.search.value.trim().toLowerCase(); render(); }, 150);
 });
 
-// Modal
-document.getElementById('addBtn').addEventListener('click', () => openModal('add'));
-els.closeBtn.addEventListener('click', () => els.modal.close());
-els.cancelBtn.addEventListener('click', () => els.modal.close());
+// ========= MODAL ADD/EDIT =========
+document.getElementById('addBtn')?.addEventListener('click', () => openModal('add'));
+els.closeBtn?.addEventListener('click', () => els.modal.close());
+els.cancelBtn?.addEventListener('click', () => els.modal.close());
+
 function openModal(mode='add', id=null, product=null) {
   els.form.reset(); els.form.dataset.mode = mode;
   document.getElementById('modalTitle').textContent = mode==='edit'?'Edit product':'Add product';
@@ -156,7 +210,8 @@ function openModal(mode='add', id=null, product=null) {
   els.form.elements['isFree'].addEventListener('change', sync, { once:true }); sync();
   els.modal.showModal();
 }
-els.form.addEventListener('submit', async (e) => {
+
+els.form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!isOwner) return alert('Owner only');
   const fd = new FormData(els.form); const d = Object.fromEntries(fd.entries());
@@ -184,10 +239,10 @@ els.form.addEventListener('submit', async (e) => {
   if (!['ebook','video','app'].includes(p.type)) return alert('Type invalid');
   if (p.promo<0 || p.promo>100) return alert('Promo 0–100');
   try { await saveProduct(p); els.modal.close(); await render(); }
-  catch(err){ alert('Save failed: ' + (err.message||err)); }
+  catch(err){ console.error(err); alert('Save failed: ' + (err.message||err)); }
 });
 
-// Render
+// ========= RENDER =========
 function matchFilters(p){
   if (filter==='ebook' && p.type!=='ebook') return false;
   if (filter==='video' && p.type!=='video') return false;
@@ -241,4 +296,6 @@ async function render(){
     body.append(row,desc,price); card.append(thumb,body,actions); els.grid.appendChild(card);
   }
 }
-initAuth().then(render);
+
+// ========= START =========
+initAuth().then(render).catch(err => console.error('init error', err));
