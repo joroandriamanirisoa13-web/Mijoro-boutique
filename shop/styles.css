@@ -45,6 +45,7 @@ body{
   padding:8px 12px;
   border-radius:8px;
   cursor:pointer;
+  transition:all 0.2s ease-in-out;
 }
 .btn:hover{filter:brightness(1.1)}
 .btn.primary{
@@ -82,8 +83,9 @@ body{
   border-radius:999px;
   cursor:pointer;
   font-size:14px;
+  transition:all 0.2s;
 }
-.chip.active{outline:2px solid var(--primary)}
+.chip.active{outline:2px solid var(--primary); transform:scale(1.05)}
 
 .search{
   width:100%;
@@ -114,7 +116,9 @@ body{
   display:flex;
   flex-direction:column;
   min-height:260px;
+  transition:transform 0.2s;
 }
+.card:hover{transform:translateY(-3px)}
 .thumb{
   height:150px;
   background:#0b1220;
@@ -136,7 +140,9 @@ body{
   background:#0e1a33;
   color:#f2f6ff;
   margin-left:4px;
+  transition:background 0.2s;
 }
+.badge:hover{background:var(--primary)}
 .card-actions{
   display:flex;
   gap:8px;
@@ -202,3 +208,15 @@ input, select, textarea{
 /* Small helpers */
 a{color:#9cb6ff}
 a:hover{color:#c3d3ff}
+
+/* Additional UI polish */
+.card p{
+  font-size:13px;
+  color:var(--muted);
+  margin:6px 0 0 0;
+}
+.card-body h4{
+  margin:0;
+  font-size:16px;
+  color:var(--text);
+}
