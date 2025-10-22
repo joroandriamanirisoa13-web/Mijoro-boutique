@@ -1,225 +1,296 @@
-/* ================================
-   Mijoro Boutique - app-secure.js
-   Patch final avec login + owner-only + produit persistence
-   ================================ */
+// =======================
+// Mijoro Boutique – Secure App Logic (Stable Patch)
+// =======================
 
+// ✅ Config
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
 const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
 
-const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ✅ Init Supabase
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* -------------------------
-   Elements DOM
-------------------------- */
-const loginBtn = document.getElementById('loginBtn');
-const addBtn = document.getElementById('addBtn');
-const grid = document.getElementById('grid');
-const emptyMsg = document.getElementById('empty');
-const modal = document.getElementById('modal');
-const form = document.getElementById('form');
-const loginModal = document.getElementById('loginModal');
-const loginForm = document.getElementById('loginForm');
-const loginEmail = document.getElementById('loginEmail');
-const loginPass = document.getElementById('loginPass');
-const closeLogin = document.getElementById('closeLogin');
-const cancelLogin = document.getElementById('cancelLogin');
+// ============================
+// STATE & HELPERS
+// ============================
 
-/* -------------------------
-   State
-------------------------- */
-let user = null;
+let currentUser = null;
 let products = [];
 
-/* -------------------------
-   Helpers
-------------------------- */
-function show(element){element.hidden = false;}
-function hide(element){element.hidden = true;}
-function isOwner(){return user && user.email === OWNER_EMAIL;}
-function renderProducts(){
-    grid.innerHTML = '';
-    if(!products.length){
-        show(emptyMsg);
-        return;
-    }
-    hide(emptyMsg);
-    products.forEach(p=>{
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="thumb" style="background-image:url('${p.image_url || ''}')"></div>
-          <div class="card-body">
-            <div class="title-row">
-              <strong>${p.title}</strong>
-              <span class="badge">${p.type}</span>
-            </div>
-            <p>${p.description || ''}</p>
-          </div>
-          <div class="card-actions">
-            ${isOwner()?`<button class="btn edit" data-id="${p.id}">Edit</button>
-            <button class="btn danger delete" data-id="${p.id}">Delete</button>`:''}
-          </div>`;
-        grid.appendChild(card);
-    });
+function $(sel) {
+  return document.querySelector(sel);
 }
 
-/* -------------------------
-   Load products
-------------------------- */
-async function loadProducts(){
-    const {data,error} = await supabase.from('products').select('*');
-    if(error){console.error(error); return;}
-    products = data;
-    renderProducts();
+function showLogin() {
+  $('#loginModal').showModal();
+  $('#email').value = '';
+  $('#password').value = '';
 }
 
-/* -------------------------
-   Login
-------------------------- */
-loginBtn.addEventListener('click',()=>loginModal.showModal());
-closeLogin.addEventListener('click',()=>loginModal.close());
-cancelLogin.addEventListener('click',()=>loginModal.close());
+function showApp() {
+  $('#loginModal').close();
+  loadProducts();
+}
 
-loginForm.addEventListener('submit',async e=>{
-    e.preventDefault();
-    const email = loginEmail.value.trim();
-    const pass = loginPass.value.trim();
-    // Simple owner check
-    if(email === OWNER_EMAIL && pass === 'ownerpassword'){ // <-- set your password
-        user = {email};
-        hide(loginBtn);
-        show(addBtn);
-        loginModal.close();
-        loadProducts();
-    } else {
-        alert('Invalid credentials!');
+function setLoading(state) {
+  const btn = $('#saveBtn');
+  if (!btn) return;
+  btn.disabled = state;
+  btn.textContent = state ? 'Enregistrement...' : 'Enregistrer';
+}
+
+// ============================
+// LOGIN SYSTEM
+// ============================
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    localStorage.setItem('sb-user', JSON.stringify(session.user));
+    showApp();
+  } else {
+    localStorage.removeItem('sb-user');
+    showLogin();
+  }
+});
+
+// Reload session if available
+const savedUser = localStorage.getItem('sb-user');
+if (savedUser) {
+  currentUser = JSON.parse(savedUser);
+  showApp();
+} else {
+  showLogin();
+}
+
+$('#loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('#email').value.trim();
+  const password = $('#password').value.trim();
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    alert('Email ou mot de passe incorrect.');
+  } else {
+    currentUser = data.user;
+    localStorage.setItem('sb-user', JSON.stringify(data.user));
+    showApp();
+  }
+});
+
+$('#logoutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  localStorage.removeItem('sb-user');
+  showLogin();
+});
+
+// ============================
+// PRODUCT LOGIC
+// ============================
+
+async function loadProducts() {
+  const { data, error } = await supabase.from('products').select('*').order('id', { ascending: false });
+  if (error) {
+    console.error('Erreur chargement produits:', error);
+    return;
+  }
+  products = data || [];
+  renderProducts();
+}
+
+function renderProducts() {
+  const grid = $('#productGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  if (!products.length) {
+    grid.innerHTML = `<p class="empty">Aucun produit trouvé.</p>`;
+    return;
+  }
+
+  for (const p of products) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="thumb" style="background-image:url('${p.image_url || 'https://via.placeholder.com/300x200?text=Produit'}')"></div>
+      <div class="card-body">
+        <div class="title-row">
+          <h3>${p.title}</h3>
+          <span class="badge">${p.price || ''} Ar</span>
+        </div>
+        <p class="desc">${p.description || ''}</p>
+        ${p.preview_url ? `<video src="${p.preview_url}" controls width="100%"></video>` : ''}
+      </div>
+      ${currentUser?.email === OWNER_EMAIL ? `
+      <div class="card-actions">
+        <button class="btn" onclick="editProduct(${p.id})">Modifier</button>
+        <button class="btn danger" onclick="deleteProduct(${p.id})">Supprimer</button>
+      </div>` : ''}
+    `;
+    grid.appendChild(card);
+  }
+}// ============================
+// ADD / EDIT / DELETE PRODUCTS
+// ============================
+
+const modal = $('#modal');
+const form = $('#form');
+const addBtn = $('#addBtn');
+
+addBtn.addEventListener('click', () => {
+  form.reset();
+  $('#modalTitle').textContent = 'Add product';
+  modal.showModal();
+});
+
+$('#closeBtn').addEventListener('click', () => modal.close());
+$('#cancelBtn').addEventListener('click', () => modal.close());
+
+// Save form
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setLoading(true);
+
+  const formData = new FormData(form);
+  const obj = Object.fromEntries(formData.entries());
+  obj.price = parseFloat(obj.price || 0);
+  obj.promo = parseInt(obj.promo || 0);
+  obj.isFree = form.isFree.checked;
+  obj.isVIP = form.isVIP.checked;
+  obj.owner = currentUser?.email;
+
+  // Insert or Update
+  if (obj.id) {
+    const { error } = await supabase.from('products').update(obj).eq('id', obj.id);
+    if (error) alert('Erreur modification: ' + error.message);
+    else alert('Produit modifié !');
+  } else {
+    const { error } = await supabase.from('products').insert([obj]);
+    if (error) alert('Erreur ajout: ' + error.message);
+    else alert('Produit ajouté !');
+  }
+
+  modal.close();
+  setLoading(false);
+  loadProducts();
+});
+
+// Edit product
+window.editProduct = async function (id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+
+  $('#modalTitle').textContent = 'Edit product';
+  for (const key in p) {
+    if (form[key]) {
+      if (form[key].type === 'checkbox') form[key].checked = !!p[key];
+      else form[key].value = p[key] || '';
     }
+  }
+  modal.showModal();
+};
+
+// Delete
+window.deleteProduct = async function (id) {
+  if (!confirm('Supprimer ce produit ?')) return;
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) alert('Erreur suppression: ' + error.message);
+  else {
+    alert('Produit supprimé !');
+    loadProducts();
+  }
+};
+
+// ============================
+// FILTERS / SEARCH
+// ============================
+
+const searchInput = $('#searchInput');
+const resetBtn = $('#resetFilters');
+const chipButtons = document.querySelectorAll('.chip');
+
+chipButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    chipButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  });
 });
 
-/* -------------------------
-   Add / Edit produit
-------------------------- */
-addBtn.addEventListener('click',()=>{
-    form.reset();
-    modal.showModal();
+searchInput.addEventListener('input', applyFilters);
+resetBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  document.querySelector('[data-filter="all"]').click();
+  renderProducts();
 });
-
-form.addEventListener('submit',async e=>{
-    e.preventDefault();
-    if(!isOwner()){alert('Only owner can save products'); return;}
-    const fd = new FormData(form);
-    const product = {};
-    fd.forEach((v,k)=>{product[k]=v;});
-    // convert checkbox values
-    product.isVIP = fd.get('isVIP')==='on';
-    product.isFree = fd.get('isFree')==='on';
-    // save to supabase
-    const {data,error} = await supabase.from('products').upsert(product).select();
-    if(error){console.error(error); return;}
-    products = data;
-    renderProducts();
-    modal.close();
-});
-
-/* -------------------------
-   Delete
-------------------------- */
-grid.addEventListener('click',async e=>{
-    if(e.target.classList.contains('delete')){
-        if(!isOwner()) return;
-        const id = e.target.dataset.id;
-        const {error} = await supabase.from('products').delete().eq('id',id);
-        if(error){console.error(error); return;}
-        products = products.filter(p=>p.id!=id);
-        renderProducts();
-    } else if(e.target.classList.contains('edit')){
-        const id = e.target.dataset.id;
-        const p = products.find(x=>x.id==id);
-        if(!p) return;
-        // populate form
-        for(let key in p){
-            const input = form.querySelector(`[name=${key}]`);
-            if(input){
-                if(input.type==='checkbox') input.checked = p[key];
-                else input.value = p[key];
-            }
-        }
-        modal.showModal();
-    }
-});
-
-/* -------------------------
-   Init
-------------------------- */
-loadProducts();/* -------------------------
-   Filters & search
-------------------------- */
-const chips = document.querySelectorAll('.chip');
-const searchInput = document.getElementById('searchInput');
-const resetFilters = document.getElementById('resetFilters');
 
 function applyFilters() {
-    const filterType = document.querySelector('.chip.active').dataset.filter;
-    const search = searchInput.value.trim().toLowerCase();
+  const search = searchInput.value.toLowerCase();
+  const activeFilter = document.querySelector('.chip.active').dataset.filter;
 
-    const filtered = products.filter(p=>{
-        const matchesType = filterType==='all' || p.type===filterType || (filterType==='free' && p.isFree) || (filterType==='vip' && p.isVIP) || (filterType==='promo' && parseFloat(p.promo)>0);
-        const matchesSearch = !search || p.title.toLowerCase().includes(search) || (p.tags && p.tags.toLowerCase().includes(search));
-        return matchesType && matchesSearch;
-    });
+  let filtered = [...products];
 
-    grid.innerHTML = '';
-    if(!filtered.length){
-        show(emptyMsg);
-        return;
-    }
-    hide(emptyMsg);
+  if (activeFilter && activeFilter !== 'all') {
+    if (activeFilter === 'free') filtered = filtered.filter(p => p.isFree);
+    else if (activeFilter === 'promo') filtered = filtered.filter(p => p.promo > 0);
+    else if (activeFilter === 'vip') filtered = filtered.filter(p => p.isVIP);
+    else filtered = filtered.filter(p => p.type === activeFilter);
+  }
 
-    filtered.forEach(p=>{
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="thumb" style="background-image:url('${p.image_url || ''}')"></div>
-          <div class="card-body">
-            <div class="title-row">
-              <strong>${p.title}</strong>
-              <span class="badge">${p.type}</span>
-              ${p.isFree?'<span class="badge">Free</span>':''}
-              ${p.isVIP?'<span class="badge">VIP</span>':''}
-              ${p.promo>0?`<span class="badge">${p.promo}% Off</span>`:''}
-            </div>
-            <p>${p.description || ''}</p>
-            ${p.media_url ? `<div class="preview">${p.media_url.endsWith('.pdf') ? `<a href="${p.media_url}" target="_blank">Preview PDF</a>` : `<video src="${p.media_url}" controls width="100%"></video>`}</div>` : ''}
-          </div>
-          <div class="card-actions">
-            ${isOwner()?`<button class="btn edit" data-id="${p.id}">Edit</button>
-            <button class="btn danger delete" data-id="${p.id}">Delete</button>`:''}
-          </div>`;
-        grid.appendChild(card);
-    });
+  if (search) {
+    filtered = filtered.filter(p =>
+      p.title.toLowerCase().includes(search) ||
+      (p.tags || '').toLowerCase().includes(search)
+    );
+  }
+
+  const grid = $('#productGrid');
+  grid.innerHTML = '';
+  if (!filtered.length) {
+    grid.innerHTML = `<p class="empty">Aucun produit trouvé.</p>`;
+    return;
+  }
+
+  for (const p of filtered) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="thumb" style="background-image:url('${p.image_url || 'https://via.placeholder.com/300x200?text=Produit'}')"></div>
+      <div class="card-body">
+        <div class="title-row">
+          <h3>${p.title}</h3>
+          ${p.isFree ? '<span class="badge">Gratuit</span>' : ''}
+          ${p.promo > 0 ? `<span class="badge">-${p.promo}%</span>` : ''}
+        </div>
+        <p class="desc">${p.description || ''}</p>
+        ${p.media_url ? renderPreview(p.media_url) : ''}
+      </div>
+      ${currentUser?.email === OWNER_EMAIL ? `
+      <div class="card-actions">
+        <button class="btn" onclick="editProduct(${p.id})">Modifier</button>
+        <button class="btn danger" onclick="deleteProduct(${p.id})">Supprimer</button>
+      </div>` : ''}
+    `;
+    grid.appendChild(card);
+  }
 }
 
-/* -------------------------
-   Event listeners filters/search
-------------------------- */
-chips.forEach(chip=>{
-    chip.addEventListener('click',()=>{
-        chips.forEach(c=>c.classList.remove('active'));
-        chip.classList.add('active');
-        applyFilters();
-    });
-});
+function renderPreview(url) {
+  if (url.endsWith('.mp4') || url.includes('video')) {
+    return `<video src="${url}" controls width="100%" style="border-radius:8px;margin-top:8px"></video>`;
+  }
+  if (url.endsWith('.pdf')) {
+    return `<iframe src="${url}" width="100%" height="180" style="border-radius:8px;margin-top:8px"></iframe>`;
+  }
+  return '';
+}
 
-searchInput.addEventListener('input',applyFilters);
-resetFilters.addEventListener('click',()=>{
-    searchInput.value = '';
-    chips.forEach(c=>c.classList.remove('active'));
-    document.querySelector('.chip[data-filter="all"]').classList.add('active');
-    applyFilters();
-});
+// ============================
+// READY
+// ============================
 
-/* -------------------------
-   Initial render with filters
-------------------------- */
-applyFilters();
+document.addEventListener('DOMContentLoaded', () => {
+  if (currentUser) showApp();
+  else showLogin();
+});
