@@ -1,6 +1,6 @@
 
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co'; // anao
-const SUPABASE_ANON_KEY = process.env.SUPABASE_KEY
+const SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw
 const supabase = createClient(supabaseUrl, supabaseKey)// fenoy
 const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
 
