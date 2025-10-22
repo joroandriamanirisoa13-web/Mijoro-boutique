@@ -1,0 +1,130 @@
+
+<html lang="mg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mijoro Boutique</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Mijoro Boutique</h1>
+    <div class="actions">
+      <button id="loginBtn" class="btn">🔒 Login</button>
+      <button id="addBtn" class="btn primary" hidden>+ Add product</button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <div class="chips">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="ebook">eBook</button>
+      <button class="chip" data-filter="video">Video</button>
+      <button class="chip" data-filter="app">App/Jeux</button>
+      <button class="chip" data-filter="free">Gratuit</button>
+      <button class="chip" data-filter="promo">Promo</button>
+      <button class="chip" data-filter="vip">VIP</button>
+    </div>
+    <input id="searchInput" class="search" placeholder="Search titre/tags..." />
+  </section>
+
+  <main>
+    <div id="grid" class="grid"></div>
+    <p id="empty" class="empty" hidden>Tsisy produits.</p>
+  </main>
+
+  <!-- Modal Add/Edit -->
+  <dialog id="modal" class="modal">
+    <form id="form" method="dialog">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add product</h3>
+        <button type="button" id="closeBtn" class="icon-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <input type="hidden" name="id" />
+          <label>Title
+            <input name="title" required />
+          </label>
+          <label>Type
+            <select name="type">
+              <option value="ebook">eBook</option>
+              <option value="video">Video</option>
+              <option value="app">App/Jeux</option>
+            </select>
+          </label>
+          <label>Gratuit
+            <input type="checkbox" name="isFree"/>
+          </label>
+          <label>Price
+            <input type="number" step="0.01" min="0" name="price" value="0"/>
+          </label>
+          <label>Promo (%)
+            <input type="number" min="0" max="100" name="promo" value="0"/>
+          </label>
+          <label>VIP
+            <input type="checkbox" name="isVIP"/>
+          </label>
+
+          <label class="full">Image (cover)
+            <div class="inline">
+              <input name="image_url" type="url" placeholder="Auto-filled rehefa upload"/>
+              <input type="file" id="imageFile" accept="image/*"/>
+            </div>
+          </label>
+
+          <label class="full">Media (Video/PDF)
+            <div class="inline">
+              <input name="media_url" type="url" placeholder="Auto-filled rehefa upload"/>
+              <input type="file" id="mediaFile" accept="video/*,.pdf"/>
+            </div>
+          </label>
+
+          <label>Platform (raha App)
+            <select name="platform">
+              <option value="">--</option>
+              <option value="android">Android</option>
+              <option value="ios">iOS</option>
+              <option value="windows">Windows</option>
+              <option value="mac">macOS</option>
+              <option value="linux">Linux</option>
+              <option value="web">Web</option>
+            </select>
+          </label>
+          <label>Version
+            <input name="version" placeholder="1.0.0"/>
+          </label>
+          <label>Build #
+            <input name="build_number" placeholder="100"/>
+          </label>
+
+          <label class="full">App file (APK/ZIP/EXE/DMG…)
+            <div class="inline">
+              <input name="file_url" type="url" placeholder="Auto-filled rehefa upload"/>
+              <input type="file" id="appFile" />
+            </div>
+            <input type="hidden" name="file_type"/>
+            <input type="hidden" name="file_size"/>
+          </label>
+
+          <label class="full">Description
+            <textarea name="description" rows="3"></textarea>
+          </label>
+          <label class="full">Tags (comma separated)
+            <input name="tags" placeholder="programming, react"/>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn primary">Save</button>
+        <button type="button" class="btn" id="cancelBtn">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Libs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="./app-secure.js"></script>
+</body>
+</html>
