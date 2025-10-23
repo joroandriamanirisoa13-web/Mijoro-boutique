@@ -1,5 +1,5 @@
 // shop/app-secure.js
-// Configuration Supabase - OVAO IREO CREDENTIALS IREO!
+// Configuration Supabase
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
 
@@ -8,6 +8,7 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // State global
 let currentUser = null;
+let allProducts = [];
 
 // ==================== STORAGE SETUP ====================
 
@@ -22,13 +23,12 @@ async function setupStorage() {
         const bucketNames = buckets.map(bucket => bucket.name);
         console.log('Available buckets:', bucketNames);
         
-        // Utiliser "Media" exactement comme dans Supabase
         const targetBucket = 'Media';
         
         if (!bucketNames.includes(targetBucket)) {
             const { error: createError } = await supabase.storage.createBucket(targetBucket, {
                 public: true,
-                fileSizeLimit: 524288000 // 500MB
+                fileSizeLimit: 524288000
             });
             if (createError) {
                 console.warn('Cannot create bucket:', createError.message);
@@ -46,16 +46,13 @@ async function setupStorage() {
 
 // ==================== PRÉVISUALISATION AVANCÉE ====================
 
-// Prévisualisation PDF avec PDF.js
 async function setupPdfPreview(file) {
     return new Promise((resolve) => {
         const fileReader = new FileReader();
         fileReader.onload = function() {
             const typedarray = new Uint8Array(this.result);
             
-            // Charger le PDF avec PDF.js
             pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                // Récupérer la première page
                 pdf.getPage(1).then(function(page) {
                     const viewport = page.getViewport({ scale: 1.5 });
                     const canvas = document.createElement('canvas');
@@ -78,7 +75,6 @@ async function setupPdfPreview(file) {
     });
 }
 
-// Prévisualisation Vidéo
 function setupVideoPreview(file) {
     return new Promise((resolve) => {
         const video = document.createElement('video');
@@ -92,13 +88,12 @@ function setupVideoPreview(file) {
     });
 }
 
-// Gestionnaire de prévisualisation
 async function handleFilePreview(file) {
     const previewSection = document.getElementById('previewSection');
     const previewContent = document.getElementById('previewContent');
     
     previewSection.classList.remove('hidden');
-    previewContent.innerHTML = '<div class="text-center">Loading preview...</div>';
+    previewContent.innerHTML = '<div class="text-center">Chargement de l\'aperçu...</div>';
 
     try {
         if (file.type.startsWith('image/')) {
@@ -115,7 +110,7 @@ async function handleFilePreview(file) {
             const previewData = await setupPdfPreview(file);
             previewContent.innerHTML = `
                 <img src="${previewData}" style="max-width: 100%; border-radius: 8px;" alt="PDF Preview">
-                <p class="text-center mt-2">${file.name} (PDF Preview - Page 1)</p>
+                <p class="text-center mt-2">${file.name} (Aperçu PDF - Page 1)</p>
             `;
         }
         else if (file.type.startsWith('video/')) {
@@ -143,9 +138,9 @@ async function handleFilePreview(file) {
             previewContent.innerHTML = `
                 <div class="text-center">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
-                    <p><strong>File:</strong> ${file.name}</p>
-                    <p><strong>Type:</strong> ${file.type || 'Unknown'}</p>
-                    <p><strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p><strong>Fichier:</strong> ${file.name}</p>
+                    <p><strong>Type:</strong> ${file.type || 'Inconnu'}</p>
+                    <p><strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
                 </div>
             `;
         }
@@ -153,11 +148,49 @@ async function handleFilePreview(file) {
         console.error('Preview error:', error);
         previewContent.innerHTML = `
             <div class="text-center text-error">
-                <p>Cannot generate preview for this file type</p>
-                <p><strong>File:</strong> ${file.name}</p>
+                <p>Impossible de générer l'aperçu pour ce type de fichier</p>
+                <p><strong>Fichier:</strong> ${file.name}</p>
             </div>
         `;
     }
+}
+
+// ==================== NAVIGATION ====================
+
+function switchTab(tabName) {
+    // Désactiver tous les tabs
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Activer le tab sélectionné
+    document.querySelector(`.tab:nth-child(${tabName === 'shop' ? 1 : 2})`).classList.add('active');
+    document.getElementById(tabName === 'shop' ? 'shopTab' : 'myProductsTab').classList.add('active');
+    
+    // Charger les données si nécessaire
+    if (tabName === 'shop') {
+        loadShopProducts();
+    } else if (tabName === 'myProducts') {
+        loadUserProducts();
+    }
+}
+
+// ==================== FILTRES BOUTIQUE ====================
+
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value;
+    const platformFilter = document.getElementById('platformFilter').value;
+    
+    const filteredProducts = allProducts.filter(product => {
+        const matchesSearch = product.title.toLowerCase().includes(searchTerm) || 
+                            (product.description && product.description.toLowerCase().includes(searchTerm));
+        const matchesType = !typeFilter || product.type === typeFilter;
+        const matchesPlatform = !platformFilter || product.platform === platformFilter;
+        
+        return matchesSearch && matchesType && matchesPlatform;
+    });
+    
+    renderShopProducts(filteredProducts);
 }
 
 // ==================== MODAL FUNCTIONS ====================
@@ -188,10 +221,10 @@ async function loginWithEmail() {
         const password = document.getElementById('loginPassword').value;
 
         if (!email || !password) {
-            throw new Error('Please enter both email and password');
+            throw new Error('Veuillez entrer email et mot de passe');
         }
 
-        showLoading('Signing in...');
+        showLoading('Connexion...');
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
@@ -201,10 +234,10 @@ async function loginWithEmail() {
         if (error) throw error;
 
         hideLoginForm();
-        showAlert('Login successful!', 'success');
+        showAlert('Connexion réussie!', 'success');
 
     } catch (error) {
-        showAlert('Login failed: ' + error.message, 'error');
+        showAlert('Échec connexion: ' + error.message, 'error');
     } finally {
         hideLoading();
     }
@@ -216,14 +249,14 @@ async function signUpWithEmail() {
         const password = document.getElementById('signupPassword').value;
 
         if (!email || !password) {
-            throw new Error('Please enter both email and password');
+            throw new Error('Veuillez entrer email et mot de passe');
         }
 
         if (password.length < 6) {
-            throw new Error('Password must be at least 6 characters');
+            throw new Error('Le mot de passe doit faire au moins 6 caractères');
         }
 
-        showLoading('Creating account...');
+        showLoading('Création du compte...');
 
         const { data, error } = await supabase.auth.signUp({
             email: email,
@@ -238,13 +271,13 @@ async function signUpWithEmail() {
         hideSignupForm();
         
         if (data.user && !data.user.identities?.length) {
-            showAlert('Account created! Please check your email to confirm your account.', 'success');
+            showAlert('Compte créé! Vérifiez votre email pour confirmer.', 'success');
         } else {
-            showAlert('Account created successfully! You can now login.', 'success');
+            showAlert('Compte créé avec succès! Vous pouvez maintenant vous connecter.', 'success');
         }
 
     } catch (error) {
-        showAlert('Signup failed: ' + error.message, 'error');
+        showAlert('Échec inscription: ' + error.message, 'error');
     } finally {
         hideLoading();
     }
@@ -252,12 +285,12 @@ async function signUpWithEmail() {
 
 async function signOut() {
     try {
-        showLoading('Logging out...');
+        showLoading('Déconnexion...');
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        showAlert('Logged out successfully', 'success');
+        showAlert('Déconnexion réussie', 'success');
     } catch (error) {
-        showAlert('Logout failed: ' + error.message, 'error');
+        showAlert('Échec déconnexion: ' + error.message, 'error');
     } finally {
         hideLoading();
     }
@@ -276,7 +309,7 @@ async function getCurrentUser() {
 
 async function addProduct(productData) {
     const user = await getCurrentUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('Non authentifié');
 
     const { data, error } = await supabase
         .from('products')
@@ -296,7 +329,7 @@ async function addProduct(productData) {
 
 async function getUserProducts() {
     const user = await getCurrentUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('Non authentifié');
 
     const { data, error } = await supabase
         .from('products')
@@ -308,9 +341,22 @@ async function getUserProducts() {
     return data;
 }
 
+async function getAllProducts() {
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error loading all products:', error);
+        return [];
+    }
+    return data;
+}
+
 async function updateProduct(productId, updates) {
     const user = await getCurrentUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('Non authentifié');
 
     const { data: product } = await supabase
         .from('products')
@@ -319,7 +365,7 @@ async function updateProduct(productId, updates) {
         .single();
 
     if (!product || product.owner_id !== user.id) {
-        throw new Error('Not authorized to update this product');
+        throw new Error('Non autorisé à modifier ce produit');
     }
 
     const { data, error } = await supabase
@@ -337,7 +383,7 @@ async function updateProduct(productId, updates) {
 
 async function deleteProduct(productId) {
     const user = await getCurrentUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('Non authentifié');
 
     const { data: product } = await supabase
         .from('products')
@@ -346,7 +392,7 @@ async function deleteProduct(productId) {
         .single();
 
     if (!product || product.owner_id !== user.id) {
-        throw new Error('Not authorized to delete this product');
+        throw new Error('Non autorisé à supprimer ce produit');
     }
 
     const { error } = await supabase
@@ -383,7 +429,7 @@ async function uploadFile(file, folder = 'product-files') {
 
 function validateFile(file, options = {}) {
     const {
-        maxSize = 500 * 1024 * 1024, // 500MB par défaut
+        maxSize = 500 * 1024 * 1024,
         allowedTypes = [
             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
             'application/pdf', 'application/zip', 
@@ -402,16 +448,16 @@ function validateFile(file, options = {}) {
     } = options;
 
     if (file.size > maxSize) {
-        throw new Error(`File too large. Maximum size: ${maxSize / 1024 / 1024}MB`);
+        throw new Error(`Fichier trop volumineux. Taille max: ${maxSize / 1024 / 1024}MB`);
     }
 
     if (file.type && !allowedTypes.includes(file.type) && file.type !== '') {
-        throw new Error('File type not allowed');
+        throw new Error('Type de fichier non autorisé');
     }
 
     const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
     if (!allowedExtensions.includes(fileExtension)) {
-        throw new Error('File extension not allowed');
+        throw new Error('Extension de fichier non autorisée');
     }
 
     return true;
@@ -421,15 +467,15 @@ function validateProductData(productData) {
     const errors = [];
 
     if (!productData.title?.trim()) {
-        errors.push('Product title is required');
+        errors.push('Le titre du produit est requis');
     }
 
     if (!productData.type) {
-        errors.push('Product type is required');
+        errors.push('Le type de produit est requis');
     }
 
     if (productData.type === 'app' && !productData.platform) {
-        errors.push('Platform is required for App/Jeux');
+        errors.push('La plateforme est requise pour les Apps/Jeux');
     }
 
     if (productData.type !== 'app' && !productData.platform) {
@@ -437,15 +483,15 @@ function validateProductData(productData) {
     }
 
     if (productData.price < 0) {
-        errors.push('Price cannot be negative');
+        errors.push('Le prix ne peut pas être négatif');
     }
 
     if (productData.promo < 0) {
-        errors.push('Promo price cannot be negative');
+        errors.push('Le prix promo ne peut pas être négatif');
     }
 
     if (productData.is_free && productData.price > 0) {
-        errors.push('Free products must have price 0');
+        errors.push('Les produits gratuits doivent avoir un prix de 0');
     }
 
     return errors;
@@ -479,7 +525,7 @@ function toggleProductForm() {
 
 async function submitProduct() {
     try {
-        showLoading('Adding product...');
+        showLoading('Ajout du produit...');
 
         const productData = {
             title: document.getElementById('productTitle').value.trim(),
@@ -496,7 +542,7 @@ async function submitProduct() {
 
         const errors = validateProductData(productData);
         if (errors.length > 0) {
-            throw new Error('Validation errors:\n' + errors.join('\n'));
+            throw new Error('Erreurs de validation:\n' + errors.join('\n'));
         }
 
         const imageFile = document.getElementById('productImage').files[0];
@@ -530,95 +576,20 @@ async function submitProduct() {
 
         await addProduct(productData);
         
-        showAlert('✅ Product added successfully!', 'success');
+        showAlert('✅ Produit ajouté avec succès!', 'success');
         await loadUserProducts();
+        await loadShopProducts(); // Rafraîchir aussi la boutique
         toggleProductForm();
         
     } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
+        showAlert('❌ Erreur: ' + error.message, 'error');
         console.error('Product submission error:', error);
     } finally {
         hideLoading();
     }
 }
 
-async function loadUserProducts() {
-    try {
-        showLoading('Loading products...');
-        const products = await getUserProducts();
-        const productsList = document.getElementById('productsList');
-        
-        if (products.length === 0) {
-            productsList.innerHTML = `
-                <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
-                    <h3 class="text-lg font-semibold mb-2">No products yet</h3>
-                    <p class="text-secondary">Start by adding your first product!</p>
-                </div>
-            `;
-            return;
-        }
-        
-        productsList.innerHTML = products.map(product => `
-            <div class="product-card">
-                <div class="product-card-content">
-                    <div class="product-header">
-                        <div>
-                            <h3 class="product-title">${escapeHtml(product.title)}</h3>
-                        </div>
-                        <div class="product-price">
-                            ${product.is_free ? 'FREE' : `$${product.price}`}
-                            ${product.promo > 0 ? `<div style="font-size: 0.9rem; color: orange; text-decoration: line-through;">$${product.promo}</div>` : ''}
-                        </div>
-                    </div>
-                    
-                    <!-- Badges Stylés -->
-                    <div class="badges-container">
-                        ${product.is_vip ? '<span class="badge badge-vip">⭐ VIP</span>' : ''}
-                        ${product.is_free ? '<span class="badge badge-free">🆓 FREE</span>' : ''}
-                        ${!product.is_free && !product.is_vip ? '<span class="badge badge-premium">💰 PREMIUM</span>' : ''}
-                        ${product.type === 'promotion' ? '<span class="badge badge-promo">🔥 PROMO</span>' : ''}
-                        ${product.type === 'ebook' ? '<span class="badge badge-ebook">📚 eBook</span>' : ''}
-                        ${product.type === 'video' ? '<span class="badge badge-video">🎥 Video</span>' : ''}
-                        ${product.type === 'app' ? '<span class="badge badge-app">📱 App/Jeux</span>' : ''}
-                        ${product.platform && product.platform !== 'web' ? `<span class="badge badge-platform">${getPlatformIcon(product.platform)} ${product.platform}</span>` : ''}
-                    </div>
-                    
-                    ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">${escapeHtml(product.description)}</p>` : ''}
-                    
-                    <div class="product-meta">
-                        ${product.type ? `<p>📦 <strong>Type:</strong> ${product.type}</p>` : ''}
-                        ${product.platform && product.platform !== 'web' ? `<p>🖥️ <strong>Platform:</strong> ${product.platform}</p>` : ''}
-                        ${product.version ? `<p>🔢 <strong>Version:</strong> ${product.version}</p>` : ''}
-                        ${product.build_number ? `<p>⚙️ <strong>Build:</strong> ${product.build_number}</p>` : ''}
-                        ${product.file_size ? `<p>💾 <strong>Size:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
-                        <p>📅 <strong>Created:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
-                    </div>
-                    
-                    ${product.file_url ? `
-                        <div class="preview-section">
-                            <div class="preview-header">File Preview</div>
-                            <div class="preview-content">
-                                ${getFilePreview(product)}
-                            </div>
-                        </div>
-                    ` : ''}
-                    
-                    <div class="product-actions">
-                        <button class="btn btn-secondary" onclick="editProduct('${product.id}')">✏️ Edit</button>
-                        <button class="btn btn-danger" onclick="confirmDelete('${product.id}')">🗑️ Delete</button>
-                        ${product.file_url ? `<button class="btn btn-primary" onclick="downloadFile('${product.file_url}', '${product.title}')">⬇️ Download</button>` : ''}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        showAlert('Error loading products: ' + error.message, 'error');
-        console.error('Error loading products:', error);
-    } finally {
-        hideLoading();
-    }
-}
+// ==================== PRODUCT RENDERING ====================
 
 function getPlatformIcon(platform) {
     const icons = {
@@ -646,24 +617,152 @@ function getFilePreview(product) {
     else if (['mp4', 'avi', 'mkv', 'mov', 'wmv'].includes(fileExt)) {
         return `<video controls class="video-preview" style="width: 100%; max-height: 300px;">
                     <source src="${product.file_url}" type="video/${fileExt}">
-                    Your browser does not support the video tag.
+                    Votre navigateur ne supporte pas la balise vidéo.
                 </video>`;
     }
     else if (['mp3', 'wav', 'm4a'].includes(fileExt)) {
         return `<audio controls style="width: 100%;">
                     <source src="${product.file_url}" type="audio/${fileExt}">
-                    Your browser does not support the audio tag.
+                    Votre navigateur ne supporte pas la balise audio.
                 </audio>`;
     }
     else {
         return `
             <div class="text-center">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
-                <p><strong>File Type:</strong> ${product.file_type || 'Unknown'}</p>
-                <p><strong>Size:</strong> ${product.file_size ? (product.file_size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown'}</p>
-                <button class="btn btn-primary mt-2" onclick="downloadFile('${product.file_url}', '${product.title}')">Download File</button>
+                <p><strong>Type de fichier:</strong> ${product.file_type || 'Inconnu'}</p>
+                <p><strong>Taille:</strong> ${product.file_size ? (product.file_size / 1024 / 1024).toFixed(2) + ' MB' : 'Inconnue'}</p>
+                <button class="btn btn-primary mt-2" onclick="downloadFile('${product.file_url}', '${product.title}')">Télécharger</button>
             </div>
         `;
+    }
+}
+
+function renderProductCard(product, options = {}) {
+    const { showActions = false, currentUser = null } = options;
+    const isOwner = currentUser && product.owner_id === currentUser.id;
+
+    return `
+        <div class="product-card">
+            <div class="product-card-content">
+                <div class="product-header">
+                    <div>
+                        <h3 class="product-title">${escapeHtml(product.title)}</h3>
+                        ${isOwner ? '<div class="badge badge-premium" style="margin-top: 0.5rem;">👑 VOTRE PRODUIT</div>' : ''}
+                    </div>
+                    <div class="product-price">
+                        ${product.is_free ? 'GRATUIT' : `$${product.price}`}
+                        ${product.promo > 0 ? `<div style="font-size: 0.9rem; color: orange; text-decoration: line-through;">$${product.promo}</div>` : ''}
+                    </div>
+                </div>
+                
+                <!-- Badges Stylés -->
+                <div class="badges-container">
+                    ${product.is_vip ? '<span class="badge badge-vip">⭐ VIP</span>' : ''}
+                    ${product.is_free ? '<span class="badge badge-free">🆓 GRATUIT</span>' : ''}
+                    ${!product.is_free && !product.is_vip ? '<span class="badge badge-premium">💰 PREMIUM</span>' : ''}
+                    ${product.type === 'promotion' ? '<span class="badge badge-promo">🔥 PROMO</span>' : ''}
+                    ${product.type === 'ebook' ? '<span class="badge badge-ebook">📚 eBook</span>' : ''}
+                    ${product.type === 'video' ? '<span class="badge badge-video">🎥 Video</span>' : ''}
+                    ${product.type === 'app' ? '<span class="badge badge-app">📱 App/Jeux</span>' : ''}
+                    ${product.platform && product.platform !== 'web' ? `<span class="badge badge-platform">${getPlatformIcon(product.platform)} ${product.platform}</span>` : ''}
+                </div>
+                
+                ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">${escapeHtml(product.description)}</p>` : ''}
+                
+                <div class="product-meta">
+                    ${product.type ? `<p>📦 <strong>Type:</strong> ${product.type}</p>` : ''}
+                    ${product.platform && product.platform !== 'web' ? `<p>🖥️ <strong>Plateforme:</strong> ${product.platform}</p>` : ''}
+                    ${product.version ? `<p>🔢 <strong>Version:</strong> ${product.version}</p>` : ''}
+                    ${product.build_number ? `<p>⚙️ <strong>Build:</strong> ${product.build_number}</p>` : ''}
+                    ${product.file_size ? `<p>💾 <strong>Taille:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
+                    <p>📅 <strong>Créé:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
+                </div>
+                
+                ${product.file_url ? `
+                    <div class="preview-section">
+                        <div class="preview-header">Aperçu</div>
+                        <div class="preview-content">
+                            ${getFilePreview(product)}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="product-actions">
+                    ${showActions ? `
+                        <button class="btn btn-secondary" onclick="editProduct('${product.id}')">✏️ Modifier</button>
+                        <button class="btn btn-danger" onclick="confirmDelete('${product.id}')">🗑️ Supprimer</button>
+                    ` : ''}
+                    ${product.file_url ? `<button class="btn btn-primary" onclick="downloadFile('${product.file_url}', '${product.title}')">⬇️ Télécharger</button>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+async function loadShopProducts() {
+    try {
+        showLoading('Chargement de la boutique...');
+        allProducts = await getAllProducts();
+        renderShopProducts(allProducts);
+        
+    } catch (error) {
+        showAlert('Erreur chargement boutique: ' + error.message, 'error');
+        console.error('Error loading shop products:', error);
+    } finally {
+        hideLoading();
+    }
+}
+
+function renderShopProducts(products) {
+    const shopProductsList = document.getElementById('shopProductsList');
+    
+    if (products.length === 0) {
+        shopProductsList.innerHTML = `
+            <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
+                <h3 class="text-lg font-semibold mb-2">Aucun produit trouvé</h3>
+                <p class="text-secondary">Aucun produit ne correspond à vos critères de recherche</p>
+            </div>
+        `;
+        return;
+    }
+    
+    shopProductsList.innerHTML = products.map(product => 
+        renderProductCard(product, { 
+            showActions: false, 
+            currentUser: currentUser 
+        })
+    ).join('');
+}
+
+async function loadUserProducts() {
+    try {
+        showLoading('Chargement de vos produits...');
+        const products = await getUserProducts();
+        const myProductsList = document.getElementById('myProductsList');
+        
+        if (products.length === 0) {
+            myProductsList.innerHTML = `
+                <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
+                    <h3 class="text-lg font-semibold mb-2">Aucun produit encore</h3>
+                    <p class="text-secondary">Commencez par ajouter votre premier produit!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        myProductsList.innerHTML = products.map(product => 
+            renderProductCard(product, { 
+                showActions: true, 
+                currentUser: currentUser 
+            })
+        ).join('');
+        
+    } catch (error) {
+        showAlert('Erreur chargement produits: ' + error.message, 'error');
+        console.error('Error loading user products:', error);
+    } finally {
+        hideLoading();
     }
 }
 
@@ -675,14 +774,14 @@ function downloadFile(url, filename) {
 }
 
 function confirmDelete(productId) {
-    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')) {
         deleteProductHandler(productId);
     }
 }
 
 async function deleteProductHandler(productId) {
     try {
-        showLoading('Deleting product...');
+        showLoading('Suppression du produit...');
         
         const { data: product, error: fetchError } = await supabase
             .from('products')
@@ -691,7 +790,7 @@ async function deleteProductHandler(productId) {
             .single();
 
         if (fetchError) {
-            throw new Error('Product not found');
+            throw new Error('Produit non trouvé');
         }
 
         const { error: deleteError } = await supabase
@@ -701,14 +800,14 @@ async function deleteProductHandler(productId) {
 
         if (deleteError) throw deleteError;
 
-        showAlert('✅ Product deleted successfully', 'success');
+        showAlert('✅ Produit supprimé avec succès', 'success');
         
-        setTimeout(async () => {
-            await loadUserProducts();
-        }, 500);
+        // Rafraîchir les deux vues
+        await loadUserProducts();
+        await loadShopProducts();
         
     } catch (error) {
-        showAlert('❌ Error deleting product: ' + error.message, 'error');
+        showAlert('❌ Erreur suppression: ' + error.message, 'error');
         console.error('Delete error:', error);
     } finally {
         hideLoading();
@@ -739,13 +838,12 @@ function setupFilePreviews() {
         if (file) {
             document.getElementById('filePreview').innerHTML = `
                 <div style="padding: 1rem; background: var(--surface-color); border-radius: 8px;">
-                    <p><strong>File:</strong> ${file.name}</p>
-                    <p><strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                    <p><strong>Type:</strong> ${file.type || 'Unknown'}</p>
+                    <p><strong>Fichier:</strong> ${file.name}</p>
+                    <p><strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p><strong>Type:</strong> ${file.type || 'Inconnu'}</p>
                 </div>
             `;
             
-            // Générer la prévisualisation
             await handleFilePreview(file);
         }
     });
@@ -754,18 +852,26 @@ function setupFilePreviews() {
 function showOwnerSection(user) {
     document.getElementById('ownerSection').classList.remove('hidden');
     document.getElementById('welcomeSection').classList.add('hidden');
+    document.getElementById('tabsSection').classList.remove('hidden');
     document.getElementById('loginBtn').classList.add('hidden');
     document.getElementById('logoutBtn').classList.remove('hidden');
     document.getElementById('userInfo').textContent = `👤 ${user.email}`;
+    
+    // Charger les deux vues
+    loadShopProducts();
     loadUserProducts();
 }
 
 function showWelcomeSection() {
     document.getElementById('ownerSection').classList.add('hidden');
+    document.getElementById('tabsSection').classList.add('hidden');
     document.getElementById('welcomeSection').classList.remove('hidden');
     document.getElementById('loginBtn').classList.remove('hidden');
     document.getElementById('logoutBtn').classList.add('hidden');
     document.getElementById('userInfo').textContent = '';
+    
+    // Charger seulement la boutique
+    loadShopProducts();
 }
 
 function showAlert(message, type = 'info') {
@@ -785,7 +891,7 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
-function showLoading(message = 'Loading...') {
+function showLoading(message = 'Chargement...') {
     console.log('Loading:', message);
 }
 
@@ -850,6 +956,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFilePreviews();
     setupDragAndDrop();
     
+    // Rendre les fonctions globales
     window.showLoginForm = showLoginForm;
     window.hideLoginForm = hideLoginForm;
     window.showSignupForm = showSignupForm;
@@ -862,7 +969,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.deleteProduct = deleteProductHandler;
     window.confirmDelete = confirmDelete;
     window.downloadFile = downloadFile;
+    window.switchTab = switchTab;
+    window.filterProducts = filterProducts;
     
+    // Vérifier l'état d'authentification au chargement
     getCurrentUser().then(user => {
         if (user) {
             showOwnerSection(user);
