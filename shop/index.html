@@ -630,6 +630,9 @@
                             <label class="form-label">Type *</label>
                             <select id="productType" class="form-select" required>
                                 <option value="">Select Type</option>
+                                <option value="ebook">eBook</option>
+                                <option value="video">Video</option>
+                                <option value="app">App/Jeux</option>
                                 <option value="gratuit">Gratuit</option>
                                 <option value="promotion">Promotion</option>
                                 <option value="vip">VIP</option>
@@ -706,7 +709,7 @@
                         <div class="file-upload" onclick="document.getElementById('productFile').click()">
                             <p>📦 Click to upload file or drag & drop</p>
                             <p class="text-sm">ZIP, APK, IPA up to 50MB</p>
-                            <input type="file" id="productFile" class="hidden" accept=".zip,.apk,.ipa">
+                            <input type="file" id="productFile" class="hidden" accept=".zip,.apk,.ipa,.pdf,.mp4">
                         </div>
                         <div id="filePreview" class="upload-preview"></div>
                     </div>
