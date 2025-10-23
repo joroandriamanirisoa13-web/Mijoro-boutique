@@ -13,7 +13,6 @@ let currentUser = null;
 
 async function setupStorage() {
     try {
-        // Vérifier si le bucket existe
         const { data: buckets, error } = await supabase.storage.listBuckets();
         if (error) {
             console.warn('Cannot list buckets:', error.message);
@@ -21,23 +20,27 @@ async function setupStorage() {
         }
 
         const bucketNames = buckets.map(bucket => bucket.name);
+        console.log('Available buckets:', bucketNames);
         
-        // Créer bucket 'media' s'il n'existe pas
-        if (!bucketNames.includes('media')) {
-            const { error: createError } = await supabase.storage.createBucket('media', {
+        // Utiliser "Media" exactement comme dans Supabase
+        const targetBucket = 'Media';
+        
+        if (!bucketNames.includes(targetBucket)) {
+            const { error: createError } = await supabase.storage.createBucket(targetBucket, {
                 public: true,
-                fileSizeLimit: 52428800 // 50MB
+                fileSizeLimit: 52428800
             });
             if (createError) {
                 console.warn('Cannot create bucket:', createError.message);
                 return;
             }
-            console.log('Bucket "media" created successfully');
+            console.log('Bucket "Media" created successfully');
+        } else {
+            console.log('Bucket "Media" already exists');
         }
         
     } catch (error) {
         console.warn('Storage setup warning:', error.message);
-        // Continuer malgré l'erreur
     }
 }
 
@@ -193,7 +196,6 @@ async function updateProduct(productId, updates) {
     const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Vérifier la propriété
     const { data: product } = await supabase
         .from('products')
         .select('owner_id')
@@ -221,7 +223,6 @@ async function deleteProduct(productId) {
     const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Vérifier la propriété
     const { data: product } = await supabase
         .from('products')
         .select('owner_id')
@@ -249,17 +250,13 @@ async function uploadFile(file, folder = 'product-files') {
         const filePath = `${folder}/${fileName}`;
 
         const { data, error } = await supabase.storage
-            .from('media')
+            .from('Media')  // ✅ "Media" majuscule
             .upload(filePath, file);
 
-        if (error) {
-            // Si bucket n'existe pas, essayer sans spécifier le bucket
-            console.warn('Upload error, trying alternative method:', error.message);
-            throw new Error('Storage bucket not available. Please check Supabase storage configuration.');
-        }
+        if (error) throw error;
 
         const { data: { publicUrl } } = supabase.storage
-            .from('media')
+            .from('Media')  // ✅ "Media" majuscule
             .getPublicUrl(filePath);
 
         return { path: filePath, url: publicUrl };
@@ -302,12 +299,10 @@ function validateProductData(productData) {
         errors.push('Product type is required');
     }
 
-    // Platform required only for App/Jeux
     if (productData.type === 'app' && !productData.platform) {
         errors.push('Platform is required for App/Jeux');
     }
 
-    // Platform optional for other types - set default if empty
     if (productData.type !== 'app' && !productData.platform) {
         productData.platform = 'web';
     }
@@ -320,7 +315,6 @@ function validateProductData(productData) {
         errors.push('Promo price cannot be negative');
     }
 
-    // Si gratuit, prix doit être 0
     if (productData.is_free && productData.price > 0) {
         errors.push('Free products must have price 0');
     }
@@ -335,7 +329,6 @@ function toggleProductForm() {
     form.classList.toggle('hidden');
     
     if (!form.classList.contains('hidden')) {
-        // Reset form when opening
         document.getElementById('productTitle').value = '';
         document.getElementById('productType').value = '';
         document.getElementById('productPrice').value = '0';
@@ -358,7 +351,6 @@ async function submitProduct() {
     try {
         showLoading('Adding product...');
 
-        // Récupérer toutes les valeurs du formulaire
         const productData = {
             title: document.getElementById('productTitle').value.trim(),
             type: document.getElementById('productType').value,
@@ -367,19 +359,16 @@ async function submitProduct() {
             description: document.getElementById('productDescription').value.trim(),
             version: document.getElementById('productVersion').value.trim(),
             build_number: document.getElementById('productBuildNumber').value.trim(),
-            // NOUVEAUX CHAMPS
             promo: parseFloat(document.getElementById('productPromoPrice').value) || 0,
             is_vip: document.getElementById('productIsVip').checked,
             is_free: document.getElementById('productIsFree').checked
         };
 
-        // Validation des données
         const errors = validateProductData(productData);
         if (errors.length > 0) {
             throw new Error('Validation errors:\n' + errors.join('\n'));
         }
 
-        // Upload de l'image
         const imageFile = document.getElementById('productImage').files[0];
         if (imageFile) {
             validateFile(imageFile, { 
@@ -391,11 +380,9 @@ async function submitProduct() {
                 productData.img_url = imageUpload.url;
             } catch (uploadError) {
                 console.warn('Image upload failed:', uploadError.message);
-                // Continuer sans image
             }
         }
 
-        // Upload du fichier
         const productFile = document.getElementById('productFile').files[0];
         if (productFile) {
             validateFile(productFile, {
@@ -410,11 +397,9 @@ async function submitProduct() {
                 productData.file_type = productFile.type;
             } catch (uploadError) {
                 console.warn('File upload failed:', uploadError.message);
-                // Continuer sans fichier
             }
         }
 
-        // Ajouter le produit
         await addProduct(productData);
         
         showAlert('✅ Product added successfully!', 'success');
@@ -501,11 +486,36 @@ function confirmDelete(productId) {
 async function deleteProductHandler(productId) {
     try {
         showLoading('Deleting product...');
-        await deleteProduct(productId);
-        showAlert('Product deleted successfully', 'success');
-        await loadUserProducts();
+        
+        // Vérifier aloha raha misy ilay produit
+        const { data: product, error: fetchError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', productId)
+            .single();
+
+        if (fetchError) {
+            throw new Error('Product not found');
+        }
+
+        // Delete le produit
+        const { error: deleteError } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', productId);
+
+        if (deleteError) throw deleteError;
+
+        showAlert('✅ Product deleted successfully', 'success');
+        
+        // Attendre un peu avant de recharger
+        setTimeout(async () => {
+            await loadUserProducts();
+        }, 500);
+        
     } catch (error) {
-        showAlert('Error deleting product: ' + error.message, 'error');
+        showAlert('❌ Error deleting product: ' + error.message, 'error');
+        console.error('Delete error:', error);
     } finally {
         hideLoading();
     }
@@ -562,7 +572,6 @@ function showWelcomeSection() {
 }
 
 function showAlert(message, type = 'info') {
-    // Remove existing alerts
     const existingAlerts = document.querySelectorAll('.alert');
     existingAlerts.forEach(alert => alert.remove());
     
@@ -572,7 +581,6 @@ function showAlert(message, type = 'info') {
     
     document.querySelector('.main-content').insertBefore(alert, document.querySelector('.main-content').firstChild);
     
-    // Auto-remove after 5 seconds
     setTimeout(() => {
         if (alert.parentElement) {
             alert.remove();
@@ -581,7 +589,6 @@ function showAlert(message, type = 'info') {
 }
 
 function showLoading(message = 'Loading...') {
-    // Simple loading implementation
     console.log('Loading:', message);
 }
 
@@ -631,7 +638,6 @@ function setupDragAndDrop() {
 
 // ==================== INITIALISATION ====================
 
-// Gestion de l'état d'authentification
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (session) {
         currentUser = session.user;
@@ -642,13 +648,11 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     }
 });
 
-// Initialisation
 document.addEventListener('DOMContentLoaded', function() {
-    setupStorage(); // Setup storage buckets
+    setupStorage();
     setupFilePreviews();
     setupDragAndDrop();
     
-    // Rendre les fonctions globales
     window.showLoginForm = showLoginForm;
     window.hideLoginForm = hideLoginForm;
     window.showSignupForm = showSignupForm;
@@ -661,7 +665,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.deleteProduct = deleteProductHandler;
     window.confirmDelete = confirmDelete;
     
-    // Vérifier l'état d'authentification au chargement
     getCurrentUser().then(user => {
         if (user) {
             showOwnerSection(user);
@@ -671,14 +674,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Close modals when clicking outside
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.add('hidden');
     }
 });
 
-// Close modals with Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         hideLoginForm();
