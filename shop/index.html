@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Manager - Shop</title>
+    <title>Product Shop</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- PDF.js pour la prévisualisation PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -74,6 +74,42 @@
             font-weight: 500;
         }
 
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 0.5rem;
+            margin: 2rem 0;
+            box-shadow: var(--shadow);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem 2rem;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         /* Buttons */
         .btn {
             padding: 0.75rem 1.5rem;
@@ -123,6 +159,15 @@
             transform: translateY(-1px);
         }
 
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
         /* Main Content */
         .main-content {
             background: rgba(255, 255, 255, 0.95);
@@ -134,7 +179,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        /* Product Form */
+        /* Product Form - OWNER ONLY */
         .product-form {
             background: white;
             padding: 2.5rem;
@@ -200,12 +245,12 @@
             margin-bottom: 0.5rem;
         }
 
-        /* Products Grid - DESIGN MODERNE */
+        /* Products Grid */
         .products-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
             gap: 2rem;
-            margin: 3rem 0;
+            margin: 2rem 0;
         }
 
         .product-card {
@@ -238,7 +283,7 @@
         }
 
         .product-card:hover {
-            transform: translateY(-10px) scale(1.02);
+            transform: translateY(-8px) scale(1.02);
             box-shadow: 0 25px 50px rgba(0,0,0,0.15);
         }
 
@@ -254,7 +299,7 @@
         }
 
         .product-title {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
@@ -529,6 +574,10 @@
                 padding: 1rem;
             }
 
+            .tabs {
+                flex-direction: column;
+            }
+
             .form-grid {
                 grid-template-columns: 1fr;
             }
@@ -720,30 +769,74 @@
 
     <div class="container">
         <div class="main-content">
-            <!-- Owner Only Section -->
-            <div id="ownerSection" class="hidden">
+            <!-- Navigation Tabs (Visible when logged in) -->
+            <div id="tabsSection" class="tabs hidden">
+                <button class="tab active" onclick="switchTab('shop')">🛍️ Boutique</button>
+                <button class="tab" onclick="switchTab('myProducts')">📦 Mes Produits</button>
+            </div>
+
+            <!-- Shop Tab - VISIBLE TO ALL -->
+            <div id="shopTab" class="tab-content active">
                 <div class="text-center mb-8">
-                    <h1 class="welcome-title">🎯 My Products Manager</h1>
-                    <p class="welcome-subtitle">Manage your products and uploads</p>
+                    <h1 class="welcome-title">🛍️ Notre Boutique</h1>
+                    <p class="welcome-subtitle">Découvrez tous nos produits disponibles</p>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="filters-section" style="margin-bottom: 2rem;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <input type="text" id="searchInput" class="form-input" placeholder="🔍 Rechercher un produit..." onkeyup="filterProducts()">
+                        </div>
+                        <div class="form-group">
+                            <select id="typeFilter" class="form-select" onchange="filterProducts()">
+                                <option value="">Tous les types</option>
+                                <option value="ebook">eBook</option>
+                                <option value="video">Video</option>
+                                <option value="app">App/Jeux</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <select id="platformFilter" class="form-select" onchange="filterProducts()">
+                                <option value="">Toutes les plateformes</option>
+                                <option value="android">Android</option>
+                                <option value="ios">iOS</option>
+                                <option value="windows">Windows</option>
+                                <option value="mac">Mac</option>
+                                <option value="web">Web</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products List - VISIBLE TO ALL -->
+                <div id="shopProductsList" class="products-grid"></div>
+            </div>
+
+            <!-- My Products Tab - OWNER ONLY -->
+            <div id="myProductsTab" class="tab-content">
+                <div class="text-center mb-8">
+                    <h1 class="welcome-title">📦 Mes Produits</h1>
+                    <p class="welcome-subtitle">Gérez vos produits et téléchargements</p>
                 </div>
 
                 <button class="btn btn-primary mb-4" onclick="toggleProductForm()">
-                    ➕ Add New Product
+                    ➕ Ajouter un Produit
                 </button>
 
-                <!-- Product Form -->
+                <!-- Product Form - OWNER ONLY -->
                 <div id="productForm" class="product-form hidden">
-                    <h2 class="mb-4">Add New Product</h2>
+                    <h2 class="mb-4">Ajouter un Nouveau Produit</h2>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Product Title *</label>
-                            <input type="text" id="productTitle" class="form-input" placeholder="Enter product title" required>
+                            <label class="form-label">Titre du Produit *</label>
+                            <input type="text" id="productTitle" class="form-input" placeholder="Entrez le titre du produit" required>
                         </div>
                         
                         <div class="form-group">
                             <label class="form-label">Type *</label>
                             <select id="productType" class="form-select" required>
-                                <option value="">Select Type</option>
+                                <option value="">Sélectionnez le type</option>
                                 <option value="ebook">eBook</option>
                                 <option value="video">Video</option>
                                 <option value="app">App/Jeux</option>
@@ -755,20 +848,20 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Price ($)</label>
+                            <label class="form-label">Prix ($)</label>
                             <input type="number" id="productPrice" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Platform <span class="text-sm text-secondary">(Required for App/Jeux only)</span></label>
+                            <label class="form-label">Plateforme <span class="text-sm text-secondary">(Requis pour App/Jeux seulement)</span></label>
                             <select id="productPlatform" class="form-select">
-                                <option value="">Select Platform (Optional for eBook/Video)</option>
+                                <option value="">Sélectionnez la plateforme (Optionnel pour eBook/Video)</option>
                                 <option value="android">Android</option>
                                 <option value="ios">iOS</option>
                                 <option value="windows">Windows</option>
                                 <option value="mac">Mac OS</option>
                                 <option value="web">Web</option>
-                                <option value="multi">Multi-platform</option>
+                                <option value="multi">Multi-platforme</option>
                             </select>
                         </div>
 
@@ -778,52 +871,51 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Build Number</label>
+                            <label class="form-label">Numéro de Build</label>
                             <input type="text" id="productBuildNumber" class="form-input" placeholder="12345">
                         </div>
 
-                        <!-- Nouveaux champs -->
                         <div class="form-group">
-                            <label class="form-label">Promo Price ($)</label>
+                            <label class="form-label">Prix Promo ($)</label>
                             <input type="number" id="productPromoPrice" class="form-input" placeholder="0.00" step="0.01" min="0">
                         </div>
 
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="productIsVip" class="form-checkbox"> 
-                                VIP Product
+                                Produit VIP
                             </label>
                         </div>
 
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="productIsFree" class="form-checkbox"> 
-                                Free Product
+                                Produit Gratuit
                             </label>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Description</label>
-                        <textarea id="productDescription" class="form-textarea" placeholder="Describe your product..."></textarea>
+                        <textarea id="productDescription" class="form-textarea" placeholder="Décrivez votre produit..."></textarea>
                     </div>
 
                     <!-- File Upload Section -->
                     <div class="form-group">
-                        <label class="form-label">Product Image</label>
+                        <label class="form-label">Image du Produit</label>
                         <div class="file-upload" onclick="document.getElementById('productImage').click()">
-                            <p>📁 Click to upload image or drag & drop</p>
-                            <p class="text-sm">PNG, JPG, GIF, WEBP up to 500MB</p>
+                            <p>📁 Cliquez pour uploader une image ou glissez-déposez</p>
+                            <p class="text-sm">PNG, JPG, GIF, WEBP jusqu'à 500MB</p>
                             <input type="file" id="productImage" class="hidden" accept="image/*">
                         </div>
                         <div id="imagePreview" class="upload-preview hidden"></div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Product File</label>
+                        <label class="form-label">Fichier du Produit</label>
                         <div class="file-upload" onclick="document.getElementById('productFile').click()">
-                            <p>📦 Click to upload file or drag & drop</p>
-                            <p class="text-sm">ZIP, APK, IPA, EXE, ISO, PDF, MP4, MP3, AVI up to 500MB</p>
+                            <p>📦 Cliquez pour uploader un fichier ou glissez-déposez</p>
+                            <p class="text-sm">ZIP, APK, IPA, EXE, ISO, PDF, MP4, MP3, AVI jusqu'à 500MB</p>
                             <input type="file" id="productFile" class="hidden" accept=".zip,.apk,.ipa,.exe,.iso,.pdf,.mp4,.mp3,.avi,.mkv,.mov,.wmv">
                         </div>
                         <div id="filePreview" class="upload-preview"></div>
@@ -831,27 +923,27 @@
 
                     <!-- Preview Section -->
                     <div id="previewSection" class="preview-section hidden">
-                        <div class="preview-header">Preview</div>
+                        <div class="preview-header">Aperçu</div>
                         <div id="previewContent" class="preview-content"></div>
                     </div>
 
                     <div class="product-actions">
-                        <button class="btn btn-primary" onclick="submitProduct()">Add Product</button>
-                        <button class="btn btn-secondary" onclick="toggleProductForm()">Cancel</button>
+                        <button class="btn btn-primary" onclick="submitProduct()">Ajouter le Produit</button>
+                        <button class="btn btn-secondary" onclick="toggleProductForm()">Annuler</button>
                     </div>
                 </div>
 
-                <!-- Products List -->
-                <div id="productsList" class="products-grid"></div>
+                <!-- My Products List - OWNER ONLY -->
+                <div id="myProductsList" class="products-grid"></div>
             </div>
 
             <!-- Welcome Section for Non-Logged In -->
             <div id="welcomeSection">
                 <div class="welcome-section">
-                    <h1 class="welcome-title">🚀 Welcome to Product Manager</h1>
-                    <p class="welcome-subtitle">Please login to manage your products</p>
+                    <h1 class="welcome-title">🚀 Bienvenue dans notre Boutique</h1>
+                    <p class="welcome-subtitle">Connectez-vous pour gérer vos produits</p>
                     <button class="btn btn-primary" onclick="showLoginForm()">
-                        📧 Login with Email
+                        📧 Se Connecter
                     </button>
                 </div>
             </div>
@@ -861,21 +953,21 @@
     <!-- Login Modal -->
     <div id="loginModal" class="modal hidden">
         <div class="modal-content">
-            <h3>Login with Email</h3>
+            <h3>Connexion par Email</h3>
             <div class="form-group">
                 <label class="form-label">Email</label>
                 <input type="email" id="loginEmail" class="form-input" placeholder="joroandriamanirisoa13@gmail.com">
             </div>
             <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="loginPassword" class="form-input" placeholder="Your password">
+                <label class="form-label">Mot de passe</label>
+                <input type="password" id="loginPassword" class="form-input" placeholder="Votre mot de passe">
             </div>
             <div class="form-actions">
-                <button class="btn btn-primary" onclick="loginWithEmail()">Login</button>
-                <button class="btn btn-secondary" onclick="hideLoginForm()">Cancel</button>
+                <button class="btn btn-primary" onclick="loginWithEmail()">Se Connecter</button>
+                <button class="btn btn-secondary" onclick="hideLoginForm()">Annuler</button>
             </div>
             <p class="text-center">
-                Don't have an account? <a href="#" onclick="showSignupForm()">Sign up</a>
+                Pas de compte ? <a href="#" onclick="showSignupForm()">S'inscrire</a>
             </p>
         </div>
     </div>
@@ -883,21 +975,21 @@
     <!-- Signup Modal -->
     <div id="signupModal" class="modal hidden">
         <div class="modal-content">
-            <h3>Create Account</h3>
+            <h3>Créer un Compte</h3>
             <div class="form-group">
                 <label class="form-label">Email</label>
                 <input type="email" id="signupEmail" class="form-input" placeholder="joroandriamanirisoa13@gmail.com">
             </div>
             <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="signupPassword" class="form-input" placeholder="Minimum 6 characters">
+                <label class="form-label">Mot de passe</label>
+                <input type="password" id="signupPassword" class="form-input" placeholder="Minimum 6 caractères">
             </div>
             <div class="form-actions">
-                <button class="btn btn-primary" onclick="signUpWithEmail()">Sign Up</button>
-                <button class="btn btn-secondary" onclick="hideSignupForm()">Cancel</button>
+                <button class="btn btn-primary" onclick="signUpWithEmail()">S'inscrire</button>
+                <button class="btn btn-secondary" onclick="hideSignupForm()">Annuler</button>
             </div>
             <p class="text-center">
-                Already have an account? <a href="#" onclick="showLoginForm()">Login</a>
+                Déjà un compte ? <a href="#" onclick="showLoginForm()">Se connecter</a>
             </p>
         </div>
     </div>
