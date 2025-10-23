@@ -9,6 +9,38 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // State global
 let currentUser = null;
 
+// ==================== STORAGE SETUP ====================
+
+async function setupStorage() {
+    try {
+        // Vérifier si le bucket existe
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        if (error) {
+            console.warn('Cannot list buckets:', error.message);
+            return;
+        }
+
+        const bucketNames = buckets.map(bucket => bucket.name);
+        
+        // Créer bucket 'media' s'il n'existe pas
+        if (!bucketNames.includes('media')) {
+            const { error: createError } = await supabase.storage.createBucket('media', {
+                public: true,
+                fileSizeLimit: 52428800 // 50MB
+            });
+            if (createError) {
+                console.warn('Cannot create bucket:', createError.message);
+                return;
+            }
+            console.log('Bucket "media" created successfully');
+        }
+        
+    } catch (error) {
+        console.warn('Storage setup warning:', error.message);
+        // Continuer malgré l'erreur
+    }
+}
+
 // ==================== MODAL FUNCTIONS ====================
 
 function showLoginForm() {
@@ -220,7 +252,11 @@ async function uploadFile(file, folder = 'product-files') {
             .from('media')
             .upload(filePath, file);
 
-        if (error) throw error;
+        if (error) {
+            // Si bucket n'existe pas, essayer sans spécifier le bucket
+            console.warn('Upload error, trying alternative method:', error.message);
+            throw new Error('Storage bucket not available. Please check Supabase storage configuration.');
+        }
 
         const { data: { publicUrl } } = supabase.storage
             .from('media')
@@ -243,7 +279,7 @@ function validateFile(file, options = {}) {
         throw new Error(`File too large. Maximum size: ${maxSize / 1024 / 1024}MB`);
     }
 
-    if (!allowedTypes.includes(file.type) && file.type !== '') {
+    if (file.type && !allowedTypes.includes(file.type) && file.type !== '') {
         throw new Error('File type not allowed');
     }
 
@@ -262,12 +298,18 @@ function validateProductData(productData) {
         errors.push('Product title is required');
     }
 
-    if (!productData.platform) {
-        errors.push('Platform is required');
-    }
-
     if (!productData.type) {
         errors.push('Product type is required');
+    }
+
+    // Platform required only for App/Jeux
+    if (productData.type === 'app' && !productData.platform) {
+        errors.push('Platform is required for App/Jeux');
+    }
+
+    // Platform optional for other types - set default if empty
+    if (productData.type !== 'app' && !productData.platform) {
+        productData.platform = 'web';
     }
 
     if (productData.price < 0) {
@@ -344,8 +386,13 @@ async function submitProduct() {
                 maxSize: 10 * 1024 * 1024,
                 allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
             });
-            const imageUpload = await uploadFile(imageFile, 'product-images');
-            productData.img_url = imageUpload.url;
+            try {
+                const imageUpload = await uploadFile(imageFile, 'product-images');
+                productData.img_url = imageUpload.url;
+            } catch (uploadError) {
+                console.warn('Image upload failed:', uploadError.message);
+                // Continuer sans image
+            }
         }
 
         // Upload du fichier
@@ -356,10 +403,15 @@ async function submitProduct() {
                 allowedTypes: ['application/zip', 'application/octet-stream', 'application/pdf', 'video/mp4'],
                 allowedExtensions: ['.zip', '.apk', '.ipa', '.pdf', '.mp4']
             });
-            const fileUpload = await uploadFile(productFile, 'product-files');
-            productData.file_url = fileUpload.url;
-            productData.file_size = productFile.size;
-            productData.file_type = productFile.type;
+            try {
+                const fileUpload = await uploadFile(productFile, 'product-files');
+                productData.file_url = fileUpload.url;
+                productData.file_size = productFile.size;
+                productData.file_type = productFile.type;
+            } catch (uploadError) {
+                console.warn('File upload failed:', uploadError.message);
+                // Continuer sans fichier
+            }
         }
 
         // Ajouter le produit
@@ -399,7 +451,7 @@ async function loadUserProducts() {
                     <div>
                         <h3 class="product-title">${escapeHtml(product.title)}</h3>
                         <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                            <span class="product-platform">${product.platform}</span>
+                            ${product.platform && product.platform !== 'web' ? `<span class="product-platform">${product.platform}</span>` : ''}
                             ${product.is_vip ? '<span style="background: gold; color: black; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">⭐ VIP</span>' : ''}
                             ${product.is_free ? '<span style="background: green; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🆓 FREE</span>' : ''}
                             ${product.type === 'promotion' ? '<span style="background: orange; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🔥 PROMO</span>' : ''}
@@ -418,6 +470,7 @@ async function loadUserProducts() {
                 
                 <div class="product-meta">
                     ${product.type ? `<p><strong>Type:</strong> ${product.type}</p>` : ''}
+                    ${product.platform && product.platform !== 'web' ? `<p><strong>Platform:</strong> ${product.platform}</p>` : ''}
                     ${product.version ? `<p><strong>Version:</strong> ${product.version}</p>` : ''}
                     ${product.build_number ? `<p><strong>Build:</strong> ${product.build_number}</p>` : ''}
                     ${product.file_size ? `<p><strong>Size:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
@@ -591,6 +644,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
+    setupStorage(); // Setup storage buckets
     setupFilePreviews();
     setupDragAndDrop();
     
