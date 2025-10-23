@@ -1,999 +1,234 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product Shop</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- PDF.js pour la prévisualisation PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+  <title>Mijoro Boutique — Version Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="style.css">
+
+  <noscript>
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --secondary-color: #64748b;
-            --background-color: #ffffff;
-            --surface-color: #f8fafc;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --border-color: #e2e8f0;
-            --success-color: #10b981;
-            --error-color: #ef4444;
-            --warning-color: #f59e0b;
-            --vip-color: #f59e0b;
-            --free-color: #10b981;
-            --premium-color: #8b5cf6;
-            --shadow: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: var(--text-primary);
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Header & Auth */
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 1rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: var(--shadow);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .auth-section {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            justify-content: flex-end;
-            padding: 1rem 0;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        /* Navigation Tabs */
-        .tabs {
-            display: flex;
-            background: white;
-            border-radius: 12px;
-            padding: 0.5rem;
-            margin: 2rem 0;
-            box-shadow: var(--shadow);
-        }
-
-        .tab {
-            flex: 1;
-            padding: 1rem 2rem;
-            text-align: center;
-            background: transparent;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .tab.active {
-            background: var(--primary-color);
-            color: white;
-            box-shadow: var(--shadow);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.95rem;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);
-        }
-
-        .btn-primary:hover {
-            background: #1d4ed8;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        .btn-secondary {
-            background: var(--surface-color);
-            color: var(--text-primary);
-            border: 2px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: #e2e8f0;
-            transform: translateY(-1px);
-        }
-
-        .btn-danger {
-            background: var(--error-color);
-            color: white;
-            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.2);
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-            transform: translateY(-1px);
-        }
-
-        .btn-success {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #059669;
-        }
-
-        /* Main Content */
-        .main-content {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
-            margin: 2rem auto;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        /* Product Form - OWNER ONLY */
-        .product-form {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            margin: 2rem 0;
-            border: 1px solid var(--border-color);
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-label {
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 0.95rem;
-        }
-
-        .form-input, .form-select, .form-textarea {
-            padding: 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-            transform: translateY(-1px);
-        }
-
-        .form-textarea {
-            min-height: 120px;
-            resize: vertical;
-            font-family: inherit;
-        }
-
-        /* Checkbox Styles */
-        .form-checkbox {
-            width: 18px;
-            height: 18px;
-            margin-right: 0.5rem;
-            accent-color: var(--primary-color);
-        }
-
-        .form-group label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Products Grid */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 2rem;
-            margin: 2rem 0;
-        }
-
-        .product-card {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 0;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .product-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--primary-color), var(--success-color), var(--vip-color));
-            background-size: 200% 100%;
-            animation: gradientShift 3s ease infinite;
-        }
-
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        .product-card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
-        }
-
-        .product-card-content {
-            padding: 2rem;
-        }
-
-        .product-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.5rem;
-        }
-
-        .product-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            line-height: 1.3;
-            background: linear-gradient(135deg, var(--text-primary), var(--primary-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .product-price {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--primary-color);
-            text-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
-        }
-
-        /* Badges Stylés avec Icônes */
-        .badges-container {
-            display: flex;
-            gap: 0.5rem;
-            margin: 1rem 0;
-            flex-wrap: wrap;
-        }
-
-        .badge {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-        }
-
-        .badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .badge-vip {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
-        }
-
-        .badge-free {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-        }
-
-        .badge-premium {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: white;
-        }
-
-        .badge-promo {
-            background: linear-gradient(135deg, #f97316, #ea580c);
-            color: white;
-        }
-
-        .badge-ebook {
-            background: linear-gradient(135deg, #a855f7, #9333ea);
-            color: white;
-        }
-
-        .badge-video {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: white;
-        }
-
-        .badge-app {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-        }
-
-        .badge-platform {
-            background: var(--surface-color);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .product-meta {
-            margin: 1.5rem 0;
-            padding: 1.5rem;
-            background: var(--surface-color);
-            border-radius: 16px;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .product-meta p {
-            margin: 0.5rem 0;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .product-actions {
-            display: flex;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        /* Preview Sections */
-        .preview-section {
-            margin-top: 1.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .preview-header {
-            background: var(--surface-color);
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            font-weight: 600;
-        }
-
-        .preview-content {
-            padding: 1rem;
-            max-height: 400px;
-            overflow: auto;
-        }
-
-        .pdf-preview, .video-preview {
-            width: 100%;
-            border-radius: 8px;
-        }
-
-        .video-preview {
-            max-height: 300px;
-        }
-
-        /* File Upload */
-        .file-upload {
-            border: 3px dashed var(--border-color);
-            border-radius: 16px;
-            padding: 2.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background: var(--surface-color);
-        }
-
-        .file-upload:hover {
-            border-color: var(--primary-color);
-            background: rgba(37, 99, 235, 0.05);
-            transform: scale(1.02);
-        }
-
-        .file-upload.dragover {
-            border-color: var(--primary-color);
-            background: rgba(37, 99, 235, 0.1);
-            transform: scale(1.02);
-        }
-
-        .upload-preview {
-            margin-top: 1.5rem;
-            text-align: center;
-        }
-
-        .preview-image {
-            max-width: 250px;
-            max-height: 200px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        /* Welcome Section */
-        .welcome-section {
-            text-align: center;
-            padding: 4rem 2rem;
-            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            margin: 2rem 0;
-        }
-
-        .welcome-title {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary-color), #7c3aed);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-        }
-
-        .welcome-subtitle {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-        }
-
-        /* Utility Classes */
-        .hidden {
-            display: none !important;
-        }
-
-        .text-sm {
-            font-size: 0.875rem;
-        }
-
-        .text-lg {
-            font-size: 1.125rem;
-        }
-
-        .text-xl {
-            font-size: 1.25rem;
-        }
-
-        .font-semibold {
-            font-weight: 600;
-        }
-
-        .font-bold {
-            font-weight: 700;
-        }
-
-        .mb-4 {
-            margin-bottom: 1rem;
-        }
-
-        .mt-4 {
-            margin-top: 1rem;
-        }
-
-        .mb-8 {
-            margin-bottom: 2rem;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-success {
-            color: var(--success-color);
-        }
-
-        .text-error {
-            color: var(--error-color);
-        }
-
-        /* Alert Messages */
-        .alert {
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            margin: 1rem 0;
-            font-weight: 500;
-        }
-
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--success-color);
-            color: var(--success-color);
-        }
-
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--error-color);
-            color: var(--error-color);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .tabs {
-                flex-direction: column;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .products-grid {
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-
-            .auth-section {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 1rem;
-            }
-
-            .product-header {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .product-actions {
-                flex-direction: column;
-            }
-
-            .welcome-title {
-                font-size: 2rem;
-            }
-
-            .main-content {
-                padding: 1.5rem;
-                margin: 1rem auto;
-            }
-
-            .product-form {
-                padding: 1.5rem;
-            }
-
-            .product-card-content {
-                padding: 1.5rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0.5rem;
-            }
-
-            .btn {
-                padding: 0.6rem 1.2rem;
-                font-size: 0.9rem;
-            }
-
-            .file-upload {
-                padding: 1.5rem;
-            }
-        }
-
-        /* ==================== MODAL STYLES ==================== */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 450px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            animation: modalSlideIn 0.3s ease-out;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal h3 {
-            margin-bottom: 1.5rem;
-            text-align: center;
-            color: var(--text-primary);
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .modal .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .modal .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .modal .form-input {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .modal .form-input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-            transform: translateY(-1px);
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .form-actions .btn {
-            flex: 1;
-            justify-content: center;
-        }
-
-        .modal .text-center {
-            text-align: center;
-            margin-top: 1.5rem;
-        }
-
-        .modal a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .modal a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 480px) {
-            .modal {
-                padding: 10px;
-            }
-            
-            .modal-content {
-                padding: 2rem 1.5rem;
-            }
-            
-            .form-actions {
-                flex-direction: column;
-            }
-        }
+      #loader{ display:none !important; }
+      .bottom-menu{ display:flex !important; }
+      section{ display:block !important; }
     </style>
+  </noscript>
 </head>
-<body>
-    <div class="header">
-        <div class="container">
-            <div class="auth-section">
-                <div id="userInfo" class="user-info"></div>
-                <button id="loginBtn" class="btn btn-primary" onclick="showLoginForm()">
-                    📧 Login with Email
-                </button>
-                <button id="logoutBtn" class="btn btn-secondary hidden" onclick="signOut()">
-                    🚪 Logout
-                </button>
-            </div>
+<body aria-busy="true">
+  <!-- Loader -->
+  <div id="loader" aria-hidden="false" role="status" aria-label="Chargement">
+    <img class="loader-logo" src="https://i.ibb.co/p6CWgYWd/Logo.png" alt="Logo Mijoro" width="92" height="92" decoding="async">
+    <div class="loader-text">Mijoro</div>
+  </div>
+
+  <!-- Sections: Home -->
+  <section id="home" class="active" aria-label="Accueil" aria-hidden="false">
+    <div class="slideshow" aria-label="Promotion">
+      <div class="slide-track" id="slide-track">
+        <!-- Add your slides here -->
+        <div class="slide">
+          <a href="#"><img src="https://i.ibb.co/DP1xT5Ky/8b7e15f5dd5dd2290ac52af728cc12c3.jpg" alt="Offre promo 1"></a>
         </div>
-    </div>
-
-    <div class="container">
-        <div class="main-content">
-            <!-- Navigation Tabs (Visible when logged in) -->
-            <div id="tabsSection" class="tabs hidden">
-                <button class="tab active" onclick="switchTab('shop')">🛍️ Boutique</button>
-                <button class="tab" onclick="switchTab('myProducts')">📦 Mes Produits</button>
-            </div>
-
-            <!-- Shop Tab - VISIBLE TO ALL -->
-            <div id="shopTab" class="tab-content active">
-                <div class="text-center mb-8">
-                    <h1 class="welcome-title">🛍️ Notre Boutique</h1>
-                    <p class="welcome-subtitle">Découvrez tous nos produits disponibles</p>
-                </div>
-
-                <!-- Search and Filters -->
-                <div class="filters-section" style="margin-bottom: 2rem;">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <input type="text" id="searchInput" class="form-input" placeholder="🔍 Rechercher un produit..." onkeyup="filterProducts()">
-                        </div>
-                        <div class="form-group">
-                            <select id="typeFilter" class="form-select" onchange="filterProducts()">
-                                <option value="">Tous les types</option>
-                                <option value="ebook">eBook</option>
-                                <option value="video">Video</option>
-                                <option value="app">App/Jeux</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <select id="platformFilter" class="form-select" onchange="filterProducts()">
-                                <option value="">Toutes les plateformes</option>
-                                <option value="android">Android</option>
-                                <option value="ios">iOS</option>
-                                <option value="windows">Windows</option>
-                                <option value="mac">Mac</option>
-                                <option value="web">Web</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Products List - VISIBLE TO ALL -->
-                <div id="shopProductsList" class="products-grid"></div>
-            </div>
-
-            <!-- My Products Tab - OWNER ONLY -->
-            <div id="myProductsTab" class="tab-content">
-                <div class="text-center mb-8">
-                    <h1 class="welcome-title">📦 Mes Produits</h1>
-                    <p class="welcome-subtitle">Gérez vos produits et téléchargements</p>
-                </div>
-
-                <button class="btn btn-primary mb-4" onclick="toggleProductForm()">
-                    ➕ Ajouter un Produit
-                </button>
-
-                <!-- Product Form - OWNER ONLY -->
-                <div id="productForm" class="product-form hidden">
-                    <h2 class="mb-4">Ajouter un Nouveau Produit</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Titre du Produit *</label>
-                            <input type="text" id="productTitle" class="form-input" placeholder="Entrez le titre du produit" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Type *</label>
-                            <select id="productType" class="form-select" required>
-                                <option value="">Sélectionnez le type</option>
-                                <option value="ebook">eBook</option>
-                                <option value="video">Video</option>
-                                <option value="app">App/Jeux</option>
-                                <option value="gratuit">Gratuit</option>
-                                <option value="promotion">Promotion</option>
-                                <option value="vip">VIP</option>
-                                <option value="payant">Payant</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Prix ($)</label>
-                            <input type="number" id="productPrice" class="form-input" placeholder="0.00" step="0.01" min="0" value="0">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Plateforme <span class="text-sm text-secondary">(Requis pour App/Jeux seulement)</span></label>
-                            <select id="productPlatform" class="form-select">
-                                <option value="">Sélectionnez la plateforme (Optionnel pour eBook/Video)</option>
-                                <option value="android">Android</option>
-                                <option value="ios">iOS</option>
-                                <option value="windows">Windows</option>
-                                <option value="mac">Mac OS</option>
-                                <option value="web">Web</option>
-                                <option value="multi">Multi-platforme</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Version</label>
-                            <input type="text" id="productVersion" class="form-input" placeholder="1.0.0">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Numéro de Build</label>
-                            <input type="text" id="productBuildNumber" class="form-input" placeholder="12345">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Prix Promo ($)</label>
-                            <input type="number" id="productPromoPrice" class="form-input" placeholder="0.00" step="0.01" min="0">
-                        </div>
-
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="productIsVip" class="form-checkbox"> 
-                                Produit VIP
-                            </label>
-                        </div>
-
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="productIsFree" class="form-checkbox"> 
-                                Produit Gratuit
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea id="productDescription" class="form-textarea" placeholder="Décrivez votre produit..."></textarea>
-                    </div>
-
-                    <!-- File Upload Section -->
-                    <div class="form-group">
-                        <label class="form-label">Image du Produit</label>
-                        <div class="file-upload" onclick="document.getElementById('productImage').click()">
-                            <p>📁 Cliquez pour uploader une image ou glissez-déposez</p>
-                            <p class="text-sm">PNG, JPG, GIF, WEBP jusqu'à 500MB</p>
-                            <input type="file" id="productImage" class="hidden" accept="image/*">
-                        </div>
-                        <div id="imagePreview" class="upload-preview hidden"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Fichier du Produit</label>
-                        <div class="file-upload" onclick="document.getElementById('productFile').click()">
-                            <p>📦 Cliquez pour uploader un fichier ou glissez-déposez</p>
-                            <p class="text-sm">ZIP, APK, IPA, EXE, ISO, PDF, MP4, MP3, AVI jusqu'à 500MB</p>
-                            <input type="file" id="productFile" class="hidden" accept=".zip,.apk,.ipa,.exe,.iso,.pdf,.mp4,.mp3,.avi,.mkv,.mov,.wmv">
-                        </div>
-                        <div id="filePreview" class="upload-preview"></div>
-                    </div>
-
-                    <!-- Preview Section -->
-                    <div id="previewSection" class="preview-section hidden">
-                        <div class="preview-header">Aperçu</div>
-                        <div id="previewContent" class="preview-content"></div>
-                    </div>
-
-                    <div class="product-actions">
-                        <button class="btn btn-primary" onclick="submitProduct()">Ajouter le Produit</button>
-                        <button class="btn btn-secondary" onclick="toggleProductForm()">Annuler</button>
-                    </div>
-                </div>
-
-                <!-- My Products List - OWNER ONLY -->
-                <div id="myProductsList" class="products-grid"></div>
-            </div>
-
-            <!-- Welcome Section for Non-Logged In -->
-            <div id="welcomeSection">
-                <div class="welcome-section">
-                    <h1 class="welcome-title">🚀 Bienvenue dans notre Boutique</h1>
-                    <p class="welcome-subtitle">Connectez-vous pour gérer vos produits</p>
-                    <button class="btn btn-primary" onclick="showLoginForm()">
-                        📧 Se Connecter
-                    </button>
-                </div>
-            </div>
+        <div class="slide">
+          <a href="#"><img src="https://i.ibb.co/B5vcHVZX/ddce6f18e3cdf72f038584cdb034bbd0.jpg" alt="Offre promo 2"></a>
         </div>
+        <!-- ... More slides ... -->
+      </div>
+      <div class="slide-dots" id="slide-dots" aria-hidden="true"></div>
     </div>
+    <h1 id="home-title" data-i18n="home_title">Tongasoa ATO amin'ny boutique anay!</h1>
+    <p id="home-sub" data-i18n="home_sub">Découvre des eBooks, vidéos et apps/jeux pour t’aider à réussir en ligne.</p>
+  </section>
 
-    <!-- Login Modal -->
-    <div id="loginModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Connexion par Email</h3>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" id="loginEmail" class="form-input" placeholder="joroandriamanirisoa13@gmail.com">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Mot de passe</label>
-                <input type="password" id="loginPassword" class="form-input" placeholder="Votre mot de passe">
-            </div>
-            <div class="form-actions">
-                <button class="btn btn-primary" onclick="loginWithEmail()">Se Connecter</button>
-                <button class="btn btn-secondary" onclick="hideLoginForm()">Annuler</button>
-            </div>
-            <p class="text-center">
-                Pas de compte ? <a href="#" onclick="showSignupForm()">S'inscrire</a>
-            </p>
-        </div>
+  <!-- Shop section -->
+  <section id="shop" aria-label="Boutique - Produits numériques" aria-hidden="true">
+    <h2>Nos Produits Numériques</h2>
+    <div class="filters" id="shop-filters" role="toolbar" aria-label="Filtrer les produits">
+      <button type="button" class="filter-btn active" data-filter="all" data-i18n="filter_all">Tous</button>
+      <button type="button" class="filter-btn" data-filter="ebooks" data-i18n="filter_ebooks">Ebooks</button>
+      <button type="button" class="filter-btn" data-filter="videos" data-i18n="filter_videos">Vidéos</button>
+      <button type="button" class="filter-btn" data-filter="vip" data-i18n="filter_vip">VIP</button>
+      <button type="button" class="filter-btn" data-filter="promo" data-i18n="filter_promo">Promo</button>
+      <button type="button" class="filter-btn" data-filter="free" data-i18n="filter_free">Gratuit</button>
     </div>
-
-    <!-- Signup Modal -->
-    <div id="signupModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Créer un Compte</h3>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" id="signupEmail" class="form-input" placeholder="joroandriamanirisoa13@gmail.com">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Mot de passe</label>
-                <input type="password" id="signupPassword" class="form-input" placeholder="Minimum 6 caractères">
-            </div>
-            <div class="form-actions">
-                <button class="btn btn-primary" onclick="signUpWithEmail()">S'inscrire</button>
-                <button class="btn btn-secondary" onclick="hideSignupForm()">Annuler</button>
-            </div>
-            <p class="text-center">
-                Déjà un compte ? <a href="#" onclick="showLoginForm()">Se connecter</a>
-            </p>
-        </div>
+    <div class="products-section" aria-live="polite">
+      <div id="products-row" class="products-row" role="list" aria-label="Liste des produits — défilement vertical"></div>
     </div>
+  </section>
 
-    <script src="app-secure.js"></script>
+  <!-- Shop popup (overlay) -->
+  <div id="shop-popup" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1">
+    <button type="button" class="close-popup" aria-label="Fermer" onclick="closeShop()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="filters" id="filters" role="toolbar" aria-label="Filtres Produits (popup)">
+      <button type="button" class="filter-btn active" data-category="ebooks" data-i18n="filter_ebooks">eBooks</button>
+      <button type="button" class="filter-btn" data-category="apps" data-i18n="filter_vip">Apps/Jeux</button>
+      <button type="button" class="filter-btn" data-category="videos" data-i18n="filter_videos">Vidéos</button>
+    </div>
+    <div class="search">
+      <label for="search" class="sr-only">Recherche produits</label>
+      <input id="search" placeholder="Rechercher..." aria-label="Recherche produits"
+       data-i18n="search_placeholder" data-i18n-placeholder autocomplete="off" inputmode="search">
+    </div>
+    <div id="products-box" aria-live="polite"></div>
+    <div class="pagination" id="pagination" role="navigation" aria-label="Pagination"></div>
+  </div>
+
+  <!-- Cart panel + drawer -->
+  <div id="cart-panel" aria-live="polite">
+    <button id="cart-toggle" title="Voir le panier" aria-label="Voir le panier"><i class="fa-solid fa-basket-shopping"></i></button>
+    <button type="button" title="Vider le panier" onclick="clearCart()" aria-label="Vider le panier"><i class="fa-solid fa-trash"></i></button>
+    <div>
+      <span data-i18n="cart_label">Cart</span>: <strong id="cart-count">0</strong> •
+      <span data-i18n="cart_total">Total</span>: <strong id="cart-total">0 AR</strong>
+    </div>
+  </div>
+  <div id="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+    <div id="cart-list"></div>
+    <div class="cart-footer">
+      <div>Total: <strong id="cart-total-drawer">0 AR</strong></div>
+      <div style="display:flex; gap:8px;">
+        <button type="button" class="param-btn" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Vider</button>
+        <button type="button" class="param-btn" onclick="checkoutWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Commander</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom menu -->
+  <div class="bottom-menu" role="navigation" aria-label="Menu bas">
+    <button type="button" class="menu-btn menu-home active" onclick="showSection('home', this)"><i class="fa-solid fa-house"></i><span>Home</span></button>
+    <button type="button" class="menu-btn menu-shop" onclick="showSection('shop', this)"><i class="fa-solid fa-store"></i><span>Shop</span></button>
+    <button type="button" class="menu-btn menu-param" onclick="toggleParamFixed()"><i class="fa-solid fa-gear"></i><span>Paramètre</span></button>
+  </div>
+
+  <!-- Param fixed (right) -->
+  <aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="https://i.ibb.co/zTvNMMQd/743c16d58accff74c1c37793816bd25f.jpg" alt="param" style="width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,.06)">
+      <div>
+        <h4 style="margin-bottom:4px" data-i18n="param_settings">Paramètres</h4>
+        <small style="color:#ddd">Personnalisez votre expérience</small>
+      </div>
+    </div>
+    <!-- Langue -->
+    <div>
+      <h4 data-i18n="param_language">Langue</h4>
+      <div class="option-grid" id="lang-options">
+        <button type="button" class="option-card" data-lang="mg" onclick="selectLang('mg')">
+          <div class="option-icon icon-mg">🇲🇬</div>
+          <div class="option-texts">
+            <div class="option-title">Malagasy</div>
+            <div class="option-sub">Lazao amin’ny fiteny gasy</div>
+          </div>
+        </button>
+        <button type="button" class="option-card" data-lang="fr" onclick="selectLang('fr')">
+          <div class="option-icon icon-fr">🇫🇷</div>
+          <div class="option-texts">
+            <div class="option-title">Français</div>
+            <div class="option-sub">Interface en français</div>
+          </div>
+        </button>
+        <button type="button" class="option-card" data-lang="en" onclick="selectLang('en')">
+          <div class="option-icon icon-en">🇬🇧</div>
+          <div class="option-texts">
+            <div class="option-title">English</div>
+            <div class="option-sub">English interface</div>
+          </div>
+        </button>
+      </div>
+    </div>
+    <!-- Thème -->
+    <div>
+      <h4 data-i18n="param_theme">Thème</h4>
+      <div class="option-grid" id="theme-options">
+        <button type="button" class="option-card" data-theme="dark" onclick="selectTheme('dark')">
+          <div class="option-icon icon-dark"><i class="fa-solid fa-moon"></i></div>
+          <div class="option-texts">
+            <div class="option-title">Sombre</div>
+            <div class="option-sub">Recommandé (défaut)</div>
+          </div>
+        </button>
+        <button type="button" class="option-card" data-theme="light" onclick="selectTheme('light')">
+          <div class="option-icon icon-light"><i class="fa-solid fa-sun"></i></div>
+          <div class="option-texts">
+            <div class="option-title">Clair</div>
+            <div class="option-sub">Plus lumineux</div>
+          </div>
+        </button>
+        <!-- Rose/Jaune/Marron will be injected by app.js -->
+      </div>
+    </div>
+    <div class="row" style="justify-content:space-between; margin-top:8px;">
+      <button type="button" class="param-btn" onclick="openInfo('about')" data-i18n="about">À propos</button>
+      <button type="button" class="param-btn" onclick="openInfo('contact')" data-i18n="contact">Contact</button>
+      <button type="button" class="param-btn" onclick="openQuitModal()" data-i18n="quit">Quit</button>
+    </div>
+  </aside>
+
+  <!-- Quit modal -->
+  <div id="quit-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="quit-title">
+    <div class="modal-card" role="document">
+      <h3 id="quit-title">Voulez-vous quitter l’application ?</h3>
+      <p style="margin:8px 0 12px">Tsy ho very ny angon-drakitrao.</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:8px">
+        <button type="button" class="param-btn" onclick="closeQuitModal()">Annuler</button>
+        <button type="button" class="param-btn" style="background:#ef4444;border-color:#ef4444" onclick="quitApp()">Quitter</button>
+      </div>
+    </div>
+  </div>
+  <!-- Info modal -->
+  <div id="info-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="info-title">
+    <div class="info-card" role="document">
+      <h3 id="info-title">Informations</h3>
+      <div id="info-content"></div>
+      <div class="info-actions">
+        <button type="button" class="param-btn" onclick="closeInfo()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader Guard + iOS VH patch -->
+  <script>
+  (function(){
+    var MAX_WAIT_MS = 8000, SOFT_WAIT_MS = 400;
+    function qs(s){ return document.querySelector(s); }
+    function hideLoader(){
+      var l = qs('#loader'); if(!l) return;
+      l.classList.add('fade-out');
+      l.setAttribute('aria-hidden','true');
+      l.style.pointerEvents = 'none';
+      setTimeout(function(){ l.style.display = 'none'; }, 500);
+    }
+    function revealBaseUI(){
+      try {
+        document.body.setAttribute('aria-busy','false');
+        var home = document.getElementById('home');
+        if (home){ home.classList.add('active'); home.setAttribute('aria-hidden','false'); }
+        var bm = qs('.bottom-menu');
+        if (bm){ bm.style.display = 'flex'; bm.style.pointerEvents = 'auto'; }
+      } catch(_) {}
+    }
+    function onReady(cb){
+      if (document.readyState === 'complete' || document.readyState === 'interactive') cb();
+      else document.addEventListener('DOMContentLoaded', cb, { once: true });
+    }
+    onReady(function(){
+      setTimeout(revealBaseUI, SOFT_WAIT_MS);
+      setTimeout(function(){ hideLoader(); revealBaseUI(); }, MAX_WAIT_MS);
+    });
+  })();
+  </script>
+  <script>
+  (function(){
+    function setVH(){ var vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', vh + 'px'); }
+    window.addEventListener('resize', setVH);
+    window.addEventListener('orientationchange', setVH);
+    setVH();
+  })();
+  </script>
+  <script src="app.js" defer></script>
 </body>
 </html>

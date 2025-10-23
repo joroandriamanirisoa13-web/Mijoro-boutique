@@ -1,996 +1,1246 @@
-// shop/app-secure.js
-// Configuration Supabase
-const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
-
-// Initialiser Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// State global
-let currentUser = null;
-let allProducts = [];
-
-// ==================== STORAGE SETUP ====================
-
-async function setupStorage() {
-    try {
-        const { data: buckets, error } = await supabase.storage.listBuckets();
-        if (error) {
-            console.warn('Cannot list buckets:', error.message);
-            return;
-        }
-
-        const bucketNames = buckets.map(bucket => bucket.name);
-        console.log('Available buckets:', bucketNames);
-        
-        const targetBucket = 'Media';
-        
-        if (!bucketNames.includes(targetBucket)) {
-            const { error: createError } = await supabase.storage.createBucket(targetBucket, {
-                public: true,
-                fileSizeLimit: 524288000
-            });
-            if (createError) {
-                console.warn('Cannot create bucket:', createError.message);
-                return;
-            }
-            console.log('Bucket "Media" created successfully');
-        } else {
-            console.log('Bucket "Media" already exists');
-        }
-        
-    } catch (error) {
-        console.warn('Storage setup warning:', error.message);
-    }
-}
-
-// ==================== PRÉVISUALISATION AVANCÉE ====================
-
-async function setupPdfPreview(file) {
-    return new Promise((resolve) => {
-        const fileReader = new FileReader();
-        fileReader.onload = function() {
-            const typedarray = new Uint8Array(this.result);
-            
-            pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                pdf.getPage(1).then(function(page) {
-                    const viewport = page.getViewport({ scale: 1.5 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: viewport
-                    };
-
-                    page.render(renderContext).promise.then(function() {
-                        resolve(canvas.toDataURL());
-                    });
-                });
-            });
-        };
-        fileReader.readAsArrayBuffer(file);
-    });
-}
-
-function setupVideoPreview(file) {
-    return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(file);
-        video.controls = true;
-        video.style.width = '100%';
-        video.style.maxHeight = '300px';
-        video.addEventListener('loadeddata', () => {
-            resolve(video);
-        });
-    });
-}
-
-async function handleFilePreview(file) {
-    const previewSection = document.getElementById('previewSection');
-    const previewContent = document.getElementById('previewContent');
-    
-    previewSection.classList.remove('hidden');
-    previewContent.innerHTML = '<div class="text-center">Chargement de l\'aperçu...</div>';
-
-    try {
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                previewContent.innerHTML = `
-                    <img src="${e.target.result}" style="max-width: 100%; border-radius: 8px;" alt="Preview">
-                    <p class="text-center mt-2">${file.name}</p>
-                `;
-            };
-            reader.readAsDataURL(file);
-        }
-        else if (file.type === 'application/pdf') {
-            const previewData = await setupPdfPreview(file);
-            previewContent.innerHTML = `
-                <img src="${previewData}" style="max-width: 100%; border-radius: 8px;" alt="PDF Preview">
-                <p class="text-center mt-2">${file.name} (Aperçu PDF - Page 1)</p>
-            `;
-        }
-        else if (file.type.startsWith('video/')) {
-            const videoElement = await setupVideoPreview(file);
-            previewContent.innerHTML = '';
-            previewContent.appendChild(videoElement);
-            const info = document.createElement('p');
-            info.className = 'text-center mt-2';
-            info.textContent = `${file.name}`;
-            previewContent.appendChild(info);
-        }
-        else if (file.type.startsWith('audio/')) {
-            const audio = document.createElement('audio');
-            audio.src = URL.createObjectURL(file);
-            audio.controls = true;
-            audio.style.width = '100%';
-            previewContent.innerHTML = '';
-            previewContent.appendChild(audio);
-            const info = document.createElement('p');
-            info.className = 'text-center mt-2';
-            info.textContent = `${file.name}`;
-            previewContent.appendChild(info);
-        }
-        else {
-            previewContent.innerHTML = `
-                <div class="text-center">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
-                    <p><strong>Fichier:</strong> ${file.name}</p>
-                    <p><strong>Type:</strong> ${file.type || 'Inconnu'}</p>
-                    <p><strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Preview error:', error);
-        previewContent.innerHTML = `
-            <div class="text-center text-error">
-                <p>Impossible de générer l'aperçu pour ce type de fichier</p>
-                <p><strong>Fichier:</strong> ${file.name}</p>
-            </div>
-        `;
-    }
-}
-
-// ==================== NAVIGATION ====================
-
-function switchTab(tabName) {
-    // Désactiver tous les tabs
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    // Activer le tab sélectionné
-    document.querySelector(`.tab:nth-child(${tabName === 'shop' ? 1 : 2})`).classList.add('active');
-    document.getElementById(tabName === 'shop' ? 'shopTab' : 'myProductsTab').classList.add('active');
-    
-    // Charger les données si nécessaire
-    if (tabName === 'shop') {
-        loadShopProducts();
-    } else if (tabName === 'myProducts') {
-        loadUserProducts();
-    }
-}
-
-// ==================== FILTRES BOUTIQUE ====================
-
-function filterProducts() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const typeFilter = document.getElementById('typeFilter').value;
-    const platformFilter = document.getElementById('platformFilter').value;
-    
-    const filteredProducts = allProducts.filter(product => {
-        const matchesSearch = product.title.toLowerCase().includes(searchTerm) || 
-                            (product.description && product.description.toLowerCase().includes(searchTerm));
-        const matchesType = !typeFilter || product.type === typeFilter;
-        const matchesPlatform = !platformFilter || product.platform === platformFilter;
-        
-        return matchesSearch && matchesType && matchesPlatform;
-    });
-    
-    renderShopProducts(filteredProducts);
-}
-
-// ==================== MODAL FUNCTIONS ====================
-
-function showLoginForm() {
-    document.getElementById('loginModal').classList.remove('hidden');
-    document.getElementById('signupModal').classList.add('hidden');
-}
-
-function hideLoginForm() {
-    document.getElementById('loginModal').classList.add('hidden');
-}
-
-function showSignupForm() {
-    document.getElementById('signupModal').classList.remove('hidden');
-    document.getElementById('loginModal').classList.add('hidden');
-}
-
-function hideSignupForm() {
-    document.getElementById('signupModal').classList.add('hidden');
-}
-
-// ==================== AUTHENTICATION EMAIL ====================
-
-async function loginWithEmail() {
-    try {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-
-        if (!email || !password) {
-            throw new Error('Veuillez entrer email et mot de passe');
-        }
-
-        showLoading('Connexion...');
-
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-
-        if (error) throw error;
-
-        hideLoginForm();
-        showAlert('Connexion réussie!', 'success');
-
-    } catch (error) {
-        showAlert('Échec connexion: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function signUpWithEmail() {
-    try {
-        const email = document.getElementById('signupEmail').value.trim();
-        const password = document.getElementById('signupPassword').value;
-
-        if (!email || !password) {
-            throw new Error('Veuillez entrer email et mot de passe');
-        }
-
-        if (password.length < 6) {
-            throw new Error('Le mot de passe doit faire au moins 6 caractères');
-        }
-
-        showLoading('Création du compte...');
-
-        const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                emailRedirectTo: window.location.origin
-            }
-        });
-
-        if (error) throw error;
-
-        hideSignupForm();
-        
-        if (data.user && !data.user.identities?.length) {
-            showAlert('Compte créé! Vérifiez votre email pour confirmer.', 'success');
-        } else {
-            showAlert('Compte créé avec succès! Vous pouvez maintenant vous connecter.', 'success');
-        }
-
-    } catch (error) {
-        showAlert('Échec inscription: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function signOut() {
-    try {
-        showLoading('Déconnexion...');
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        showAlert('Déconnexion réussie', 'success');
-    } catch (error) {
-        showAlert('Échec déconnexion: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
-}
-
-async function getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) {
-        console.error('Error getting user:', error);
-        return null;
-    }
-    return user;
-}
-
-// ==================== PRODUCT MANAGEMENT ====================
-
-async function addProduct(productData) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Non authentifié');
-
-    const { data, error } = await supabase
-        .from('products')
-        .insert([
-            {
-                ...productData,
-                owner_id: user.id,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }
-        ])
-        .select();
-
-    if (error) throw error;
-    return data;
-}
-
-async function getUserProducts() {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Non authentifié');
-
-    const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('owner_id', user.id)
-        .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
-}
-
-async function getAllProducts() {
-    const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error loading all products:', error);
-        return [];
-    }
-    return data;
-}
-
-async function updateProduct(productId, updates) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Non authentifié');
-
-    const { data: product } = await supabase
-        .from('products')
-        .select('owner_id')
-        .eq('id', productId)
-        .single();
-
-    if (!product || product.owner_id !== user.id) {
-        throw new Error('Non autorisé à modifier ce produit');
-    }
-
-    const { data, error } = await supabase
-        .from('products')
-        .update({
-            ...updates,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', productId)
-        .select();
-
-    if (error) throw error;
-    return data;
-}
-
-async function deleteProduct(productId) {
-    const user = await getCurrentUser();
-    if (!user) throw new Error('Non authentifié');
-
-    const { data: product } = await supabase
-        .from('products')
-        .select('owner_id')
-        .eq('id', productId)
-        .single();
-
-    if (!product || product.owner_id !== user.id) {
-        throw new Error('Non autorisé à supprimer ce produit');
-    }
-
-    const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-
-    if (error) throw error;
-}
-
-// ==================== FILE UPLOAD ====================
-
-async function uploadFile(file, folder = 'product-files') {
-    try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-        const filePath = `${folder}/${fileName}`;
-
-        const { data, error } = await supabase.storage
-            .from('Media')
-            .upload(filePath, file);
-
-        if (error) throw error;
-
-        const { data: { publicUrl } } = supabase.storage
-            .from('Media')
-            .getPublicUrl(filePath);
-
-        return { path: filePath, url: publicUrl };
-    } catch (error) {
-        throw new Error(`Upload failed: ${error.message}`);
-    }
-}
-
-function validateFile(file, options = {}) {
-    const {
-        maxSize = 500 * 1024 * 1024,
-        allowedTypes = [
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'application/pdf', 'application/zip', 
-            'video/mp4', 'video/avi', 'video/mkv', 'video/mov', 'video/wmv',
-            'audio/mp3', 'audio/wav', 'audio/m4a',
-            'application/vnd.android.package-archive',
-            'application/octet-stream'
-        ],
-        allowedExtensions = [
-            '.jpg', '.jpeg', '.png', '.gif', '.webp',
-            '.pdf', '.zip', '.rar', '.7z',
-            '.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv',
-            '.mp3', '.wav', '.m4a', '.flac',
-            '.apk', '.ipa', '.exe', '.iso', '.dmg'
-        ]
-    } = options;
-
-    if (file.size > maxSize) {
-        throw new Error(`Fichier trop volumineux. Taille max: ${maxSize / 1024 / 1024}MB`);
-    }
-
-    if (file.type && !allowedTypes.includes(file.type) && file.type !== '') {
-        throw new Error('Type de fichier non autorisé');
-    }
-
-    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-    if (!allowedExtensions.includes(fileExtension)) {
-        throw new Error('Extension de fichier non autorisée');
-    }
-
-    return true;
-}
-
-function validateProductData(productData) {
-    const errors = [];
-
-    if (!productData.title?.trim()) {
-        errors.push('Le titre du produit est requis');
-    }
-
-    if (!productData.type) {
-        errors.push('Le type de produit est requis');
-    }
-
-    if (productData.type === 'app' && !productData.platform) {
-        errors.push('La plateforme est requise pour les Apps/Jeux');
-    }
-
-    if (productData.type !== 'app' && !productData.platform) {
-        productData.platform = 'web';
-    }
-
-    if (productData.price < 0) {
-        errors.push('Le prix ne peut pas être négatif');
-    }
-
-    if (productData.promo < 0) {
-        errors.push('Le prix promo ne peut pas être négatif');
-    }
-
-    if (productData.is_free && productData.price > 0) {
-        errors.push('Les produits gratuits doivent avoir un prix de 0');
-    }
-
-    return errors;
-}
-
-// ==================== UI MANAGEMENT ====================
-
-function toggleProductForm() {
-    const form = document.getElementById('productForm');
-    form.classList.toggle('hidden');
-    
-    if (!form.classList.contains('hidden')) {
-        document.getElementById('productTitle').value = '';
-        document.getElementById('productType').value = '';
-        document.getElementById('productPrice').value = '0';
-        document.getElementById('productPlatform').value = '';
-        document.getElementById('productVersion').value = '';
-        document.getElementById('productBuildNumber').value = '';
-        document.getElementById('productPromoPrice').value = '';
-        document.getElementById('productIsVip').checked = false;
-        document.getElementById('productIsFree').checked = false;
-        document.getElementById('productDescription').value = '';
-        document.getElementById('productImage').value = '';
-        document.getElementById('productFile').value = '';
-        document.getElementById('imagePreview').innerHTML = '';
-        document.getElementById('filePreview').innerHTML = '';
-        document.getElementById('previewSection').classList.add('hidden');
-        document.getElementById('imagePreview').classList.add('hidden');
-    }
-}
-
-async function submitProduct() {
-    try {
-        showLoading('Ajout du produit...');
-
-        const productData = {
-            title: document.getElementById('productTitle').value.trim(),
-            type: document.getElementById('productType').value,
-            price: parseFloat(document.getElementById('productPrice').value) || 0,
-            platform: document.getElementById('productPlatform').value,
-            description: document.getElementById('productDescription').value.trim(),
-            version: document.getElementById('productVersion').value.trim(),
-            build_number: document.getElementById('productBuildNumber').value.trim(),
-            promo: parseFloat(document.getElementById('productPromoPrice').value) || 0,
-            is_vip: document.getElementById('productIsVip').checked,
-            is_free: document.getElementById('productIsFree').checked
-        };
-
-        const errors = validateProductData(productData);
-        if (errors.length > 0) {
-            throw new Error('Erreurs de validation:\n' + errors.join('\n'));
-        }
-
-        const imageFile = document.getElementById('productImage').files[0];
-        if (imageFile) {
-            validateFile(imageFile, { 
-                maxSize: 500 * 1024 * 1024,
-                allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-            });
-            try {
-                const imageUpload = await uploadFile(imageFile, 'product-images');
-                productData.img_url = imageUpload.url;
-            } catch (uploadError) {
-                console.warn('Image upload failed:', uploadError.message);
-            }
-        }
-
-        const productFile = document.getElementById('productFile').files[0];
-        if (productFile) {
-            validateFile(productFile, {
-                maxSize: 500 * 1024 * 1024
-            });
-            try {
-                const fileUpload = await uploadFile(productFile, 'product-files');
-                productData.file_url = fileUpload.url;
-                productData.file_size = productFile.size;
-                productData.file_type = productFile.type;
-            } catch (uploadError) {
-                console.warn('File upload failed:', uploadError.message);
-            }
-        }
-
-        await addProduct(productData);
-        
-        showAlert('✅ Produit ajouté avec succès!', 'success');
-        await loadUserProducts();
-        await loadShopProducts(); // Rafraîchir aussi la boutique
-        toggleProductForm();
-        
-    } catch (error) {
-        showAlert('❌ Erreur: ' + error.message, 'error');
-        console.error('Product submission error:', error);
-    } finally {
-        hideLoading();
-    }
-}
-
-// ==================== PRODUCT RENDERING ====================
-
-function getPlatformIcon(platform) {
-    const icons = {
-        'android': '🤖',
-        'ios': '📱',
-        'windows': '🪟',
-        'mac': '🍎',
-        'web': '🌐',
-        'multi': '🔀'
+/* ================================
+   SAFETY / DEBUG / POLYFILLS
+   ================================ */
+(function safetyInit(){
+  if (!window.CSS || typeof window.CSS.escape !== 'function') {
+    window.CSS = window.CSS || {};
+    window.CSS.escape = function (value) {
+      return String(value).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
     };
-    return icons[platform] || '💻';
-}
+  }
+  window.addEventListener('error', function(e){
+    console.error('[App Error]', e && e.message, e && e.filename, e && e.lineno, e && e.colno, e && e.error);
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    console.error('[Unhandled Promise]', e && e.reason);
+  });
 
-function getFilePreview(product) {
-    if (!product.file_url) return '';
-    
-    const fileExt = product.file_url.split('.').pop().toLowerCase();
-    
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
-        return `<img src="${product.file_url}" style="max-width: 100%; border-radius: 8px;" alt="File Preview">`;
+  (function safeHideLoader(){
+    function hide() {
+      var loader = document.getElementById('loader');
+      if (!loader) return;
+      document.body.setAttribute('aria-busy', 'false');
+      loader.classList.add('fade-out');
+      setTimeout(function () {
+        loader.style.display = 'none';
+        loader.setAttribute('aria-hidden', 'true');
+      }, 500);
     }
-    else if (fileExt === 'pdf') {
-        return `<iframe src="${product.file_url}" class="pdf-preview" style="width: 100%; height: 400px; border: none;"></iframe>`;
-    }
-    else if (['mp4', 'avi', 'mkv', 'mov', 'wmv'].includes(fileExt)) {
-        return `<video controls class="video-preview" style="width: 100%; max-height: 300px;">
-                    <source src="${product.file_url}" type="video/${fileExt}">
-                    Votre navigateur ne supporte pas la balise vidéo.
-                </video>`;
-    }
-    else if (['mp3', 'wav', 'm4a'].includes(fileExt)) {
-        return `<audio controls style="width: 100%;">
-                    <source src="${product.file_url}" type="audio/${fileExt}">
-                    Votre navigateur ne supporte pas la balise audio.
-                </audio>`;
-    }
+    if (document.readyState === 'complete') hide();
     else {
-        return `
-            <div class="text-center">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
-                <p><strong>Type de fichier:</strong> ${product.file_type || 'Inconnu'}</p>
-                <p><strong>Taille:</strong> ${product.file_size ? (product.file_size / 1024 / 1024).toFixed(2) + ' MB' : 'Inconnue'}</p>
-                <button class="btn btn-primary mt-2" onclick="downloadFile('${product.file_url}', '${product.title}')">Télécharger</button>
-            </div>
-        `;
+      document.addEventListener('DOMContentLoaded', function(){ setTimeout(hide, 500); });
+      window.addEventListener('load', hide, { once: true });
+      setTimeout(hide, 3000);
     }
-}
+  })();
 
-function renderProductCard(product, options = {}) {
-    const { showActions = false, currentUser = null } = options;
-    const isOwner = currentUser && product.owner_id === currentUser.id;
-
-    return `
-        <div class="product-card">
-            <div class="product-card-content">
-                <div class="product-header">
-                    <div>
-                        <h3 class="product-title">${escapeHtml(product.title)}</h3>
-                        ${isOwner ? '<div class="badge badge-premium" style="margin-top: 0.5rem;">👑 VOTRE PRODUIT</div>' : ''}
-                    </div>
-                    <div class="product-price">
-                        ${product.is_free ? 'GRATUIT' : `$${product.price}`}
-                        ${product.promo > 0 ? `<div style="font-size: 0.9rem; color: orange; text-decoration: line-through;">$${product.promo}</div>` : ''}
-                    </div>
-                </div>
-                
-                <!-- Badges Stylés -->
-                <div class="badges-container">
-                    ${product.is_vip ? '<span class="badge badge-vip">⭐ VIP</span>' : ''}
-                    ${product.is_free ? '<span class="badge badge-free">🆓 GRATUIT</span>' : ''}
-                    ${!product.is_free && !product.is_vip ? '<span class="badge badge-premium">💰 PREMIUM</span>' : ''}
-                    ${product.type === 'promotion' ? '<span class="badge badge-promo">🔥 PROMO</span>' : ''}
-                    ${product.type === 'ebook' ? '<span class="badge badge-ebook">📚 eBook</span>' : ''}
-                    ${product.type === 'video' ? '<span class="badge badge-video">🎥 Video</span>' : ''}
-                    ${product.type === 'app' ? '<span class="badge badge-app">📱 App/Jeux</span>' : ''}
-                    ${product.platform && product.platform !== 'web' ? `<span class="badge badge-platform">${getPlatformIcon(product.platform)} ${product.platform}</span>` : ''}
-                </div>
-                
-                ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">${escapeHtml(product.description)}</p>` : ''}
-                
-                <div class="product-meta">
-                    ${product.type ? `<p>📦 <strong>Type:</strong> ${product.type}</p>` : ''}
-                    ${product.platform && product.platform !== 'web' ? `<p>🖥️ <strong>Plateforme:</strong> ${product.platform}</p>` : ''}
-                    ${product.version ? `<p>🔢 <strong>Version:</strong> ${product.version}</p>` : ''}
-                    ${product.build_number ? `<p>⚙️ <strong>Build:</strong> ${product.build_number}</p>` : ''}
-                    ${product.file_size ? `<p>💾 <strong>Taille:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
-                    <p>📅 <strong>Créé:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
-                </div>
-                
-                ${product.file_url ? `
-                    <div class="preview-section">
-                        <div class="preview-header">Aperçu</div>
-                        <div class="preview-content">
-                            ${getFilePreview(product)}
-                        </div>
-                    </div>
-                ` : ''}
-                
-                <div class="product-actions">
-                    ${showActions ? `
-                        <button class="btn btn-secondary" onclick="editProduct('${product.id}')">✏️ Modifier</button>
-                        <button class="btn btn-danger" onclick="confirmDelete('${product.id}')">🗑️ Supprimer</button>
-                    ` : ''}
-                    ${product.file_url ? `<button class="btn btn-primary" onclick="downloadFile('${product.file_url}', '${product.title}')">⬇️ Télécharger</button>` : ''}
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-async function loadShopProducts() {
-    try {
-        showLoading('Chargement de la boutique...');
-        allProducts = await getAllProducts();
-        renderShopProducts(allProducts);
-        
-    } catch (error) {
-        showAlert('Erreur chargement boutique: ' + error.message, 'error');
-        console.error('Error loading shop products:', error);
-    } finally {
-        hideLoading();
+  document.addEventListener('DOMContentLoaded', function(){
+    var home = document.getElementById('home');
+    if (home && !home.classList.contains('active')) {
+      home.classList.add('active');
+      home.setAttribute('aria-hidden', 'false');
     }
+  });
+
+  if (typeof window.closeShop !== 'function') window.closeShop = function(){};
+})();
+
+/* ================================
+   CONSTANTES + HELPERS
+   ================================ */
+var WHATSAPP_PHONE_INTL = '261333106055';
+
+function escapeHtml(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, function(m){
+    var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'};
+    return map[m] || m;
+  });
+}
+function escapeAttr(s){
+  return escapeHtml(s).replace(/"/g,'&quot;');
+}
+function fmtPrice(p){
+  var n = Number(p);
+  if (!isFinite(n) || n < 0) return '0 AR';
+  try { return n.toLocaleString('fr-FR') + ' AR'; }
+  catch(_){ return String(n) + ' AR'; }
+}
+function normalizeCategory(c){
+  if(!c) return '';
+  c = String(c).toLowerCase();
+  if(['app','apps','jeu','jeux','game','games'].indexOf(c) !== -1) return 'apps';
+  if(['ebook','ebooks','book','livre','livres'].indexOf(c) !== -1) return 'ebooks';
+  if(['video','vidéo','videos','vidéos'].indexOf(c) !== -1) return 'videos';
+  if(['promotion','promo'].indexOf(c) !== -1) return 'promo';
+  if(['gratuit','gratuits','free'].indexOf(c) !== -1) return 'free';
+  return c;
 }
 
-function renderShopProducts(products) {
-    const shopProductsList = document.getElementById('shopProductsList');
-    
-    if (products.length === 0) {
-        shopProductsList.innerHTML = `
-            <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
-                <h3 class="text-lg font-semibold mb-2">Aucun produit trouvé</h3>
-                <p class="text-secondary">Aucun produit ne correspond à vos critères de recherche</p>
-            </div>
-        `;
-        return;
+/* ================================
+   WHATSAPP HELPERS
+   ================================ */
+function openWhatsAppMessage(text){
+  try {
+    var msg = encodeURIComponent(text || '');
+    var wa = 'https://wa.me/' + WHATSAPP_PHONE_INTL + '?text=' + msg;
+    window.open(wa, '_blank', 'noopener');
+  } catch (err) {
+    console.error('[WA Open Error]', err);
+  }
+}
+function buildWAProductMessage(p, action){
+  action = action || 'buy';
+  var title = (p && p.title) ? p.title : '';
+  var cat   = (p && p.category) ? p.category : '';
+  var price = p && p.price;
+  var id    = (p && p.id) ? p.id : '';
+  var isFree = Number(price) === 0;
+  var actionText = isFree ? 'Demande: Obtenir (gratuit)' : (action === 'read' ? 'Demande: Lire' : 'Demande: Acheter');
+  var lines = [
+    'Salama! ' + actionText,
+    '• Produit: ' + title,
+    '• Catégorie: ' + cat,
+    '• Prix: ' + fmtPrice(price)
+  ];
+  if (id) lines.push('• ID: ' + id);
+  lines.push('Misaotra!');
+  return lines.join('\n');
+}
+function buyOrRead(product){
+  if(!product) return;
+  try { if (typeof addToCart === 'function') addToCart(product); } catch (e) { console.warn('[addToCart]', e); }
+  var isFree = Number(product.price) === 0;
+  openWhatsAppMessage(buildWAProductMessage(product, isFree ? 'read' : 'buy'));
+}
+
+/* ================================
+   LIKES (localStorage)
+   ================================ */
+var LIKE_KEY = 'likes:v1';
+var LIKE_COUNT_KEY = 'likeCounts:v1';
+
+function loadLikes(){
+  try {
+    var likedArr = JSON.parse(localStorage.getItem(LIKE_KEY) || '[]');
+    var countsObj = JSON.parse(localStorage.getItem(LIKE_COUNT_KEY) || '{}');
+    var likedSet = new Set(Array.isArray(likedArr) ? likedArr : []);
+    var countsMap = new Map(Object.entries(countsObj));
+    return { liked: likedSet, counts: countsMap };
+  } catch (_){
+    return { liked: new Set(), counts: new Map() };
+  }
+}
+function saveLikes(state){
+  try {
+    localStorage.setItem(LIKE_KEY, JSON.stringify(Array.from(state.liked)));
+    var obj = {};
+    state.counts.forEach(function(v,k){ obj[k]=v; });
+    localStorage.setItem(LIKE_COUNT_KEY, JSON.stringify(obj));
+  } catch (_){}
+}
+var likeState = loadLikes();
+
+function getLikeCount(id){
+  var v = Number(likeState.counts.get(id));
+  return isFinite(v) ? v : 0;
+}
+function isLiked(id){ return likeState.liked.has(id); }
+function toggleLike(id){
+  if(!id) return;
+  var count = getLikeCount(id);
+  if(isLiked(id)){
+    likeState.liked.delete(id);
+    count = Math.max(0, count - 1);
+  } else {
+    likeState.liked.add(id);
+    count = count + 1;
+  }
+  likeState.counts.set(id, count);
+  saveLikes(likeState);
+
+  try {
+    var safeSel = '[data-id="' + window.CSS.escape(id) + '"] .icon-like';
+    var nodes = document.querySelectorAll(safeSel);
+    for (var i=0;i<nodes.length;i++){
+      var btn = nodes[i];
+      if (!btn || !btn.classList) continue;
+      if (isLiked(id)) btn.classList.add('liked'); else btn.classList.remove('liked');
+      btn.classList.add('burst');
+      (function(b){ setTimeout(function(){ b.classList.remove('burst'); }, 480); })(btn);
+      var cnt = btn.parentElement ? btn.parentElement.querySelector('.like-count') : null;
+      if (cnt) cnt.textContent = String(getLikeCount(id));
     }
-    
-    shopProductsList.innerHTML = products.map(product => 
-        renderProductCard(product, { 
-            showActions: false, 
-            currentUser: currentUser 
-        })
-    ).join('');
+  } catch (err){
+    console.error('[toggleLike UI error]', err);
+  }
 }
 
-async function loadUserProducts() {
-    try {
-        showLoading('Chargement de vos produits...');
-        const products = await getUserProducts();
-        const myProductsList = document.getElementById('myProductsList');
-        
-        if (products.length === 0) {
-            myProductsList.innerHTML = `
-                <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
-                    <h3 class="text-lg font-semibold mb-2">Aucun produit encore</h3>
-                    <p class="text-secondary">Commencez par ajouter votre premier produit!</p>
-                </div>
-            `;
-            return;
-        }
-        
-        myProductsList.innerHTML = products.map(product => 
-            renderProductCard(product, { 
-                showActions: true, 
-                currentUser: currentUser 
-            })
-        ).join('');
-        
-    } catch (error) {
-        showAlert('Erreur chargement produits: ' + error.message, 'error');
-        console.error('Error loading user products:', error);
-    } finally {
-        hideLoading();
-    }
+/* ================================
+   BADGES helpers
+   ================================ */
+function badgeClassFor(cat){
+  var c = (cat || '').toLowerCase();
+  if (c === 'vip') return 'badge badge-vip';
+  if (c === 'promo' || c === 'promotion') return 'badge badge-promo';
+  if (c === 'free' || c === 'gratuit' || c === 'gratuits') return 'badge badge-free';
+  if (c === 'videos' || c === 'vidéos') return 'badge badge-videos';
+  if (c === 'ebooks') return 'badge badge-ebooks';
+  return 'badge';
+}
+function badgeIconFor(cat){
+  var c = (cat || '').toLowerCase();
+  if (c === 'vip') return '<i class="fa-solid fa-crown"></i>';
+  if (c === 'promo' || c === 'promotion') return '<i class="fa-solid fa-bolt"></i>';
+  if (c === 'free' || c === 'gratuit' || c === 'gratuits') return '<i class="fa-solid fa-gift"></i>';
+  if (c === 'videos' || c === 'vidéos') return '<i class="fa-solid fa-clapperboard"></i>';
+  if (c === 'ebooks') return '<i class="fa-solid fa-book"></i>';
+  return '<i class="fa-solid fa-tag"></i>';
 }
 
-function downloadFile(url, filename) {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-}
+/* ================================
+   LANG / THEME (apply/select)
+   ================================ */
+var THEME_KEY = 'settings:theme';
+var LANG_KEY  = 'settings:lang';
 
-function confirmDelete(productId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.')) {
-        deleteProductHandler(productId);
-    }
-}
+// --- Add: translations + localisation helper ---
+var TRANSLATIONS = {
+  fr: {
+    "home_title": "Tongasoa ATO amin'ny boutique anay!",
+    "home_sub": "Découvre des eBooks, vidéos et apps/jeux pour t’aider à réussir en ligne.",
+    "filter_all": "Tous",
+    "filter_ebooks": "Ebooks",
+    "filter_videos": "Vidéos",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Gratuit",
+    "shop_no_products": "Aucun produit trouvé.",
+    "search_placeholder": "Rechercher...",
+    "cart_label": "Cart",
+    "cart_total": "Total",
+    "param_settings": "Paramètres",
+    "param_language": "Langue",
+    "param_theme": "Thème",
+    "about": "À propos",
+    "contact": "Contact",
+    "quit": "Quit"
+  },
+  en: {
+    "home_title": "Welcome to our boutique!",
+    "home_sub": "Discover eBooks, videos and apps/games to help you succeed online.",
+    "filter_all": "All",
+    "filter_ebooks": "Ebooks",
+    "filter_videos": "Videos",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Free",
+    "shop_no_products": "No products found.",
+    "search_placeholder": "Search...",
+    "cart_label": "Cart",
+    "cart_total": "Total",
+    "param_settings": "Settings",
+    "param_language": "Language",
+    "param_theme": "Theme",
+    "about": "About",
+    "contact": "Contact",
+    "quit": "Quit"
+  },
+  mg: {
+    "home_title": "Tongasoa ato amin'ny boutique!",
+    "home_sub": "Jereo ny eBooks, vidéos ary apps/jeux hanampy anao hiroso amin'ny aterineto.",
+    "filter_all": "Rehetra",
+    "filter_ebooks": "eBooks",
+    "filter_videos": "Vidéos",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Maimaim-poana",
+    "shop_no_products": "Tsy misy vokatra hita.",
+    "search_placeholder": "Mitadiava...",
+    "cart_label": "Panier",
+    "cart_total": "Total",
+    "param_settings": "Paramètres",
+    "param_language": "Langue",
+    "param_theme": "Thème",
+    "about": "À propos",
+    "contact": "Contact",
+    "quit": "Quit"
+  }
+};
 
-async function deleteProductHandler(productId) {
-    try {
-        showLoading('Suppression du produit...');
-        
-        const { data: product, error: fetchError } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', productId)
-            .single();
-
-        if (fetchError) {
-            throw new Error('Produit non trouvé');
-        }
-
-        const { error: deleteError } = await supabase
-            .from('products')
-            .delete()
-            .eq('id', productId);
-
-        if (deleteError) throw deleteError;
-
-        showAlert('✅ Produit supprimé avec succès', 'success');
-        
-        // Rafraîchir les deux vues
-        await loadUserProducts();
-        await loadShopProducts();
-        
-    } catch (error) {
-        showAlert('❌ Erreur suppression: ' + error.message, 'error');
-        console.error('Delete error:', error);
-    } finally {
-        hideLoading();
-    }
-}
-
-function setupFilePreviews() {
-    const imageInput = document.getElementById('productImage');
-    const fileInput = document.getElementById('productFile');
-    
-    imageInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('imagePreview').innerHTML = `
-                    <img src="${e.target.result}" class="preview-image" alt="Preview">
-                    <p class="text-sm mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
-                `;
-                document.getElementById('imagePreview').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
-    fileInput.addEventListener('change', async function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            document.getElementById('filePreview').innerHTML = `
-                <div style="padding: 1rem; background: var(--surface-color); border-radius: 8px;">
-                    <p><strong>Fichier:</strong> ${file.name}</p>
-                    <p><strong>Taille:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                    <p><strong>Type:</strong> ${file.type || 'Inconnu'}</p>
-                </div>
-            `;
-            
-            await handleFilePreview(file);
-        }
-    });
-}
-
-function showOwnerSection(user) {
-    document.getElementById('ownerSection').classList.remove('hidden');
-    document.getElementById('welcomeSection').classList.add('hidden');
-    document.getElementById('tabsSection').classList.remove('hidden');
-    document.getElementById('loginBtn').classList.add('hidden');
-    document.getElementById('logoutBtn').classList.remove('hidden');
-    document.getElementById('userInfo').textContent = `👤 ${user.email}`;
-    
-    // Charger les deux vues
-    loadShopProducts();
-    loadUserProducts();
-}
-
-function showWelcomeSection() {
-    document.getElementById('ownerSection').classList.add('hidden');
-    document.getElementById('tabsSection').classList.add('hidden');
-    document.getElementById('welcomeSection').classList.remove('hidden');
-    document.getElementById('loginBtn').classList.remove('hidden');
-    document.getElementById('logoutBtn').classList.add('hidden');
-    document.getElementById('userInfo').textContent = '';
-    
-    // Charger seulement la boutique
-    loadShopProducts();
-}
-
-function showAlert(message, type = 'info') {
-    const existingAlerts = document.querySelectorAll('.alert');
-    existingAlerts.forEach(alert => alert.remove());
-    
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
-    alert.textContent = message;
-    
-    document.querySelector('.main-content').insertBefore(alert, document.querySelector('.main-content').firstChild);
-    
-    setTimeout(() => {
-        if (alert.parentElement) {
-            alert.remove();
-        }
-    }, 5000);
-}
-
-function showLoading(message = 'Chargement...') {
-    console.log('Loading:', message);
-}
-
-function hideLoading() {
-    console.log('Loading complete');
-}
-
-function escapeHtml(unsafe) {
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-function setupDragAndDrop() {
-    const uploadAreas = document.querySelectorAll('.file-upload');
-    
-    uploadAreas.forEach(area => {
-        area.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            area.classList.add('dragover');
-        });
-        
-        area.addEventListener('dragleave', () => {
-            area.classList.remove('dragover');
-        });
-        
-        area.addEventListener('drop', (e) => {
-            e.preventDefault();
-            area.classList.remove('dragover');
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const input = area.querySelector('input[type="file"]');
-                if (input) {
-                    const dt = new DataTransfer();
-                    dt.items.add(files[0]);
-                    input.files = dt.files;
-                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            }
-        });
-    });
-}
-
-// ==================== INITIALISATION ====================
-
-supabase.auth.onAuthStateChange(async (event, session) => {
-    if (session) {
-        currentUser = session.user;
-        showOwnerSection(session.user);
-    } else {
-        currentUser = null;
-        showWelcomeSection();
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    setupStorage();
-    setupFilePreviews();
-    setupDragAndDrop();
-    
-    // Rendre les fonctions globales
-    window.showLoginForm = showLoginForm;
-    window.hideLoginForm = hideLoginForm;
-    window.showSignupForm = showSignupForm;
-    window.hideSignupForm = hideSignupForm;
-    window.loginWithEmail = loginWithEmail;
-    window.signUpWithEmail = signUpWithEmail;
-    window.signOut = signOut;
-    window.toggleProductForm = toggleProductForm;
-    window.submitProduct = submitProduct;
-    window.deleteProduct = deleteProductHandler;
-    window.confirmDelete = confirmDelete;
-    window.downloadFile = downloadFile;
-    window.switchTab = switchTab;
-    window.filterProducts = filterProducts;
-    
-    // Vérifier l'état d'authentification au chargement
-    getCurrentUser().then(user => {
-        if (user) {
-            showOwnerSection(user);
+function localizePage(lang) {
+  try {
+    var dict = TRANSLATIONS[lang] || TRANSLATIONS['fr'];
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var key = el.getAttribute('data-i18n');
+      if (!key) continue;
+      var txt = dict[key];
+      if (txt == null) continue;
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        if (el.getAttribute('data-i18n-placeholder') !== null) {
+          el.placeholder = txt;
         } else {
-            showWelcomeSection();
+          el.value = txt;
         }
+      } else {
+        el.textContent = txt;
+      }
+    }
+    var search = document.getElementById('search');
+    if (search && dict['search_placeholder']) search.setAttribute('aria-label', dict['search_placeholder']);
+  } catch (err) { console.error('[localizePage error]', err); }
+}
+
+function applyTheme(theme){
+  try {
+    var allowed = ['dark','light','rose','jaune','marron'];
+    var t = (allowed.indexOf(theme) !== -1) ? theme : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    var cls = ['theme-dark','theme-light','theme-rose','theme-jaune','theme-marron'];
+    for (var i=0;i<cls.length;i++){ document.body.classList.remove(cls[i]); }
+    document.body.classList.add('theme-' + t);
+    var btns = document.querySelectorAll('#theme-options .option-card');
+    for (var j=0;j<btns.length;j++){
+      var b = btns[j];
+      var val = b.getAttribute('data-theme');
+      b.classList.toggle('active', val === t);
+    }
+  } catch (err) {
+    console.error('[applyTheme error]', err);
+  }
+}
+function selectTheme(theme){
+  try {
+    var allowed = ['dark','light','rose','jaune','marron'];
+    var t = (allowed.indexOf(theme) !== -1) ? theme : 'dark';
+    try { localStorage.setItem(THEME_KEY, t); } catch(_){}
+    applyTheme(t);
+  } catch (err) {
+    console.error('[selectTheme error]', err);
+  }
+}
+
+function applyLang(lang){
+  try {
+    var l = (['mg','fr','en'].indexOf(lang) !== -1) ? lang : 'fr';
+    document.documentElement.lang = l;
+    var btns = document.querySelectorAll('#lang-options .option-card');
+    for (var i=0;i<btns.length;i++){
+      var b = btns[i];
+      var val = b.getAttribute('data-lang');
+      b.classList.toggle('active', val === l);
+    }
+    localizePage(l);
+  } catch (err) {
+    console.error('[applyLang error]', err);
+  }
+}
+function selectLang(lang){
+  try {
+    var l = (['mg','fr','en'].indexOf(lang) !== -1) ? lang : 'fr';
+    try { localStorage.setItem(LANG_KEY, l); } catch(_){}
+    applyLang(l);
+  } catch (err) {
+    console.error('[selectLang error]', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    var theme = 'dark';
+    try { var t = localStorage.getItem(THEME_KEY); if (t) theme = t; } catch(_){}
+    applyTheme(theme);
+
+    var lang = 'fr';
+    try { var l = localStorage.getItem(LANG_KEY); if (l) lang = l; } catch(_){}
+    applyLang(lang);
+  } catch (err) {
+    console.error('[settings init error]', err);
+  }
+});
+
+/* ================================
+   INJECTION: Boutons thème (rose/jaune/marron) tsy manova index.html
+   ================================ */
+document.addEventListener('DOMContentLoaded', function(){
+  var wrap = document.getElementById('theme-options');
+  if (!wrap) return;
+  var needRose   = !wrap.querySelector('[data-theme="rose"]');
+  var needJaune  = !wrap.querySelector('[data-theme="jaune"]');
+  var needMarron = !wrap.querySelector('[data-theme="marron"]');
+  var html = '';
+  if (needRose) {
+    html += '' +
+      '<button type="button" class="option-card" data-theme="rose">' +
+      '  <div class="option-icon" style="background:linear-gradient(135deg,#f472b6,#fb7185)">🌸</div>' +
+      '  <div class="option-texts">' +
+      '    <div class="option-title">Rose</div>' +
+      '    <div class="option-sub">Douce et moderne</div>' +
+      '  </div>' +
+      '</button>';
+  }
+  if (needJaune) {
+    html += '' +
+      '<button type="button" class="option-card" data-theme="jaune">' +
+      '  <div class="option-icon" style="background:linear-gradient(135deg,#f59e0b,#fde68a);color:#111">🌞</div>' +
+      '  <div class="option-texts">' +
+      '    <div class="option-title">Jaune</div>' +
+      '    <div class="option-sub">Chaleureux</div>' +
+      '  </div>' +
+      '</button>';
+  }
+  if (needMarron) {
+    html += '' +
+      '<button type="button" class="option-card" data-theme="marron">' +
+      '  <div class="option-icon" style="background:linear-gradient(135deg,#8b5e3c,#3a2b24)">🍂</div>' +
+      '  <div class="option-texts">' +
+      '    <div class="option-title">Marron</div>' +
+      '    <div class="option-sub">Classique & cosy</div>' +
+      '  </div>' +
+      '</button>';
+  }
+  if (html) wrap.insertAdjacentHTML('beforeend', html);
+  var allBtns = wrap.querySelectorAll('.option-card[data-theme]');
+  for (var i=0;i<allBtns.length;i++){
+    (function(btn){
+      btn.addEventListener('click', function(){
+        selectTheme(btn.getAttribute('data-theme'));
+      });
+    })(allBtns[i]);
+  }
+});
+
+/* ================================
+   Données Produits (fallback raha tsy misy window.products)
+   ================================ */
+var products = (window.products && Array.isArray(window.products))
+  ? window.products
+  : [
+    {
+      id: "ebook-01",
+      category: "ebooks",
+      title: "Business en ligne avec ton téléphone",
+      description: "Transforme ton téléphone en source de revenus.",
+      image: { url: "https://i.ibb.co/svLgxhnZ/Design-sans-titre-20251016-153559-0000.png", alt: "Ebook business" },
+      price: 20000, currency: "AR", stock: "available",
+      description_short: "Guide pratique pour démarrer."
+    },
+    {
+      id: "vip-01",
+      category: "vip",
+      title: "Création site e-commerce (VIP)",
+      description: "Formation VIP complète.",
+      image: { url: "https://i.ibb.co/2q0mZsR/placeholder-vip1.png", alt: "VIP e-commerce" },
+      price: 200000, currency: "AR", stock: "available",
+      description_short: "Site e-commerce + boutique."
+    },
+    {
+      id: "promo-01",
+      category: "promo",
+      title: "Marketing digital (bases)",
+      description: "Formation de base marketing digital.",
+      image: { url: "https://i.ibb.co/7GZq4V7/placeholder-promo.png", alt: "Promo marketing" },
+      price: 60000, currency: "AR", stock: "available",
+      description_short: "Bases essentielles."
+    },
+    {
+      id: "free-01",
+      category: "free",
+      title: "Apprendre l'anglais en 2 mois",
+      description: "Méthode adaptée pour progresser vite.",
+      image: { url: "https://i.ibb.co/k669NxLG/placeholder-english.jpg", alt: "Ebook anglais" },
+      price: 0, currency: "AR", stock: "available",
+      description_short: "Guide gratuit."
+    }
+  ];
+
+var FALLBACK_IMG = 'https://via.placeholder.com/600x400?text=Produit';
+
+/* ================================
+   Renderer principal (vertical cards)
+   ================================ */
+function renderProducts(filter, search) {
+  try {
+    var row = document.getElementById('products-row');
+    var box = document.getElementById('products-box');
+    var normalizedFilter = normalizeCategory(filter || 'all');
+    var q = (search || '').toLowerCase();
+    var filtered = (products || []).filter(function(prod){
+      var cat = normalizeCategory(prod.category);
+      var catOk = (normalizedFilter === 'all') || (cat === normalizedFilter);
+      var t1 = prod.title || '';
+      var t2 = prod.description_short || '';
+      var t3 = prod.description || '';
+      var text = (t1 + ' ' + t2 + ' ' + t3).toLowerCase();
+      var searchOk = !q || text.indexOf(q) !== -1;
+      return catOk && searchOk;
     });
+    function makeActions(p){
+      var isFree = Number(p.price) === 0;
+      return '' +
+        '<div class="card-actions">' +
+        '  <button type="button" class="icon-btn icon-info" title="Détails"><i class="fa-solid fa-info"></i></button>' +
+        '  <button type="button" class="icon-btn icon-buy" title="' + (isFree ? 'Obtenir (WhatsApp)' : 'Acheter (WhatsApp)') + '">' +
+        '    <i class="fa-brands fa-whatsapp"></i>' +
+        '  </button>' +
+        '</div>';
+    }
+    function makeLike(p){
+      var liked = isLiked(p.id);
+      var likeCnt = getLikeCount(p.id);
+      return '' +
+        '<div style="display:flex; align-items:center; gap:6px;">' +
+        '  <button type="button" class="icon-like ' + (liked ? 'liked' : '') + '" title="Like" aria-label="Like"><i class="fa-solid fa-heart"></i></button>' +
+        '  <span class="like-count">' + String(likeCnt) + '</span>' +
+        '</div>';
+    }
+    function makeBadge(p){
+      var cat = normalizeCategory(p.category);
+      return '<span class="' + badgeClassFor(cat) + '">' + badgeIconFor(cat) + ' ' + escapeHtml(cat || 'produit') + '</span>';
+    }
+    function makeCard(p, compact){
+      var imgUrl = escapeAttr((p.image && p.image.url) ? p.image.url : FALLBACK_IMG);
+      var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
+      var priceStr = fmtPrice(p.price);
+      var badgeHTML = makeBadge(p);
+      var actions = makeActions(p);
+      var likeBtn = makeLike(p);
+      var titleSafe = escapeHtml(p.title || 'Produit');
+      var descShort = escapeHtml(p.description_short || '');
+      if (compact) {
+        return '' +
+          '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
+          '<h3>' + titleSafe + '</h3>' +
+          '<p class="desc">' + descShort + '</p>' +
+          '<div class="meta" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">' +
+          '  <div class="price">' + priceStr + '</div>' +
+               actions +
+          '</div>' +
+          '<div style="margin-top:8px; display:flex; justify-content:space-between; align-items:center;">' +
+               badgeHTML +
+               likeBtn +
+          '</div>';
+      }
+      return '' +
+        '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
+        '<div style="padding:8px 4px; flex:1; display:flex; flex-direction:column; justify-content:space-between">' +
+        '  <div>' +
+        '    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px">' +
+        '      <h3 style="font-size:15px; margin:0">' + titleSafe + '</h3>' +
+               badgeHTML +
+        '    </div>' +
+        '    <p class="desc" style="margin-top:6px; font-size:13px; color:#e9e9e9">' + descShort + '</p>' +
+        '  </div>' +
+        '  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px">' +
+        '    <div><div class="product-price">' + priceStr + '</div></div>' +
+             actions +
+        '  </div>' +
+        '  <div style="margin-top:8px; display:flex; justify-content:flex-end;">' +
+             likeBtn +
+        '  </div>' +
+        '</div>';
+    }
+    if (row) {
+      row.innerHTML = '';
+      if (filtered.length === 0) {
+        row.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
+      } else {
+        var frag = document.createDocumentFragment();
+        for (var i=0;i<filtered.length;i++){
+          var p = filtered[i];
+          var card = document.createElement('article');
+          card.className = 'product-card';
+          card.setAttribute('data-id', p.id);
+          card.setAttribute('data-category', normalizeCategory(p.category || ''));
+          card.setAttribute('role', 'listitem');
+          card.innerHTML = makeCard(p, false);
+          frag.appendChild(card);
+        }
+        row.appendChild(frag);
+      }
+    }
+    if (box) {
+      box.innerHTML = '';
+      if (filtered.length === 0) {
+        box.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
+      } else {
+        var grid = document.createElement('div');
+        grid.className = 'products-grid';
+        var frag2 = document.createDocumentFragment();
+        for (var j=0;j<filtered.length;j++){
+          var pp = filtered[j];
+          var node = document.createElement('div');
+          node.className = 'product-card';
+          node.setAttribute('data-id', pp.id);
+          node.setAttribute('data-category', normalizeCategory(pp.category || ''));
+          node.innerHTML = makeCard(pp, true);
+          frag2.appendChild(node);
+        }
+        grid.appendChild(frag2);
+        box.appendChild(grid);
+      }
+    }
+    bindProductActions();
+  } catch (err) {
+    console.error('[renderProducts error]', err);
+  }
+}
+
+/* ================================
+   Bind events ho an'ny cards (click actions)
+   ================================ */
+function bindProductActions(){
+  try {
+    function handler(root){
+      root.addEventListener('click', function(e){
+        var tgt = e.target;
+        var card = tgt && tgt.closest ? tgt.closest('.product-card') : null;
+        if(!card) return;
+        var id = card.getAttribute('data-id');
+        var p = null;
+        for (var i=0;i<(products||[]).length;i++){ if (products[i].id === id){ p = products[i]; break; } }
+        var isInfo = tgt.closest ? tgt.closest('.icon-info') : null;
+        var isBuy  = tgt.closest ? tgt.closest('.icon-buy')  : null;
+        var isLike = tgt.closest ? tgt.closest('.icon-like') : null;
+        if (isInfo){ if (p && typeof showProduct === 'function') showProduct(id); return; }
+        if (isBuy){ if (p) buyOrRead(p); return; }
+        if (isLike){ if (id) toggleLike(id); return; }
+      });
+    }
+    var row = document.getElementById('products-row');
+    if (row && !row._bound) { handler(row); row._bound = true; }
+    var box = document.getElementById('products-box');
+    if (box && !box._bound) { handler(box); box._bound = true; }
+  } catch (err) {
+    console.error('[bindProductActions error]', err);
+  }
+}
+
+/* ================================
+   Bindings Filtres + Recherche (toolbar sy popup)
+   ================================ */
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    renderProducts('all', '');
+    var toolbar = document.getElementById('shop-filters');
+    if (toolbar) {
+      toolbar.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.filter-btn') : null;
+        if (!btn) return;
+        var all = toolbar.querySelectorAll('.filter-btn');
+        for (var i=0;i<all.length;i++){ all[i].classList.toggle('active', all[i] === btn); }
+        var f = btn.getAttribute('data-filter') || 'all';
+        var sEl = document.getElementById('search');
+        var sVal = sEl ? (sEl.value || '') : '';
+        renderProducts(f, sVal);
+      });
+    }
+    var search = document.getElementById('search');
+    if (search) {
+      var t = null;
+      search.addEventListener('input', function(){
+        if (t) clearTimeout(t);
+        t = setTimeout(function(){
+          var activePopupBtn = document.querySelector('#filters .filter-btn.active');
+          var f = 'all';
+          if (activePopupBtn && activePopupBtn.getAttribute) {
+            f = activePopupBtn.getAttribute('data-category') || 'all';
+          }
+          renderProducts(f, search.value || '');
+        }, 200);
+      });
+    }
+    var popupFilters = document.getElementById('filters');
+    if (popupFilters) {
+      popupFilters.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('.filter-btn') : null;
+        if (!btn) return;
+        var all = popupFilters.querySelectorAll('.filter-btn');
+        for (var i=0;i<all.length;i++){ all[i].classList.toggle('active', all[i] === btn); }
+        var f = btn.getAttribute('data-category') || 'all';
+        var sEl2 = document.getElementById('search');
+        var sVal2 = sEl2 ? (sEl2.value || '') : '';
+        renderProducts(f, sVal2);
+      });
+    }
+  } catch (err) {
+    console.error('[Filters/Search init error]', err);
+  }
 });
 
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.add('hidden');
+/* ================================
+   PANIER (persistant) + Drawer + Checkout WhatsApp
+   ================================ */
+var CART_KEY = 'cart:v1';
+var cartItems = new Map();
+
+function loadCartFromStorage() {
+  try {
+    var raw = localStorage.getItem(CART_KEY);
+    if (!raw) return [];
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (err) {
+    console.warn('[Cart load error]', err);
+    return [];
+  }
+}
+function saveCartToStorage(itemsArr) {
+  try {
+    localStorage.setItem(CART_KEY, JSON.stringify(itemsArr));
+  } catch (err) {
+    console.warn('[Cart save error]', err);
+  }
+}
+function cartMapToArray() {
+  var out = [];
+  cartItems.forEach(function(item){ out.push(item); });
+  return out;
+}
+function cartArrayToMap(arr) {
+  cartItems.clear();
+  for (var i=0;i<arr.length;i++){
+    var it = arr[i];
+    if (!it || !it.id) continue;
+    cartItems.set(it.id, {
+      id: it.id,
+      title: it.title || 'Produit',
+      price: Number(it.price) || 0,
+      qty: Math.max(1, Number(it.qty) || 1),
+      image: it.image || ''
+    });
+  }
+}
+function addToCart(p){
+  try {
+    if(!p || !p.id) return;
+    var cur = cartItems.get(p.id);
+    if (cur) cur.qty += 1;
+    else cartItems.set(p.id, {
+      id: p.id,
+      title: p.title || 'Produit',
+      price: Number(p.price)||0,
+      qty: 1,
+      image: (p.image && p.image.url) ? p.image.url : ''
+    });
+    updateCartUI();
+    var shopBtn = document.querySelector('.menu-shop');
+    if (shopBtn){
+      shopBtn.classList.add('pulse');
+      setTimeout(function(){ shopBtn.classList.remove('pulse'); }, 450);
     }
+  } catch (err) {
+    console.error('[addToCart error]', err);
+  }
+}
+function removeFromCart(id){
+  try { cartItems.delete(id); updateCartUI(); }
+  catch (err) { console.error('[removeFromCart error]', err); }
+}
+function changeQty(id, delta){
+  try {
+    var item = cartItems.get(id);
+    if(!item) return;
+    item.qty = Math.max(0, item.qty + delta);
+    if (item.qty === 0) cartItems.delete(id);
+    updateCartUI();
+  } catch (err) {
+    console.error('[changeQty error]', err);
+  }
+}
+function clearCart(){
+  try { cartItems.clear(); updateCartUI(); }
+  catch (err) { console.error('[clearCart error]', err); }
+}
+function cartTotals(){
+  var count = 0, total = 0;
+  cartItems.forEach(function(item){
+    count += item.qty;
+    total += item.qty * (Number(item.price)||0);
+  });
+  return { count: count, total: total };
+}
+function updateCartUI(){
+  try {
+    var totals = cartTotals();
+    var count = totals.count;
+    var total = totals.total;
+    var countEl = document.getElementById('cart-count');
+    var totalEl = document.getElementById('cart-total');
+    if (countEl) countEl.textContent = String(count);
+    if (totalEl) totalEl.textContent = fmtPrice(total);
+    var drawer = document.getElementById('cart-list');
+    var totalDrawer = document.getElementById('cart-total-drawer');
+    if (drawer && totalDrawer){
+      drawer.innerHTML = '';
+      if (cartItems.size === 0){
+        drawer.innerHTML = '<div class="cart-empty">Panier vide.</div>';
+      } else {
+        var frag = document.createDocumentFragment();
+        cartItems.forEach(function(it, id){
+          var div = document.createElement('div');
+          div.className = 'cart-item';
+          div.setAttribute('data-id', id);
+          var imgUrl = escapeAttr(it.image || 'https://via.placeholder.com/56?text=~');
+          var imgAlt = escapeAttr(it.title || 'Produit');
+          div.innerHTML = '' +
+            '<img src="' + imgUrl + '" alt="' + imgAlt + '">' +
+            '<div>' +
+            '  <h4>' + escapeHtml(it.title || 'Produit') + '</h4>' +
+            '  <div class="qty">' +
+            '    <button type="button" data-action="dec" aria-label="Moins"><i class="fa-solid fa-minus"></i></button>' +
+            '    <span>' + String(it.qty) + '</span>' +
+            '    <button type="button" data-action="inc" aria-label="Plus"><i class="fa-solid fa-plus"></i></button>' +
+            '  </div>' +
+            '</div>' +
+            '<div style="display:flex; flex-direction:column; align-items:end; gap:6px;">' +
+            '  <div>' + fmtPrice((Number(it.price)||0) * it.qty) + '</div>' +
+            '  <button type="button" data-action="remove" title="Supprimer" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>' +
+            '</div>';
+          frag.appendChild(div);
+        });
+        drawer.appendChild(frag);
+      }
+      totalDrawer.textContent = fmtPrice(total);
+    }
+    saveCartToStorage(cartMapToArray());
+  } catch (err) {
+    console.error('[updateCartUI error]', err);
+  }
+}
+(function initCartDrawer(){
+  try {
+    var toggle = document.getElementById('cart-toggle');
+    var drawer = document.getElementById('cart-drawer');
+    if (toggle && drawer){
+      toggle.addEventListener('click', function(){
+        var show = !drawer.classList.contains('show');
+        drawer.classList.toggle('show', show);
+        drawer.setAttribute('aria-hidden', show ? 'false' : 'true');
+      });
+      drawer.addEventListener('click', function(e){
+        var item = e.target && e.target.closest ? e.target.closest('.cart-item') : null;
+        if(!item) return;
+        var id = item.getAttribute('data-id');
+        var btn = e.target && e.target.closest ? e.target.closest('button[data-action]') : null;
+        if(!btn) return;
+        var act = btn.getAttribute('data-action');
+        if (act === 'inc') changeQty(id, +1);
+        else if (act === 'dec') changeQty(id, -1);
+        else if (act === 'remove') removeFromCart(id);
+      });
+    }
+  } catch (err) {
+    console.error('[initCartDrawer error]', err);
+  }
+})();
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    var initial = loadCartFromStorage();
+    cartArrayToMap(initial);
+    updateCartUI();
+  } catch (err) {
+    console.error('[Cart init error]', err);
+  }
+});
+function checkoutWhatsApp(){
+  try {
+    if(cartItems.size === 0){
+      openWhatsAppMessage('Salama! Te-hanao commande (panier vide).');
+      return;
+    }
+    var lines = ['Salama! Commande avy amin’ny Mijoro Boutique:', ''];
+    var total = 0;
+    cartItems.forEach(function(item){
+      total += (Number(item.price)||0) * item.qty;
+      lines.push('• ' + item.title + ' x' + item.qty + ' — ' + fmtPrice((Number(item.price)||0)*item.qty));
+    });
+    lines.push('', 'Total: ' + fmtPrice(total), 'Misaotra!');
+    openWhatsAppMessage(lines.join('\n'));
+  } catch (err) {
+    console.error('[checkoutWhatsApp error]', err);
+  }
+}
+
+function __ensureBottomMenuClickable(){
+  var bm = document.querySelector('.bottom-menu');
+  if (bm){
+    bm.style.pointerEvents = 'auto';
+    bm.style.zIndex = '3200';
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  __ensureBottomMenuClickable();
 });
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        hideLoginForm();
-        hideSignupForm();
+/* ================================
+   Slideshow (auto + dots + touch)
+   ================================ */
+(function initSlideshow(){
+  try {
+    var track = document.getElementById('slide-track');
+    var dotsWrap = document.getElementById('slide-dots');
+    if (!track) return;
+    var slides = Array.prototype.slice.call(track.children || []);
+    var count = slides.length;
+    if (count === 0) return;
+    var index = 0;
+    var timer = null;
+    var DURATION = 5000;
+    if (dotsWrap) {
+      dotsWrap.innerHTML = '';
+      for (var i = 0; i < count; i++){
+        (function(iIdx){
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'dot' + (iIdx === 0 ? ' active' : '');
+          btn.setAttribute('aria-label', 'Aller à la diapo ' + (iIdx+1));
+          btn.addEventListener('click', function(){ goTo(iIdx, true); });
+          dotsWrap.appendChild(btn);
+        })(i);
+      }
     }
+    function updateUI(){
+      track.style.transform = 'translateX(' + (-index * 100) + '%)';
+      if (dotsWrap){
+        var kids = Array.prototype.slice.call(dotsWrap.children || []);
+        for (var d=0; d<kids.length; d++){
+          if (d === index) kids[d].classList.add('active');
+          else kids[d].classList.remove('active');
+        }
+      }
+    }
+    function next(){ index = (index + 1) % count; updateUI(); }
+    function prev(){ index = (index - 1 + count) % count; updateUI(); }
+    function goTo(i, user){ index = (i + count) % count; updateUI(); if (user) restart(); }
+    function start(){ if (timer) clearInterval(timer); timer = setInterval(next, DURATION); }
+    function stop(){ if (timer) { clearInterval(timer); timer = null; } }
+    function restart(){ stop(); start(); }
+    var startX = null;
+    track.addEventListener('touchstart', function(e){
+      var t0 = (e.touches && e.touches[0]) ? e.touches[0].clientX : null;
+      startX = t0;
+      stop();
+    }, { passive: true });
+    track.addEventListener('touchend', function(e){
+      var t1 = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : null;
+      if (startX != null && t1 != null){
+        var dx = t1 - startX;
+        if (Math.abs(dx) > 40){ if (dx < 0) next(); else prev(); }
+      }
+      startX = null;
+      start();
+    }, { passive: true });
+    track.addEventListener('mouseenter', stop);
+    track.addEventListener('mouseleave', start);
+    updateUI(); start();
+  } catch (err) {
+    console.error('[initSlideshow error]', err);
+  }
+})();
+
+/* ================================
+   Navigation sections (Home/Shop) + Home fixe + Overlays safety
+   ================================ */
+var SECTION_IDS = ['home', 'shop'];
+function __ensureOverlaysHidden(){
+  try {
+    var popup = document.getElementById('shop-popup');
+    if (popup && !popup.classList.contains('show')) {
+      popup.style.pointerEvents = 'none';
+      popup.setAttribute('aria-hidden','true');
+    }
+    var param = document.getElementById('param-fixed');
+    if (param && param.classList.contains('hidden')) {
+      param.style.pointerEvents = 'none';
+      param.setAttribute('aria-hidden','true');
+    }
+  } catch(_){}
+}
+function showSection(id, btn){
+  try {
+    if (SECTION_IDS.indexOf(id) === -1) return;
+    if (typeof closeParamFixed === 'function') closeParamFixed();
+    for (var i=0;i<SECTION_IDS.length;i++){
+      var secId = SECTION_IDS[i];
+      var sec = document.getElementById(secId);
+      if (!sec) continue;
+      var active = (secId === id);
+      sec.classList.toggle('active', active);
+      sec.setAttribute('aria-hidden', String(!active));
+    }
+    var menuBtns = document.querySelectorAll('.bottom-menu .menu-btn');
+    for (var j=0;j<menuBtns.length;j++){ menuBtns[j].classList.remove('active'); }
+    var targetBtn = btn || document.querySelector('.bottom-menu .menu-' + id);
+    if (targetBtn && targetBtn.classList) targetBtn.classList.add('active');
+    var homeEl = document.getElementById('home');
+    if (homeEl){
+      if (id === 'home'){
+        homeEl.classList.add('home-fixed');
+        document.body.style.overflow = 'hidden';
+      } else {
+        homeEl.classList.remove('home-fixed');
+        document.body.style.overflow = '';
+      }
+    }
+    var activeSec = document.getElementById(id);
+    if (activeSec) {
+      var heading = activeSec.querySelector('h1, h2');
+      if (heading) {
+        heading.setAttribute('tabindex', '-1');
+        if (heading.focus) heading.focus({ preventScroll: true });
+        setTimeout(function(){ heading.removeAttribute('tabindex'); }, 250);
+      }
+      if (id !== 'home' && activeSec.scrollIntoView) {
+        activeSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+    __ensureBottomMenuClickable();
+    __ensureOverlaysHidden();
+  } catch (err) {
+    console.error('[showSection error]', err);
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    var homeEl = document.getElementById('home');
+    if (homeEl && homeEl.classList.contains('active')) {
+      homeEl.classList.add('home-fixed');
+      document.body.style.overflow = 'hidden';
+    }
+    __ensureBottomMenuClickable();
+  } catch(e){}
 });
+
+/* ================================
+   Param panel: toggle/close + click-outside
+   ================================ */
+var __paramOpen = false;
+function toggleParamFixed(){
+  try {
+    var el = document.getElementById('param-fixed');
+    if(!el) return;
+    __paramOpen = !__paramOpen;
+    if (__paramOpen){
+      el.removeAttribute('inert');
+    }
+    el.classList.toggle('hidden', !__paramOpen);
+    el.setAttribute('aria-hidden', String(!__paramOpen));
+    if (__paramOpen){
+      document.body.classList.add('param-open');
+      var first = el.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (first && first.focus) first.focus({ preventScroll:true });
+      el.style.zIndex = '5000';
+      el.style.pointerEvents = 'auto';
+      var popup = document.getElementById('shop-popup');
+      if (popup && popup.classList && popup.classList.contains('show')) closeShop();
+    } else {
+      el.setAttribute('inert', '');
+      el.style.pointerEvents = 'none';
+      document.body.classList.remove('param-open');
+    }
+    __ensureBottomMenuClickable();
+  } catch (err) {
+    console.error('[toggleParamFixed error]', err);
+  }
+}
+function closeParamFixed(){
+  try {
+    var el = document.getElementById('param-fixed');
+    if(!el) return;
+    __paramOpen = false;
+    el.classList.add('hidden');
+    el.setAttribute('aria-hidden','true');
+    el.setAttribute('inert','');
+    el.style.pointerEvents = 'none';
+    document.body.classList.remove('param-open');
+    __ensureBottomMenuClickable();
+  } catch (err) {
+    console.error('[closeParamFixed error]', err);
+  }
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var panel = document.getElementById('param-fixed');
+  if (panel) {
+    panel.addEventListener('click', function(e){ e.stopPropagation(); });
+  }
+});
+document.addEventListener('click', function(e){
+  try {
+    var panel = document.getElementById('param-fixed');
+    if (!panel) return;
+    var trigger = e.target && e.target.closest ? e.target.closest('.menu-param') : null;
+    var insidePanel = e.target && e.target.closest ? e.target.closest('#param-fixed') : null;
+    if (trigger || insidePanel) return;
+    if (!panel.classList.contains('hidden')) closeParamFixed();
+  } catch (err) {
+    console.warn('[param click-outside]', err);
+  }
+});
+
+/* ================================
+   Modals: Info + Quit
+   ================================ */
+function openInfo(type){
+  try {
+    var modal = document.getElementById('info-modal');
+    var content = document.getElementById('info-content');
+    var title = document.getElementById('info-title');
+    if (!modal || !content || !title) return;
+    var html = '';
+    var t = 'Informations';
+    if (type === 'about'){
+      t = 'À propos';
+      html = '' +
+        '<p>Mijoro Boutique — produits numériques (ebooks, vidéos, apps/jeux).</p>' +
+        '<p>Objectif: faciliter l’accès aux contenus utiles pour réussir en ligne.</p>';
+    } else if (type === 'contact'){
+      t = 'Contact';
+      html = '' +
+        '<p>WhatsApp: <strong>+261 33 31 060 55</strong></p>' +
+        '<p>Vous pouvez aussi commander via le panier.</p>';
+    } else {
+      html = '<p>Informations générales de l’application.</p>';
+    }
+    title.textContent = t;
+    content.innerHTML = html;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    var focusEl = modal.querySelector('.info-actions .param-btn');
+    if (!focusEl) focusEl = modal.querySelector('button');
+    if (focusEl && focusEl.focus) focusEl.focus({ preventScroll:true });
+  } catch (err) {
+    console.error('[openInfo error]', err);
+  }
+}
+function closeInfo(){
+  try {
+    var modal = document.getElementById('info-modal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+  } catch (err) {
+    console.error('[closeInfo error]', err);
+  }
+}
+document.addEventListener('click', function(e){
+  try {
+    var modal = document.getElementById('info-modal');
+    if (!modal || !modal.classList.contains('show')) return;
+    var inside = e.target && e.target.closest ? e.target.closest('.info-card') : null;
+    var isBtn = e.target && e.target.closest ? e.target.closest('.param-btn') : null;
+    if (!inside && !isBtn) closeInfo();
+  } catch (err) {
+    console.warn('[info-modal click-outside]', err);
+  }
+});
+function openQuitModal(){
+  try {
+    var modal = document.getElementById('quit-modal');
+    if (!modal) return;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    var btn = modal.querySelector('button.param-btn');
+    if (btn && btn.focus) btn.focus({ preventScroll:true });
+  } catch (err) {
+    console.error('[openQuitModal error]', err);
+  }
+}
+function closeQuitModal(){
+  try {
+    var modal = document.getElementById('quit-modal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+  } catch (err) {
+    console.error('[closeQuitModal error]', err);
+  }
+}
+function quitApp(){
+  try {
+    closeQuitModal();
+    showSection('home', document.querySelector('.bottom-menu .menu-home'));
+    alert('Misaotra nitsidika!');
+  } catch (err) {
+    console.error('[quitApp error]', err);
+  }
+}
+
+/* ================================
+   Shop Popup
+   ================================ */
+function openShop(){
+  try {
+    var popup = document.getElementById('shop-popup');
+    if (!popup) return;
+    popup.classList.add('show');
+    popup.setAttribute('aria-hidden','false');
+    popup.style.pointerEvents = 'auto';
+    var s = document.getElementById('search');
+    if (s && s.focus) s.focus({ preventScroll:true });
+  } catch (err) {
+    console.error('[openShop error]', err);
+  }
+}
+function closeShop(){
+  try {
+    var popup = document.getElementById('shop-popup');
+    if (!popup) return;
+    popup.classList.remove('show');
+    popup.setAttribute('aria-hidden','true');
+    popup.style.pointerEvents = 'none';
+  } catch (err) {
+    console.error('[closeShop error]', err);
+  }
+}
+
+/* ================================
+   Détails produit (showProduct via info-modal)
+   ================================ */
+function showProduct(id){
+  try {
+    var p = null;
+    for (var i=0;i<(products||[]).length;i++){
+      if (products[i].id === id){ p = products[i]; break; }
+    }
+    if (!p) return;
+    var title = p.title || 'Produit';
+    var img = escapeAttr((p.image && p.image.url) ? p.image.url : 'https://via.placeholder.com/600x400?text=Produit');
+    var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
+    var cat = normalizeCategory(p.category);
+    var badge = '<span class="' + badgeClassFor(cat) + '">' + badgeIconFor(cat) + ' ' + escapeHtml(cat || 'produit') + '</span>';
+    var safeId = escapeAttr(p.id);
+    var html = '' +
+      '<div style="display:grid; gap:10px;">' +
+      '  <img src="' + img + '" alt="' + imgAlt + '" style="width:100%;height:auto;border-radius:10px;object-fit:cover;aspect-ratio:16/9">' +
+      '  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
+      '    <h4 style="margin:0">' + escapeHtml(title) + '</h4>' +
+           badge +
+      '  </div>' +
+      '  <div style="opacity:.9">' + escapeHtml(p.description || p.description_short || '') + '</div>' +
+      '  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">' +
+      '    <strong>' + fmtPrice(p.price) + '</strong>' +
+      '    <div class="card-actions">' +
+      '      <button type="button" class="icon-btn icon-buy" title="' + (Number(p.price)===0?'Obtenir (WhatsApp)':'Acheter (WhatsApp)') + '"' +
+      '        onclick="(function(){var a=null;for(var i=0;i<(products||[]).length;i++){if(products[i].id===\'' + safeId + '\'){a=products[i];break;}} if(a){buyOrRead(a);} })()">' +
+      '        <i class="fa-brands fa-whatsapp"></i>' +
+      '      </button>' +
+      '    </div>' +
+      '  </div>' +
+      '</div>';
+    var modal = document.getElementById('info-modal');
+    var content = document.getElementById('info-content');
+    var titleEl = document.getElementById('info-title');
+    if (!modal || !content || !titleEl) return;
+    titleEl.textContent = 'Détails du produit';
+    content.innerHTML = html;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    var closeBtn = modal.querySelector('.info-actions .param-btn');
+    if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll:true });
+  } catch (err) {
+    console.error('[showProduct error]', err);
+  }
+}
