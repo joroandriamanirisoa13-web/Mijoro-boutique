@@ -1,319 +1,523 @@
-
-alert('JS ready'); // Esory rehefa OK
-window.addEventListener('error', (e) => {
-  alert('JS error: ' + (e?.message || e));
-});
-
-// ========= CONFIG =========
+// shop/app-secure.js
+// Configuration Supabase
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw'; // Fenoy!
-const OWNER_EMAIL = 'joroandriamanirisoa13@gmail.com';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
 
-// Buckets
-const BUCKET_MEDIA = 'Media'; // sary/video/PDF (M lehibe)
-const BUCKET_APPS  = 'apps';  // app binaries (kely)
-
-// ========= INIT =========
-if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('APETRAHO')) {
-  alert("Tsy mbola feno ny SUPABASE_ANON_KEY ao amin'ny app-secure.js");
-}
+// Initialiser Supabase
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const els = {
-  grid: document.getElementById('grid'),
-  empty: document.getElementById('empty'),
-  loginBtn: document.getElementById('loginBtn'),
-  addBtn: document.getElementById('addBtn'),
-  chips: Array.from(document.querySelectorAll('.chip')),
-  search: document.getElementById('searchInput'),
-  modal: document.getElementById('modal'),
-  form: document.getElementById('form'),
-  closeBtn: document.getElementById('closeBtn'),
-  cancelBtn: document.getElementById('cancelBtn'),
-  imageFile: document.getElementById('imageFile'),
-  mediaFile: document.getElementById('mediaFile'),
-  appFile: document.getElementById('appFile'),
-};
-const loginModal = document.getElementById('loginModal');
-const loginForm = document.getElementById('loginForm');
-const loginEmail = document.getElementById('loginEmail');
-const loginPass = document.getElementById('loginPass');
-const closeLogin = document.getElementById('closeLogin');
-const cancelLogin = document.getElementById('cancelLogin');
+// State global
+let currentUser = null;
 
-let session = null;
-let isOwner = false;
-let filter = 'all';
-let q = '';
-
-// ========= AUTH =========
-async function initAuth() {
-  try {
-    const { data } = await supabase.auth.getSession();
-    session = data.session;
-  } catch (e) { alert('getSession error: ' + e.message); }
-  computeIsOwner();
-  reflectUI();
-
-  supabase.auth.onAuthStateChange((_e, s) => {
-    session = s;
-    computeIsOwner();
-    reflectUI();
-    render();
-  });
-}
-
-function computeIsOwner() {
-  const email = session?.user?.email || '';
-  isOwner = email.toLowerCase() === OWNER_EMAIL.toLowerCase();
-}
-
-function reflectUI() {
-  if (!els.loginBtn) return alert('TSY HITa loginBtn ao amin\'ny HTML');
-  els.loginBtn.textContent = session ? '🔓 Logout' : '🔒 Login';
-  if (els.addBtn) els.addBtn.hidden = !isOwner;
-}
-
-// Open/close login (modal + fallback prompt)
-els.loginBtn?.addEventListener('click', async () => {
-  if (session) {
-    await supabase.auth.signOut();
-    return;
-  }
-  const supportsDialog = !!(loginModal && loginModal.showModal);
-  if (!supportsDialog) {
-    const email = prompt('Owner email:', OWNER_EMAIL);
-    const password = prompt('Password:');
-    if (!email || !password) return;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) alert('Login failed: ' + error.message);
-    return;
-  }
-  loginEmail.value = OWNER_EMAIL;
-  loginPass.value = '';
-  loginModal.showModal();
-});
-closeLogin?.addEventListener('click', () => loginModal?.close());
-cancelLogin?.addEventListener('click', () => loginModal?.close());
-
-loginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = (loginEmail?.value || '').trim();
-  const password = loginPass?.value || '';
-  if (!email || !password) { alert('Fenoy email sy password'); return; }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    alert('Login failed: ' + error.message + '\n- Hamarino: Email/Password, Email confirmed, Provider enabled');
-  } else {
-    loginModal?.close();
-    const { data } = await supabase.auth.getUser();
-    alert('Logged in as: ' + (data?.user?.email || 'unknown'));
-  }
-});
-
-// ========= DB HELPERS =========
-async function listProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) { alert('listProducts error: ' + error.message); return []; }
-  return data || [];
-}
-
-async function saveProduct(p) {
-  if (!isOwner || !session) { alert('Owner only'); return; }
-  const payload = {
-    title: p.title, type: p.type, is_free: p.is_free,
-    price: p.price, promo: p.promo, is_vip: p.is_vip,
-    image_url: p.image_url || null, media_url: p.media_url || null,
-    description: p.description || null, tags: p.tags || [],
-    platform: p.platform || null, version: p.version || null, build_number: p.build_number || null,
-    file_url: p.file_url || null, file_size: p.file_size || null, file_type: p.file_type || null,
-    screenshots: p.screenshots || [],
-    owner: session.user.id
-  };
-  let err;
-  if (p.id) {
-    ({ error: err } = await supabase.from('products').update(payload).eq('id', p.id));
-  } else {
-    ({ error: err } = await supabase.from('products').insert(payload));
-  }
-  if (err) alert('Save product error: ' + err.message);
-}
-
-async function removeProduct(id) {
-  if (!isOwner || !session) { alert('Owner only'); return; }
-  const { error } = await supabase.from('products').delete().eq('id', id);
-  if (error) alert('Delete error: ' + error.message);
-}
-
-// ========= STORAGE (UPLOADS) =========
-async function uploadToBucket(bucket, path, file) {
-  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
-  if (error) throw error;
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-}
-async function uploadImage(file) {
-  const path = `images/${Date.now()}-${file.name}`;
-  return uploadToBucket(BUCKET_MEDIA, path, file);
-}
-async function uploadMedia(file) {
-  const ext = (file.name.split('.').pop() || '').toLowerCase();
-  const folder = ext === 'pdf' ? 'pdfs' : 'videos';
-  const path = `${folder}/${Date.now()}-${file.name}`;
-  return uploadToBucket(BUCKET_MEDIA, path, file);
-}
-async function uploadAppFile(file) {
-  const path = `binaries/${Date.now()}-${file.name}`;
-  const url = await uploadToBucket(BUCKET_APPS, path, file);
-  return { url, size: file.size, type: file.type || 'application/octet-stream' };
-}
-
-els.imageFile?.addEventListener('change', async (e) => {
-  const f = e.target.files?.[0]; if (!f) return;
-  try {
-    const url = await uploadImage(f);
-    els.form.elements['image_url'].value = url;
-    alert('Image uploaded');
-  } catch (err){ alert('Upload failed: ' + err.message); }
-});
-els.mediaFile?.addEventListener('change', async (e) => {
-  const f = e.target.files?.[0]; if (!f) return;
-  try {
-    const url = await uploadMedia(f);
-    els.form.elements['media_url'].value = url;
-    alert('Media uploaded');
-  } catch (err){ alert('Upload failed: ' + err.message); }
-});
-els.appFile?.addEventListener('change', async (e) => {
-  const f = e.target.files?.[0]; if (!f) return;
-  try {
-    const info = await uploadAppFile(f);
-    els.form.elements['file_url'].value = info.url;
-    els.form.elements['file_type'].value = info.type;
-    els.form.elements['file_size'].value = info.size;
-    alert('App file uploaded');
-  } catch (err){ alert('Upload failed: ' + err.message); }
-});
-
-// ========= FILTERS + SEARCH =========
-els.chips.forEach(c => c.addEventListener('click', () => {
-  els.chips.forEach(x => x.classList.remove('active'));
-  c.classList.add('active'); filter = c.dataset.filter || 'all'; render();
-}));
-let st; els.search?.addEventListener('input', () => {
-  clearTimeout(st); st = setTimeout(()=>{ q = els.search.value.trim().toLowerCase(); render(); }, 150);
-});
-
-// ========= MODAL ADD/EDIT =========
-document.getElementById('addBtn')?.addEventListener('click', () => openModal('add'));
-els.closeBtn?.addEventListener('click', () => els.modal.close());
-els.cancelBtn?.addEventListener('click', () => els.modal.close());
-
-function openModal(mode='add', id=null, product=null) {
-  els.form.reset(); els.form.dataset.mode = mode;
-  document.getElementById('modalTitle').textContent = mode==='edit'?'Edit product':'Add product';
-  if (product) {
-    const f = els.form.elements;
-    f['id'].value = product.id; f['title'].value = product.title||''; f['type'].value = product.type||'ebook';
-    f['isFree'].checked = !!product.is_free; f['price'].value = Number(product.price||0); f['promo'].value = Number(product.promo||0);
-    f['isVIP'].checked = !!product.is_vip; f['image_url'].value = product.image_url||''; f['media_url'].value = product.media_url||'';
-    f['platform'].value = product.platform||''; f['version'].value = product.version||''; f['build_number'].value = product.build_number||'';
-    f['file_url'].value = product.file_url||''; f['file_type'].value = product.file_type||''; f['file_size'].value = product.file_size||'';
-    f['description'].value = product.description||''; f['tags'].value = (product.tags||[]).join(', ');
-  } else { els.form.elements['price'].value = 0; els.form.elements['promo'].value = 0; }
-  const sync = () => { const isFree = els.form.elements['isFree'].checked; els.form.elements['price'].disabled = isFree; if (isFree) els.form.elements['price'].value = 0; };
-  els.form.elements['isFree'].addEventListener('change', sync, { once:true }); sync();
-  els.modal.showModal();
-}
-
-els.form?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!isOwner) return alert('Owner only');
-  const fd = new FormData(els.form); const d = Object.fromEntries(fd.entries());
-  const p = {
-    id: d.id || undefined,
-    title: (d.title||'').trim(),
-    type: d.type || 'ebook',
-    is_free: els.form.elements['isFree'].checked,
-    price: Number(d.price||0),
-    promo: Number(d.promo||0),
-    is_vip: els.form.elements['isVIP'].checked,
-    image_url: (d.image_url||'').trim(),
-    media_url: (d.media_url||'').trim(),
-    platform: d.platform || null,
-    version: d.version || null,
-    build_number: d.build_number || null,
-    file_url: (d.file_url||'').trim(),
-    file_type: (d.file_type||'').trim(),
-    file_size: d.file_size ? Number(d.file_size) : null,
-    description: (d.description||'').trim(),
-    tags: String(d.tags||'').split(',').map(s=>s.trim()).filter(Boolean),
-    screenshots: []
-  };
-  if (!p.title) return alert('Title required');
-  if (!['ebook','video','app'].includes(p.type)) return alert('Type invalid');
-  if (p.promo<0 || p.promo>100) return alert('Promo 0–100');
-  await saveProduct(p);
-  els.modal.close();
-  await render();
-});
-
-// ========= RENDER =========
-function matchFilters(p){
-  if (filter==='ebook' && p.type!=='ebook') return false;
-  if (filter==='video' && p.type!=='video') return false;
-  if (filter==='app' && p.type!=='app') return false;
-  if (filter==='free' && !p.is_free) return false;
-  if (filter==='promo' && !(Number(p.promo)>0)) return false;
-  if (filter==='vip' && !p.is_vip) return false;
-  if (q){
-    const hay = [p.title,p.description,(p.tags||[]).join(' '),p.type].filter(Boolean).join(' ').toLowerCase();
-    if(!hay.includes(q)) return false;
-  }
-  return true;
-}
-function priceText(p){
-  const base = p.is_free?0:Number(p.price||0);
-  const promo = Number(p.promo||0);
-  const final = Math.max(0, base - (base*promo)/100);
-  if (final===0) return 'GRATUIT';
-  if (promo>0 && final<base) return `$${final.toFixed(2)} (was $${base.toFixed(2)})`;
-  return `$${base.toFixed(2)}`;
-}
-async function render(){
-  const items = (await listProducts()).filter(matchFilters);
-  els.grid.innerHTML=''; if (!items.length){ els.empty.hidden=false; return; } els.empty.hidden=true;
-  for (const p of items){
-    const card = document.createElement('div'); card.className='card';
-    const thumb = document.createElement('div'); thumb.className='thumb'; if(p.image_url) thumb.style.backgroundImage=`url("${p.image_url}")`;
-    const body = document.createElement('div'); body.className='card-body';
-    const row = document.createElement('div'); row.className='title-row';
-    const h = document.createElement('h4'); h.textContent = p.title;
-    const badges = document.createElement('div');
-    const btype = document.createElement('span'); btype.className='badge'; btype.textContent=p.type.toUpperCase(); badges.appendChild(btype);
-    if (p.is_vip){ const b=document.createElement('span'); b.className='badge'; b.textContent='VIP'; badges.appendChild(b); }
-    if (p.is_free){ const b=document.createElement('span'); b.className='badge'; b.textContent='FREE'; badges.appendChild(b); }
-    if (p.type==='app' && p.platform){ const b=document.createElement('span'); b.className='badge'; b.textContent=p.platform.toUpperCase(); badges.appendChild(b); }
-    row.append(h,badges);
-    const desc = document.createElement('p'); desc.textContent = p.description||'';
-    const price = document.createElement('div'); price.textContent = priceText(p);
-    const actions = document.createElement('div'); actions.className='card-actions';
-    const openBtn = document.createElement('a'); openBtn.className='btn'; openBtn.target='_blank'; openBtn.rel='noopener';
-    if (p.type==='video' && p.media_url){ openBtn.textContent='Play'; openBtn.href=p.media_url; }
-    else if (p.type==='ebook' && p.media_url?.toLowerCase().endsWith('.pdf')){ openBtn.textContent='Read PDF'; openBtn.href=p.media_url; }
-    else if (p.type==='app' && p.file_url){ openBtn.textContent='Download'; openBtn.href=p.file_url; openBtn.setAttribute('download',''); }
-    else { openBtn.textContent='Open'; openBtn.href=p.media_url || p.image_url || '#'; }
-    actions.appendChild(openBtn);
-    if (isOwner){
-      const edit = document.createElement('button'); edit.className='btn'; edit.textContent='Edit'; edit.onclick=()=>openModal('edit', p.id, p);
-      const del = document.createElement('button'); del.className='btn'; del.textContent='Delete'; del.onclick=async()=>{ if(confirm(`Supprimer "${p.title}" ?`)){ await removeProduct(p.id); await render(); } };
-      actions.append(edit,del);
+// Fonctions d'authentification
+async function signInWithGitHub() {
+    try {
+        showLoading('Connecting to GitHub...');
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) throw error;
+    } catch (error) {
+        showAlert('Login failed: ' + error.message, 'error');
+        hideLoading();
     }
-    body.append(row,desc,price); card.append(thumb,body,actions); els.grid.appendChild(card);
-  }
 }
 
-// ========= START =========
-initAuth().then(render);
+async function signOut() {
+    try {
+        showLoading('Logging out...');
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        showAlert('Logged out successfully', 'success');
+    } catch (error) {
+        showAlert('Logout failed: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function getCurrentUser() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+        console.error('Error getting user:', error);
+        return null;
+    }
+    return user;
+}
+
+// Gestion des produits
+async function addProduct(productData) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+        .from('products')
+        .insert([
+            {
+                ...productData,
+                owner_id: user.id,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }
+        ])
+        .select();
+
+    if (error) throw error;
+    return data;
+}
+
+async function getUserProducts() {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('owner_id', user.id)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+}
+
+async function updateProduct(productId, updates) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Vérifier la propriété
+    const { data: product } = await supabase
+        .from('products')
+        .select('owner_id')
+        .eq('id', productId)
+        .single();
+
+    if (!product || product.owner_id !== user.id) {
+        throw new Error('Not authorized to update this product');
+    }
+
+    const { data, error } = await supabase
+        .from('products')
+        .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', productId)
+        .select();
+
+    if (error) throw error;
+    return data;
+}
+
+async function deleteProduct(productId) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Vérifier la propriété
+    const { data: product } = await supabase
+        .from('products')
+        .select('owner_id')
+        .eq('id', productId)
+        .single();
+
+    if (!product || product.owner_id !== user.id) {
+        throw new Error('Not authorized to delete this product');
+    }
+
+    const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+    if (error) throw error;
+}
+
+// Upload de fichiers
+async function uploadFile(file, folder = 'product-files') {
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+        const filePath = `${folder}/${fileName}`;
+
+        const { data, error } = await supabase.storage
+            .from('media')
+            .upload(filePath, file);
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('media')
+            .getPublicUrl(filePath);
+
+        return { path: filePath, url: publicUrl };
+    } catch (error) {
+        throw new Error(`Upload failed: ${error.message}`);
+    }
+}
+
+// Validation des fichiers
+function validateFile(file, options = {}) {
+    const {
+        maxSize = 10 * 1024 * 1024,
+        allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/zip'],
+        allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.apk', '.ipa']
+    } = options;
+
+    if (file.size > maxSize) {
+        throw new Error(`File too large. Maximum size: ${maxSize / 1024 / 1024}MB`);
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error('File type not allowed');
+    }
+
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+        throw new Error('File extension not allowed');
+    }
+
+    return true;
+}
+
+// Validation des données produit
+function validateProductData(productData) {
+    const errors = [];
+
+    if (!productData.title?.trim()) {
+        errors.push('Product title is required');
+    }
+
+    if (!productData.platform) {
+        errors.push('Platform is required');
+    }
+
+    if (productData.price && productData.price < 0) {
+        errors.push('Price cannot be negative');
+    }
+
+    return errors;
+}
+
+// Gestion de l'UI
+function toggleProductForm() {
+    const form = document.getElementById('productForm');
+    form.classList.toggle('hidden');
+    
+    if (!form.classList.contains('hidden')) {
+        // Reset form when opening
+        document.getElementById('productForm').reset();
+        document.getElementById('imagePreview').innerHTML = '';
+        document.getElementById('filePreview').innerHTML = '';
+        document.getElementById('imagePreview').classList.add('hidden');
+    }
+}
+
+async function submitProduct() {
+    try {
+        showLoading('Adding product...');
+
+        const productData = {
+            title: document.getElementById('productTitle').value.trim(),
+            type: document.getElementById('productType').value.trim(),
+            price: parseFloat(document.getElementById('productPrice').value) || 0,
+            platform: document.getElementById('productPlatform').value,
+            description: document.getElementById('productDescription').value.trim(),
+            version: document.getElementById('productVersion').value.trim(),
+            build_number: document.getElementById('productBuildNumber').value.trim()
+        };
+
+        // Validation des données
+        const errors = validateProductData(productData);
+        if (errors.length > 0) {
+            throw new Error('Validation errors:\n' + errors.join('\n'));
+        }
+
+        // Upload de l'image
+        const imageFile = document.getElementById('productImage').files[0];
+        if (imageFile) {
+            validateFile(imageFile, { 
+                maxSize: 10 * 1024 * 1024,
+                allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
+            });
+            const imageUpload = await uploadFile(imageFile, 'product-images');
+            productData.img_url = imageUpload.url;
+        }
+
+        // Upload du fichier
+        const productFile = document.getElementById('productFile').files[0];
+        if (productFile) {
+            validateFile(productFile, {
+                maxSize: 50 * 1024 * 1024,
+                allowedTypes: ['application/zip', 'application/octet-stream'],
+                allowedExtensions: ['.zip', '.apk', '.ipa']
+            });
+            const fileUpload = await uploadFile(productFile, 'product-files');
+            productData.file_url = fileUpload.url;
+            productData.file_size = productFile.size;
+            productData.file_type = productFile.type;
+        }
+
+        // Ajouter le produit
+        await addProduct(productData);
+        
+        showAlert('Product added successfully!', 'success');
+        await loadUserProducts();
+        toggleProductForm();
+        
+    } catch (error) {
+        showAlert('Error: ' + error.message, 'error');
+        console.error('Product submission error:', error);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function loadUserProducts() {
+    try {
+        showLoading('Loading products...');
+        const products = await getUserProducts();
+        const productsList = document.getElementById('productsList');
+        
+        if (products.length === 0) {
+            productsList.innerHTML = `
+                <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
+                    <h3 class="text-lg font-semibold mb-2">No products yet</h3>
+                    <p class="text-secondary">Start by adding your first product!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        productsList.innerHTML = products.map(product => `
+            <div class="product-card">
+                <div class="product-header">
+                    <div>
+                        <h3 class="product-title">${escapeHtml(product.title)}</h3>
+                        <span class="product-platform">${product.platform}</span>
+                    </div>
+                    <div class="product-price">$${product.price || '0.00'}</div>
+                </div>
+                
+                ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">${escapeHtml(product.description)}</p>` : ''}
+                
+                <div class="product-meta">
+                    ${product.version ? `<p><strong>Version:</strong> ${product.version}</p>` : ''}
+                    ${product.build_number ? `<p><strong>Build:</strong> ${product.build_number}</p>` : ''}
+                    ${product.type ? `<p><strong>Type:</strong> ${product.type}</p>` : ''}
+                    ${product.file_size ? `<p><strong>Size:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
+                    ${product.file_type ? `<p><strong>File Type:</strong> ${product.file_type}</p>` : ''}
+                    <p><strong>Created:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
+                </div>
+                
+                <div class="product-actions">
+                    <button class="btn btn-secondary" onclick="editProduct('${product.id}')">Edit</button>
+                    <button class="btn btn-danger" onclick="confirmDelete('${product.id}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        showAlert('Error loading products: ' + error.message, 'error');
+        console.error('Error loading products:', error);
+    } finally {
+        hideLoading();
+    }
+}
+
+function confirmDelete(productId) {
+    if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+        deleteProductHandler(productId);
+    }
+}
+
+async function deleteProductHandler(productId) {
+    try {
+        showLoading('Deleting product...');
+        await deleteProduct(productId);
+        showAlert('Product deleted successfully', 'success');
+        await loadUserProducts();
+    } catch (error) {
+        showAlert('Error deleting product: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Gestion des prévisualisations
+function setupFilePreviews() {
+    const imageInput = document.getElementById('productImage');
+    const fileInput = document.getElementById('productFile');
+    
+    imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').innerHTML = `
+                    <img src="${e.target.result}" class="preview-image" alt="Preview">
+                    <p class="text-sm mt-2">${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>
+                `;
+                document.getElementById('imagePreview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('filePreview').innerHTML = `
+                <div style="padding: 1rem; background: var(--surface-color); border-radius: 8px;">
+                    <p><strong>File:</strong> ${file.name}</p>
+                    <p><strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p><strong>Type:</strong> ${file.type || 'Unknown'}</p>
+                </div>
+            `;
+        }
+    });
+}
+
+// Utilitaires d'UI
+function showOwnerSection(user) {
+    document.getElementById('ownerSection').classList.remove('hidden');
+    document.getElementById('welcomeSection').classList.add('hidden');
+    document.getElementById('githubLogin').classList.add('hidden');
+    document.getElementById('logoutBtn').classList.remove('hidden');
+    document.getElementById('userInfo').textContent = `👤 ${user.email || user.user_metadata.full_name || 'User'}`;
+    loadUserProducts();
+}
+
+function showWelcomeSection() {
+    document.getElementById('ownerSection').classList.add('hidden');
+    document.getElementById('welcomeSection').classList.remove('hidden');
+    document.getElementById('githubLogin').classList.remove('hidden');
+    document.getElementById('logoutBtn').classList.add('hidden');
+    document.getElementById('userInfo').textContent = '';
+}
+
+function showAlert(message, type = 'info') {
+    // Remove existing alerts
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    
+    document.querySelector('.container').insertBefore(alert, document.querySelector('.container').firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentElement) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function showLoading(message = 'Loading...') {
+    // Implementation simple - vous pouvez ajouter un spinner plus sophistiqué
+    console.log('Loading:', message);
+}
+
+function hideLoading() {
+    console.log('Loading complete');
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Drag and drop support
+function setupDragAndDrop() {
+    const uploadAreas = document.querySelectorAll('.file-upload');
+    
+    uploadAreas.forEach(area => {
+        area.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            area.classList.add('dragover');
+        });
+        
+        area.addEventListener('dragleave', () => {
+            area.classList.remove('dragover');
+        });
+        
+        area.addEventListener('drop', (e) => {
+            e.preventDefault();
+            area.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const input = area.querySelector('input[type="file"]');
+                if (input) {
+                    // Create a new FileList (simulated)
+                    const dt = new DataTransfer();
+                    dt.items.add(files[0]);
+                    input.files = dt.files;
+                    
+                    // Trigger change event
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        });
+    });
+}
+
+// Gestion de l'état d'authentification
+supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+        currentUser = session.user;
+        showOwnerSection(session.user);
+    } else {
+        currentUser = null;
+        showWelcomeSection();
+    }
+});
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    setupFilePreviews();
+    setupDragAndDrop();
+    
+    // Rendre les fonctions globales
+    window.signInWithGitHub = signInWithGitHub;
+    window.signOut = signOut;
+    window.toggleProductForm = toggleProductForm;
+    window.submitProduct = submitProduct;
+    window.deleteProduct = deleteProductHandler;
+    window.confirmDelete = confirmDelete;
+    
+    // Vérifier l'état d'authentification au chargement
+    getCurrentUser().then(user => {
+        if (user) {
+            showOwnerSection(user);
+        } else {
+            showWelcomeSection();
+        }
+    });
+});
+
+// Gestion des erreurs globales
+window.addEventListener('error', function(e) {
+    console.error('Global error:', e.error);
+    showAlert('An unexpected error occurred', 'error');
+});
+
+// Exporter pour les tests (si nécessaire)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        supabase,
+        signInWithGitHub,
+        signOut,
+        addProduct,
+        getUserProducts,
+        updateProduct,
+        deleteProduct
+    };
+}
