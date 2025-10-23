@@ -1,157 +1,406 @@
-
-<html lang="mg">
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mijoro Boutique</title>
-  <link rel="stylesheet" href="./styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Manager - Shop</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --background-color: #ffffff;
+            --surface-color: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header & Auth */
+        .header {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .auth-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding: 1rem 0;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Product Form */
+        .product-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin: 2rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .product-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .product-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .product-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .product-platform {
+            display: inline-block;
+            background: var(--surface-color);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .upload-preview {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-lg {
+            font-size: 1.125rem;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .auth-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header class="topbar">
-    <h1>Mijoro Boutique</h1>
-    <div class="actions">
-      <button id="loginBtn" class="btn">🔒 Login</button>
-      <button id="addBtn" class="btn primary" hidden>+ Add product</button>
-    </div>
-  </header>
-
-  <section class="filters">
-    <div class="chips">
-      <button class="chip active" data-filter="all">All</button>
-      <button class="chip" data-filter="ebook">eBook</button>
-      <button class="chip" data-filter="video">Video</button>
-      <button class="chip" data-filter="app">App/Jeux</button>
-      <button class="chip" data-filter="free">Gratuit</button>
-      <button class="chip" data-filter="promo">Promo</button>
-      <button class="chip" data-filter="vip">VIP</button>
-    </div>
-    <input id="searchInput" class="search" placeholder="Search titre/tags..." />
-  </section>
-
-  <main>
-    <div id="grid" class="grid"></div>
-    <p id="empty" class="empty" hidden>Tsisy produits.</p>
-  </main>
-
-  <!-- Modal Add/Edit Product -->
-  <dialog id="modal" class="modal">
-    <form id="form" method="dialog">
-      <div class="modal-header">
-        <h3 id="modalTitle">Add product</h3>
-        <button type="button" id="closeBtn" class="icon-btn">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <input type="hidden" name="id" />
-          <label>Title
-            <input name="title" required />
-          </label>
-          <label>Type
-            <select name="type">
-              <option value="ebook">eBook</option>
-              <option value="video">Video</option>
-              <option value="app">App/Jeux</option>
-            </select>
-          </label>
-          <label>Gratuit
-            <input type="checkbox" name="isFree"/>
-          </label>
-          <label>Price
-            <input type="number" step="0.01" min="0" name="price" value="0"/>
-          </label>
-          <label>Promo (%)
-            <input type="number" min="0" max="100" name="promo" value="0"/>
-          </label>
-          <label>VIP
-            <input type="checkbox" name="isVIP"/>
-          </label>
-
-          <label class="full">Image (cover)
-            <div class="inline">
-              <input name="image_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="imageFile" accept="image/*"/>
+    <div class="header">
+        <div class="container">
+            <div class="auth-section">
+                <div id="userInfo" class="user-info"></div>
+                <button id="githubLogin" class="btn btn-primary" onclick="signInWithGitHub()">
+                    🔗 Login with GitHub
+                </button>
+                <button id="logoutBtn" class="btn btn-secondary hidden" onclick="signOut()">
+                    🚪 Logout
+                </button>
             </div>
-          </label>
-
-          <label class="full">Media (Video/PDF)
-            <div class="inline">
-              <input name="media_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="mediaFile" accept="video/*,.pdf"/>
-            </div>
-          </label>
-
-          <label>Platform (raha App)
-            <select name="platform">
-              <option value="">--</option>
-              <option value="android">Android</option>
-              <option value="ios">iOS</option>
-              <option value="windows">Windows</option>
-              <option value="mac">macOS</option>
-              <option value="linux">Linux</option>
-              <option value="web">Web</option>
-            </select>
-          </label>
-          <label>Version
-            <input name="version" placeholder="1.0.0"/>
-          </label>
-          <label>Build #
-            <input name="build_number" placeholder="100"/>
-          </label>
-
-          <label class="full">App file (APK/ZIP/EXE/DMG…)
-            <div class="inline">
-              <input name="file_url" type="url" placeholder="Auto-filled rehefa upload"/>
-              <input type="file" id="appFile" />
-            </div>
-            <input type="hidden" name="file_type"/>
-            <input type="hidden" name="file_size"/>
-          </label>
-
-          <label class="full">Description
-            <textarea name="description" rows="3"></textarea>
-          </label>
-          <label class="full">Tags (comma separated)
-            <input name="tags" placeholder="programming, react"/>
-          </label>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn primary">Save</button>
-        <button type="button" class="btn" id="cancelBtn">Cancel</button>
-      </div>
-    </form>
-  </dialog>
+    </div>
 
-  <!-- Login Modal (ILAY TSY MAINTSY MISY) -->
-  <dialog id="loginModal" class="modal">
-    <form id="loginForm" method="dialog">
-      <div class="modal-header">
-        <h3>Owner Login</h3>
-        <button type="button" class="icon-btn" id="closeLogin">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-grid">
-          <label class="full">Email
-            <input id="loginEmail" type="email" placeholder="joroandriamanirisoa13@gmail.com" required />
-          </label>
-          <label class="full">Password
-            <input id="loginPass" type="password" placeholder="••••••••" required />
-          </label>
+    <div class="container">
+        <!-- Owner Only Section -->
+        <div id="ownerSection" class="hidden">
+            <div class="text-center mb-4">
+                <h1 class="text-lg font-semibold">🎯 My Products Manager</h1>
+                <p class="text-secondary">Manage your products and uploads</p>
+            </div>
+
+            <button class="btn btn-primary mb-4" onclick="toggleProductForm()">
+                ➕ Add New Product
+            </button>
+
+            <!-- Product Form -->
+            <div id="productForm" class="product-form hidden">
+                <h2 class="mb-4">Add New Product</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Product Title *</label>
+                        <input type="text" id="productTitle" class="form-input" placeholder="Enter product title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Type</label>
+                        <input type="text" id="productType" class="form-input" placeholder="App, Game, Tool, etc.">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Price ($)</label>
+                        <input type="number" id="productPrice" class="form-input" placeholder="0.00" step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Platform *</label>
+                        <select id="productPlatform" class="form-select" required>
+                            <option value="">Select Platform</option>
+                            <option value="android">Android</option>
+                            <option value="ios">iOS</option>
+                            <option value="windows">Windows</option>
+                            <option value="mac">Mac OS</option>
+                            <option value="web">Web</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Version</label>
+                        <input type="text" id="productVersion" class="form-input" placeholder="1.0.0">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Build Number</label>
+                        <input type="text" id="productBuildNumber" class="form-input" placeholder="12345">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="productDescription" class="form-textarea" placeholder="Describe your product..."></textarea>
+                </div>
+
+                <!-- File Upload Section -->
+                <div class="form-group">
+                    <label class="form-label">Product Image</label>
+                    <div class="file-upload" onclick="document.getElementById('productImage').click()">
+                        <p>📁 Click to upload image or drag & drop</p>
+                        <p class="text-sm">PNG, JPG, GIF up to 10MB</p>
+                        <input type="file" id="productImage" class="hidden" accept="image/*">
+                    </div>
+                    <div id="imagePreview" class="upload-preview hidden"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Product File</label>
+                    <div class="file-upload" onclick="document.getElementById('productFile').click()">
+                        <p>📦 Click to upload file or drag & drop</p>
+                        <p class="text-sm">ZIP, APK, IPA up to 50MB</p>
+                        <input type="file" id="productFile" class="hidden" accept=".zip,.apk,.ipa">
+                    </div>
+                    <div id="filePreview" class="upload-preview"></div>
+                </div>
+
+                <div class="product-actions">
+                    <button class="btn btn-primary" onclick="submitProduct()">Add Product</button>
+                    <button class="btn btn-secondary" onclick="toggleProductForm()">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Products List -->
+            <div id="productsList" class="products-grid"></div>
         </div>
-        <p class="hint" style="color:#94a3b8;font-size:12px;margin-top:8px">
-          Owner ihany no mahazo miditra.
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn primary">Login</button>
-        <button type="button" class="btn" id="cancelLogin">Cancel</button>
-      </div>
-    </form>
-  </dialog>
 
-  <!-- Libs (Tsy ovaina filaharana) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.js"></script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="./app-secure.js"></script>
+        <!-- Welcome Section for Non-Logged In -->
+        <div id="welcomeSection" class="text-center">
+            <h1 class="text-lg font-semibold">🚀 Welcome to Product Manager</h1>
+            <p class="text-secondary">Please login with GitHub to manage your products</p>
+        </div>
+    </div>
+
+    <script src="app-secure.js"></script>
 </body>
 </html>
