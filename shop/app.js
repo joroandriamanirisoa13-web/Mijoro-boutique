@@ -1243,4 +1243,4 @@ function showProduct(id){
   } catch (err) {
     console.error('[showProduct error]', err);
   }
-}
+    }
