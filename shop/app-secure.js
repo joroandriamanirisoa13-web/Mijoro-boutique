@@ -1,3 +1,38 @@
+// ==================== MODAL FUNCTIONS ====================
+// Ajout any am début an'ny JavaScript
+
+function showLoginForm() {
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.getElementById('signupModal').classList.add('hidden');
+}
+
+function hideLoginForm() {
+    document.getElementById('loginModal').classList.add('hidden');
+}
+
+function showSignupForm() {
+    document.getElementById('signupModal').classList.remove('hidden');
+    document.getElementById('loginModal').classList.add('hidden');
+}
+
+function hideSignupForm() {
+    document.getElementById('signupModal').classList.add('hidden');
+}
+
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.add('hidden');
+    }
+});
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideLoginForm();
+        hideSignupForm();
+    }
+});
 // shop/app-secure.js
 // Configuration Supabase
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
