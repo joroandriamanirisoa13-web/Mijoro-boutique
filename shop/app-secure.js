@@ -9,19 +9,90 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // State global
 let currentUser = null;
 
-// Fonctions d'authentification
-async function signInWithGitHub() {
+// ==================== AUTHENTICATION EMAIL ====================
+
+async function showLoginForm() {
+    document.getElementById('loginModal').classList.remove('hidden');
+    document.getElementById('signupModal').classList.add('hidden');
+}
+
+async function hideLoginForm() {
+    document.getElementById('loginModal').classList.add('hidden');
+}
+
+async function showSignupForm() {
+    document.getElementById('signupModal').classList.remove('hidden');
+    document.getElementById('loginModal').classList.add('hidden');
+}
+
+async function hideSignupForm() {
+    document.getElementById('signupModal').classList.add('hidden');
+}
+
+async function loginWithEmail() {
     try {
-        showLoading('Connecting to GitHub...');
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: window.location.origin
-            }
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+
+        if (!email || !password) {
+            throw new Error('Please enter both email and password');
+        }
+
+        showLoading('Signing in...');
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
         });
+
         if (error) throw error;
+
+        hideLoginForm();
+        showAlert('Login successful!', 'success');
+
     } catch (error) {
         showAlert('Login failed: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function signUpWithEmail() {
+    try {
+        const email = document.getElementById('signupEmail').value.trim();
+        const password = document.getElementById('signupPassword').value;
+
+        if (!email || !password) {
+            throw new Error('Please enter both email and password');
+        }
+
+        if (password.length < 6) {
+            throw new Error('Password must be at least 6 characters');
+        }
+
+        showLoading('Creating account...');
+
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+                emailRedirectTo: window.location.origin
+            }
+        });
+
+        if (error) throw error;
+
+        hideSignupForm();
+        
+        if (data.user && !data.user.identities?.length) {
+            showAlert('Account created! Please check your email to confirm your account.', 'success');
+        } else {
+            showAlert('Account created successfully! You can now login.', 'success');
+        }
+
+    } catch (error) {
+        showAlert('Signup failed: ' + error.message, 'error');
+    } finally {
         hideLoading();
     }
 }
@@ -48,7 +119,8 @@ async function getCurrentUser() {
     return user;
 }
 
-// Gestion des produits
+// ==================== PRODUCT MANAGEMENT ====================
+
 async function addProduct(productData) {
     const user = await getCurrentUser();
     if (!user) throw new Error('Not authenticated');
@@ -134,7 +206,8 @@ async function deleteProduct(productId) {
     if (error) throw error;
 }
 
-// Upload de fichiers
+// ==================== FILE UPLOAD ====================
+
 async function uploadFile(file, folder = 'product-files') {
     try {
         const fileExt = file.name.split('.').pop();
@@ -157,7 +230,6 @@ async function uploadFile(file, folder = 'product-files') {
     }
 }
 
-// Validation des fichiers
 function validateFile(file, options = {}) {
     const {
         maxSize = 10 * 1024 * 1024,
@@ -181,7 +253,6 @@ function validateFile(file, options = {}) {
     return true;
 }
 
-// Validation des données produit
 function validateProductData(productData) {
     const errors = [];
 
@@ -200,7 +271,8 @@ function validateProductData(productData) {
     return errors;
 }
 
-// Gestion de l'UI
+// ==================== UI MANAGEMENT ====================
+
 function toggleProductForm() {
     const form = document.getElementById('productForm');
     form.classList.toggle('hidden');
@@ -345,7 +417,6 @@ async function deleteProductHandler(productId) {
     }
 }
 
-// Gestion des prévisualisations
 function setupFilePreviews() {
     const imageInput = document.getElementById('productImage');
     const fileInput = document.getElementById('productFile');
@@ -379,20 +450,19 @@ function setupFilePreviews() {
     });
 }
 
-// Utilitaires d'UI
 function showOwnerSection(user) {
     document.getElementById('ownerSection').classList.remove('hidden');
     document.getElementById('welcomeSection').classList.add('hidden');
-    document.getElementById('githubLogin').classList.add('hidden');
+    document.getElementById('loginBtn').classList.add('hidden');
     document.getElementById('logoutBtn').classList.remove('hidden');
-    document.getElementById('userInfo').textContent = `👤 ${user.email || user.user_metadata.full_name || 'User'}`;
+    document.getElementById('userInfo').textContent = `👤 ${user.email}`;
     loadUserProducts();
 }
 
 function showWelcomeSection() {
     document.getElementById('ownerSection').classList.add('hidden');
     document.getElementById('welcomeSection').classList.remove('hidden');
-    document.getElementById('githubLogin').classList.remove('hidden');
+    document.getElementById('loginBtn').classList.remove('hidden');
     document.getElementById('logoutBtn').classList.add('hidden');
     document.getElementById('userInfo').textContent = '';
 }
@@ -417,7 +487,7 @@ function showAlert(message, type = 'info') {
 }
 
 function showLoading(message = 'Loading...') {
-    // Implementation simple - vous pouvez ajouter un spinner plus sophistiqué
+    // Simple loading implementation
     console.log('Loading:', message);
 }
 
@@ -434,7 +504,6 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-// Drag and drop support
 function setupDragAndDrop() {
     const uploadAreas = document.querySelectorAll('.file-upload');
     
@@ -456,12 +525,9 @@ function setupDragAndDrop() {
             if (files.length > 0) {
                 const input = area.querySelector('input[type="file"]');
                 if (input) {
-                    // Create a new FileList (simulated)
                     const dt = new DataTransfer();
                     dt.items.add(files[0]);
                     input.files = dt.files;
-                    
-                    // Trigger change event
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
@@ -486,7 +552,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDragAndDrop();
     
     // Rendre les fonctions globales
-    window.signInWithGitHub = signInWithGitHub;
+    window.showLoginForm = showLoginForm;
+    window.hideLoginForm = hideLoginForm;
+    window.showSignupForm = showSignupForm;
+    window.hideSignupForm = hideSignupForm;
+    window.loginWithEmail = loginWithEmail;
+    window.signUpWithEmail = signUpWithEmail;
     window.signOut = signOut;
     window.toggleProductForm = toggleProductForm;
     window.submitProduct = submitProduct;
@@ -503,21 +574,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Gestion des erreurs globales
-window.addEventListener('error', function(e) {
-    console.error('Global error:', e.error);
-    showAlert('An unexpected error occurred', 'error');
+// Close modals when clicking outside
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        e.target.classList.add('hidden');
+    }
 });
-
-// Exporter pour les tests (si nécessaire)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        supabase,
-        signInWithGitHub,
-        signOut,
-        addProduct,
-        getUserProducts,
-        updateProduct,
-        deleteProduct
-    };
-}
