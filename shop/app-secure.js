@@ -1,5 +1,15 @@
+// shop/app-secure.js
+// Configuration Supabase - Ovao ny credentials anao eto
+const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
+
+// Initialiser Supabase
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// State global
+let currentUser = null;
+
 // ==================== MODAL FUNCTIONS ====================
-// Ajout any am début an'ny JavaScript
 
 function showLoginForm() {
     document.getElementById('loginModal').classList.remove('hidden');
@@ -19,50 +29,7 @@ function hideSignupForm() {
     document.getElementById('signupModal').classList.add('hidden');
 }
 
-// Close modals when clicking outside
-document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.add('hidden');
-    }
-});
-
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        hideLoginForm();
-        hideSignupForm();
-    }
-});
-// shop/app-secure.js
-// Configuration Supabase
-const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
-
-// Initialiser Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// State global
-let currentUser = null;
-
 // ==================== AUTHENTICATION EMAIL ====================
-
-async function showLoginForm() {
-    document.getElementById('loginModal').classList.remove('hidden');
-    document.getElementById('signupModal').classList.add('hidden');
-}
-
-async function hideLoginForm() {
-    document.getElementById('loginModal').classList.add('hidden');
-}
-
-async function showSignupForm() {
-    document.getElementById('signupModal').classList.remove('hidden');
-    document.getElementById('loginModal').classList.add('hidden');
-}
-
-async function hideSignupForm() {
-    document.getElementById('signupModal').classList.add('hidden');
-}
 
 async function loginWithEmail() {
     try {
@@ -269,14 +236,14 @@ function validateFile(file, options = {}) {
     const {
         maxSize = 10 * 1024 * 1024,
         allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/zip'],
-        allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.apk', '.ipa']
+        allowedExtensions = ['.jpg', '.jpeg', '.png', '.gzip', '.zip', '.apk', '.ipa']
     } = options;
 
     if (file.size > maxSize) {
         throw new Error(`File too large. Maximum size: ${maxSize / 1024 / 1024}MB`);
     }
 
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type) && file.type !== '') {
         throw new Error('File type not allowed');
     }
 
@@ -299,8 +266,21 @@ function validateProductData(productData) {
         errors.push('Platform is required');
     }
 
-    if (productData.price && productData.price < 0) {
+    if (!productData.type) {
+        errors.push('Product type is required');
+    }
+
+    if (productData.price < 0) {
         errors.push('Price cannot be negative');
+    }
+
+    if (productData.promo < 0) {
+        errors.push('Promo price cannot be negative');
+    }
+
+    // Si gratuit, prix doit être 0
+    if (productData.is_free && productData.price > 0) {
+        errors.push('Free products must have price 0');
     }
 
     return errors;
@@ -314,7 +294,18 @@ function toggleProductForm() {
     
     if (!form.classList.contains('hidden')) {
         // Reset form when opening
-        document.getElementById('productForm').reset();
+        document.getElementById('productTitle').value = '';
+        document.getElementById('productType').value = '';
+        document.getElementById('productPrice').value = '0';
+        document.getElementById('productPlatform').value = '';
+        document.getElementById('productVersion').value = '';
+        document.getElementById('productBuildNumber').value = '';
+        document.getElementById('productPromoPrice').value = '';
+        document.getElementById('productIsVip').checked = false;
+        document.getElementById('productIsFree').checked = false;
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productImage').value = '';
+        document.getElementById('productFile').value = '';
         document.getElementById('imagePreview').innerHTML = '';
         document.getElementById('filePreview').innerHTML = '';
         document.getElementById('imagePreview').classList.add('hidden');
@@ -325,14 +316,19 @@ async function submitProduct() {
     try {
         showLoading('Adding product...');
 
+        // Récupérer toutes les valeurs du formulaire
         const productData = {
             title: document.getElementById('productTitle').value.trim(),
-            type: document.getElementById('productType').value.trim(),
+            type: document.getElementById('productType').value,
             price: parseFloat(document.getElementById('productPrice').value) || 0,
             platform: document.getElementById('productPlatform').value,
             description: document.getElementById('productDescription').value.trim(),
             version: document.getElementById('productVersion').value.trim(),
-            build_number: document.getElementById('productBuildNumber').value.trim()
+            build_number: document.getElementById('productBuildNumber').value.trim(),
+            // NOUVEAUX CHAMPS
+            promo: parseFloat(document.getElementById('productPromoPrice').value) || 0,
+            is_vip: document.getElementById('productIsVip').checked,
+            is_free: document.getElementById('productIsFree').checked
         };
 
         // Validation des données
@@ -369,12 +365,12 @@ async function submitProduct() {
         // Ajouter le produit
         await addProduct(productData);
         
-        showAlert('Product added successfully!', 'success');
+        showAlert('✅ Product added successfully!', 'success');
         await loadUserProducts();
         toggleProductForm();
         
     } catch (error) {
-        showAlert('Error: ' + error.message, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
         console.error('Product submission error:', error);
     } finally {
         hideLoading();
@@ -402,19 +398,26 @@ async function loadUserProducts() {
                 <div class="product-header">
                     <div>
                         <h3 class="product-title">${escapeHtml(product.title)}</h3>
-                        <span class="product-platform">${product.platform}</span>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                            <span class="product-platform">${product.platform}</span>
+                            ${product.is_vip ? '<span style="background: gold; color: black; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">⭐ VIP</span>' : ''}
+                            ${product.is_free ? '<span style="background: green; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🆓 FREE</span>' : ''}
+                            ${product.type === 'promotion' ? '<span style="background: orange; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🔥 PROMO</span>' : ''}
+                        </div>
                     </div>
-                    <div class="product-price">$${product.price || '0.00'}</div>
+                    <div class="product-price">
+                        ${product.is_free ? 'FREE' : `$${product.price}`}
+                        ${product.promo > 0 ? `<div style="font-size: 0.9rem; color: orange; text-decoration: line-through;">$${product.promo}</div>` : ''}
+                    </div>
                 </div>
                 
                 ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">${escapeHtml(product.description)}</p>` : ''}
                 
                 <div class="product-meta">
+                    ${product.type ? `<p><strong>Type:</strong> ${product.type}</p>` : ''}
                     ${product.version ? `<p><strong>Version:</strong> ${product.version}</p>` : ''}
                     ${product.build_number ? `<p><strong>Build:</strong> ${product.build_number}</p>` : ''}
-                    ${product.type ? `<p><strong>Type:</strong> ${product.type}</p>` : ''}
                     ${product.file_size ? `<p><strong>Size:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
-                    ${product.file_type ? `<p><strong>File Type:</strong> ${product.file_type}</p>` : ''}
                     <p><strong>Created:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
                 </div>
                 
@@ -511,7 +514,7 @@ function showAlert(message, type = 'info') {
     alert.className = `alert alert-${type}`;
     alert.textContent = message;
     
-    document.querySelector('.container').insertBefore(alert, document.querySelector('.container').firstChild);
+    document.querySelector('.main-content').insertBefore(alert, document.querySelector('.main-content').firstChild);
     
     // Auto-remove after 5 seconds
     setTimeout(() => {
@@ -570,6 +573,8 @@ function setupDragAndDrop() {
     });
 }
 
+// ==================== INITIALISATION ====================
+
 // Gestion de l'état d'authentification
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (session) {
@@ -613,5 +618,13 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.add('hidden');
+    }
+});
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideLoginForm();
+        hideSignupForm();
     }
 });
