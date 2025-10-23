@@ -1243,4 +1243,309 @@ function showProduct(id){
   } catch (err) {
     console.error('[showProduct error]', err);
   }
+    }/* ================================
+   ADMIN PANEL - FONCTIONNALITÉS ADMIN (vaovao)
+   ================================ */
+
+// Configuration Supabase
+const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Admin state
+let currentAdmin = null;
+let adminProducts = [];
+
+// Vérification admin simple
+function isAdmin(user) {
+    return user && (
+        user.email === 'joroandriamanirisoa13@gmail.com' || 
+        user.email === 'admin@mijoro.com' ||
+        user.user_metadata?.role === 'admin'
+    );
+}
+
+// Initialisation admin
+async function initAdminPanel() {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user && isAdmin(user)) {
+        currentAdmin = user;
+        showAdminButton();
+        loadAdminProducts();
     }
+}
+
+// Afficher bouton admin
+function showAdminButton() {
+    // Créer le bouton admin s'il n'existe pas
+    if (!document.getElementById('adminBtn')) {
+        const adminBtn = document.createElement('button');
+        adminBtn.id = 'adminBtn';
+        adminBtn.className = 'btn btn-vip';
+        adminBtn.innerHTML = '👑 Admin';
+        adminBtn.onclick = showAdminPanel;
+        
+        // Ajouter dans le header
+        const authSection = document.querySelector('.auth-section');
+        if (authSection) {
+            authSection.insertBefore(adminBtn, authSection.firstChild);
+        }
+    } else {
+        document.getElementById('adminBtn').classList.remove('hidden');
+    }
+}
+
+// Panel admin principal
+function showAdminPanel() {
+    const modal = document.getElementById('adminModal');
+    if (!modal) createAdminModal();
+    document.getElementById('adminModal').classList.remove('hidden');
+}
+
+// Créer le modal admin
+function createAdminModal() {
+    const modalHTML = `
+        <div id="adminModal" class="modal hidden">
+            <div class="modal-content" style="max-width: 800px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h3>👑 Panel Admin</h3>
+                    <button class="btn btn-secondary" onclick="hideAdminPanel()">✕ Fermer</button>
+                </div>
+                
+                <!-- Formulaire Ajout Produit -->
+                <div class="admin-section">
+                    <h4>➕ Ajouter un Produit</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <input type="text" id="adminTitle" class="form-input" placeholder="Titre du produit">
+                        </div>
+                        <div class="form-group">
+                            <select id="adminCategory" class="form-select">
+                                <option value="ebooks">📚 eBooks</option>
+                                <option value="videos">🎥 Vidéos</option>
+                                <option value="apps">📱 Apps/Jeux</option>
+                                <option value="vip">⭐ VIP</option>
+                                <option value="promo">🔥 Promo</option>
+                                <option value="free">🆓 Gratuit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="adminPrice" class="form-input" placeholder="Prix" value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="adminDescription" class="form-textarea" placeholder="Description du produit"></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="addAdminProduct()">💾 Ajouter le Produit</button>
+                </div>
+
+                <hr style="margin: 2rem 0;">
+
+                <!-- Liste Produits Admin -->
+                <div class="admin-section">
+                    <h4>📦 Gestion des Produits (${adminProducts.length})</h4>
+                    <div id="adminProductsList" class="products-grid" style="grid-template-columns: 1fr;"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Cacher panel admin
+function hideAdminPanel() {
+    document.getElementById('adminModal').classList.add('hidden');
+}
+
+// Charger produits admin
+async function loadAdminProducts() {
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        adminProducts = data || [];
+        renderAdminProducts();
+    } catch (error) {
+        console.error('Error loading admin products:', error);
+    }
+}
+
+// Afficher produits admin
+function renderAdminProducts() {
+    const container = document.getElementById('adminProductsList');
+    if (!container) return;
+
+    if (adminProducts.length === 0) {
+        container.innerHTML = '<p class="text-center">Aucun produit à gérer</p>';
+        return;
+    }
+
+    container.innerHTML = adminProducts.map(product => `
+        <div class="product-card">
+            <div class="product-card-content">
+                <div class="product-header">
+                    <h4>${escapeHtml(product.title)}</h4>
+                    <div class="product-price">${product.price} AR</div>
+                </div>
+                
+                <div class="badges-container">
+                    <span class="badge">${product.category}</span>
+                    ${product.is_vip ? '<span class="badge badge-vip">VIP</span>' : ''}
+                    ${product.is_free ? '<span class="badge badge-free">GRATUIT</span>' : ''}
+                </div>
+                
+                <p style="margin: 1rem 0; color: #666;">${escapeHtml(product.description || '')}</p>
+                
+                <div class="product-actions">
+                    <button class="btn btn-secondary" onclick="editAdminProduct('${product.id}')">✏️ Modifier</button>
+                    <button class="btn btn-danger" onclick="deleteAdminProduct('${product.id}')">🗑️ Supprimer</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Ajouter produit admin
+async function addAdminProduct() {
+    try {
+        const title = document.getElementById('adminTitle').value.trim();
+        const category = document.getElementById('adminCategory').value;
+        const price = parseFloat(document.getElementById('adminPrice').value) || 0;
+        const description = document.getElementById('adminDescription').value.trim();
+
+        if (!title) {
+            alert('Veuillez entrer un titre');
+            return;
+        }
+
+        const productData = {
+            title,
+            category,
+            price,
+            description,
+            is_vip: category === 'vip',
+            is_free: category === 'free' || price === 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('products')
+            .insert([productData])
+            .select();
+
+        if (error) throw error;
+
+        // Réinitialiser le formulaire
+        document.getElementById('adminTitle').value = '';
+        document.getElementById('adminPrice').value = '0';
+        document.getElementById('adminDescription').value = '';
+        
+        // Recharger les produits
+        await loadAdminProducts();
+        
+        alert('✅ Produit ajouté avec succès!');
+
+    } catch (error) {
+        console.error('Error adding product:', error);
+        alert('❌ Erreur: ' + error.message);
+    }
+}
+
+// Supprimer produit admin
+async function deleteAdminProduct(productId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) return;
+
+    try {
+        const { error } = await supabase
+            .from('products')
+            .delete()
+            .eq('id', productId);
+
+        if (error) throw error;
+
+        await loadAdminProducts();
+        alert('✅ Produit supprimé avec succès!');
+
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        alert('❌ Erreur: ' + error.message);
+    }
+}
+
+// Modifier produit admin
+async function editAdminProduct(productId) {
+    const product = adminProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    // Simple édition via prompts
+    const newTitle = prompt('Nouveau titre:', product.title);
+    if (newTitle === null) return;
+
+    const newPrice = prompt('Nouveau prix:', product.price);
+    if (newPrice === null) return;
+
+    try {
+        const { error } = await supabase
+            .from('products')
+            .update({
+                title: newTitle,
+                price: parseFloat(newPrice) || 0,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', productId);
+
+        if (error) throw error;
+
+        await loadAdminProducts();
+        alert('✅ Produit modifié avec succès!');
+
+    } catch (error) {
+        console.error('Error updating product:', error);
+        alert('❌ Erreur: ' + error.message);
+    }
+}
+
+// Cacher bouton admin si non admin
+function hideAdminButton() {
+    const adminBtn = document.getElementById('adminBtn');
+    if (adminBtn) {
+        adminBtn.classList.add('hidden');
+    }
+}
+
+// Écouter les changements d'authentification
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session && isAdmin(session.user)) {
+        currentAdmin = session.user;
+        showAdminButton();
+        loadAdminProducts();
+    } else {
+        currentAdmin = null;
+        hideAdminButton();
+        hideAdminPanel();
+    }
+});
+
+// Initialiser au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initAdminPanel, 1000);
+});
+
+/* ================================
+   FONCTIONS UTILITAIRES
+   ================================ */
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
