@@ -28,7 +28,7 @@ async function setupStorage() {
         if (!bucketNames.includes(targetBucket)) {
             const { error: createError } = await supabase.storage.createBucket(targetBucket, {
                 public: true,
-                fileSizeLimit: 52428800
+                fileSizeLimit: 524288000 // 500MB
             });
             if (createError) {
                 console.warn('Cannot create bucket:', createError.message);
@@ -41,6 +41,122 @@ async function setupStorage() {
         
     } catch (error) {
         console.warn('Storage setup warning:', error.message);
+    }
+}
+
+// ==================== PRÉVISUALISATION AVANCÉE ====================
+
+// Prévisualisation PDF avec PDF.js
+async function setupPdfPreview(file) {
+    return new Promise((resolve) => {
+        const fileReader = new FileReader();
+        fileReader.onload = function() {
+            const typedarray = new Uint8Array(this.result);
+            
+            // Charger le PDF avec PDF.js
+            pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+                // Récupérer la première page
+                pdf.getPage(1).then(function(page) {
+                    const viewport = page.getViewport({ scale: 1.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+
+                    page.render(renderContext).promise.then(function() {
+                        resolve(canvas.toDataURL());
+                    });
+                });
+            });
+        };
+        fileReader.readAsArrayBuffer(file);
+    });
+}
+
+// Prévisualisation Vidéo
+function setupVideoPreview(file) {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(file);
+        video.controls = true;
+        video.style.width = '100%';
+        video.style.maxHeight = '300px';
+        video.addEventListener('loadeddata', () => {
+            resolve(video);
+        });
+    });
+}
+
+// Gestionnaire de prévisualisation
+async function handleFilePreview(file) {
+    const previewSection = document.getElementById('previewSection');
+    const previewContent = document.getElementById('previewContent');
+    
+    previewSection.classList.remove('hidden');
+    previewContent.innerHTML = '<div class="text-center">Loading preview...</div>';
+
+    try {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewContent.innerHTML = `
+                    <img src="${e.target.result}" style="max-width: 100%; border-radius: 8px;" alt="Preview">
+                    <p class="text-center mt-2">${file.name}</p>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+        else if (file.type === 'application/pdf') {
+            const previewData = await setupPdfPreview(file);
+            previewContent.innerHTML = `
+                <img src="${previewData}" style="max-width: 100%; border-radius: 8px;" alt="PDF Preview">
+                <p class="text-center mt-2">${file.name} (PDF Preview - Page 1)</p>
+            `;
+        }
+        else if (file.type.startsWith('video/')) {
+            const videoElement = await setupVideoPreview(file);
+            previewContent.innerHTML = '';
+            previewContent.appendChild(videoElement);
+            const info = document.createElement('p');
+            info.className = 'text-center mt-2';
+            info.textContent = `${file.name}`;
+            previewContent.appendChild(info);
+        }
+        else if (file.type.startsWith('audio/')) {
+            const audio = document.createElement('audio');
+            audio.src = URL.createObjectURL(file);
+            audio.controls = true;
+            audio.style.width = '100%';
+            previewContent.innerHTML = '';
+            previewContent.appendChild(audio);
+            const info = document.createElement('p');
+            info.className = 'text-center mt-2';
+            info.textContent = `${file.name}`;
+            previewContent.appendChild(info);
+        }
+        else {
+            previewContent.innerHTML = `
+                <div class="text-center">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+                    <p><strong>File:</strong> ${file.name}</p>
+                    <p><strong>Type:</strong> ${file.type || 'Unknown'}</p>
+                    <p><strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Preview error:', error);
+        previewContent.innerHTML = `
+            <div class="text-center text-error">
+                <p>Cannot generate preview for this file type</p>
+                <p><strong>File:</strong> ${file.name}</p>
+            </div>
+        `;
     }
 }
 
@@ -250,13 +366,13 @@ async function uploadFile(file, folder = 'product-files') {
         const filePath = `${folder}/${fileName}`;
 
         const { data, error } = await supabase.storage
-            .from('Media')  // ✅ "Media" majuscule
+            .from('Media')
             .upload(filePath, file);
 
         if (error) throw error;
 
         const { data: { publicUrl } } = supabase.storage
-            .from('Media')  // ✅ "Media" majuscule
+            .from('Media')
             .getPublicUrl(filePath);
 
         return { path: filePath, url: publicUrl };
@@ -267,9 +383,22 @@ async function uploadFile(file, folder = 'product-files') {
 
 function validateFile(file, options = {}) {
     const {
-        maxSize = 10 * 1024 * 1024,
-        allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/zip', 'application/pdf', 'video/mp4'],
-        allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.apk', '.ipa', '.pdf', '.mp4']
+        maxSize = 500 * 1024 * 1024, // 500MB par défaut
+        allowedTypes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf', 'application/zip', 
+            'video/mp4', 'video/avi', 'video/mkv', 'video/mov', 'video/wmv',
+            'audio/mp3', 'audio/wav', 'audio/m4a',
+            'application/vnd.android.package-archive',
+            'application/octet-stream'
+        ],
+        allowedExtensions = [
+            '.jpg', '.jpeg', '.png', '.gif', '.webp',
+            '.pdf', '.zip', '.rar', '.7z',
+            '.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv',
+            '.mp3', '.wav', '.m4a', '.flac',
+            '.apk', '.ipa', '.exe', '.iso', '.dmg'
+        ]
     } = options;
 
     if (file.size > maxSize) {
@@ -343,6 +472,7 @@ function toggleProductForm() {
         document.getElementById('productFile').value = '';
         document.getElementById('imagePreview').innerHTML = '';
         document.getElementById('filePreview').innerHTML = '';
+        document.getElementById('previewSection').classList.add('hidden');
         document.getElementById('imagePreview').classList.add('hidden');
     }
 }
@@ -372,8 +502,8 @@ async function submitProduct() {
         const imageFile = document.getElementById('productImage').files[0];
         if (imageFile) {
             validateFile(imageFile, { 
-                maxSize: 10 * 1024 * 1024,
-                allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
+                maxSize: 500 * 1024 * 1024,
+                allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
             });
             try {
                 const imageUpload = await uploadFile(imageFile, 'product-images');
@@ -386,9 +516,7 @@ async function submitProduct() {
         const productFile = document.getElementById('productFile').files[0];
         if (productFile) {
             validateFile(productFile, {
-                maxSize: 50 * 1024 * 1024,
-                allowedTypes: ['application/zip', 'application/octet-stream', 'application/pdf', 'video/mp4'],
-                allowedExtensions: ['.zip', '.apk', '.ipa', '.pdf', '.mp4']
+                maxSize: 500 * 1024 * 1024
             });
             try {
                 const fileUpload = await uploadFile(productFile, 'product-files');
@@ -432,39 +560,54 @@ async function loadUserProducts() {
         
         productsList.innerHTML = products.map(product => `
             <div class="product-card">
-                <div class="product-header">
-                    <div>
-                        <h3 class="product-title">${escapeHtml(product.title)}</h3>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
-                            ${product.platform && product.platform !== 'web' ? `<span class="product-platform">${product.platform}</span>` : ''}
-                            ${product.is_vip ? '<span style="background: gold; color: black; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">⭐ VIP</span>' : ''}
-                            ${product.is_free ? '<span style="background: green; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🆓 FREE</span>' : ''}
-                            ${product.type === 'promotion' ? '<span style="background: orange; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🔥 PROMO</span>' : ''}
-                            ${product.type === 'ebook' ? '<span style="background: purple; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">📚 eBook</span>' : ''}
-                            ${product.type === 'video' ? '<span style="background: red; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🎥 Video</span>' : ''}
-                            ${product.type === 'app' ? '<span style="background: blue; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">📱 App/Jeux</span>' : ''}
+                <div class="product-card-content">
+                    <div class="product-header">
+                        <div>
+                            <h3 class="product-title">${escapeHtml(product.title)}</h3>
+                        </div>
+                        <div class="product-price">
+                            ${product.is_free ? 'FREE' : `$${product.price}`}
+                            ${product.promo > 0 ? `<div style="font-size: 0.9rem; color: orange; text-decoration: line-through;">$${product.promo}</div>` : ''}
                         </div>
                     </div>
-                    <div class="product-price">
-                        ${product.is_free ? 'FREE' : `$${product.price}`}
-                        ${product.promo > 0 ? `<div style="font-size: 0.9rem; color: orange; text-decoration: line-through;">$${product.promo}</div>` : ''}
+                    
+                    <!-- Badges Stylés -->
+                    <div class="badges-container">
+                        ${product.is_vip ? '<span class="badge badge-vip">⭐ VIP</span>' : ''}
+                        ${product.is_free ? '<span class="badge badge-free">🆓 FREE</span>' : ''}
+                        ${!product.is_free && !product.is_vip ? '<span class="badge badge-premium">💰 PREMIUM</span>' : ''}
+                        ${product.type === 'promotion' ? '<span class="badge badge-promo">🔥 PROMO</span>' : ''}
+                        ${product.type === 'ebook' ? '<span class="badge badge-ebook">📚 eBook</span>' : ''}
+                        ${product.type === 'video' ? '<span class="badge badge-video">🎥 Video</span>' : ''}
+                        ${product.type === 'app' ? '<span class="badge badge-app">📱 App/Jeux</span>' : ''}
+                        ${product.platform && product.platform !== 'web' ? `<span class="badge badge-platform">${getPlatformIcon(product.platform)} ${product.platform}</span>` : ''}
                     </div>
-                </div>
-                
-                ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary);">${escapeHtml(product.description)}</p>` : ''}
-                
-                <div class="product-meta">
-                    ${product.type ? `<p><strong>Type:</strong> ${product.type}</p>` : ''}
-                    ${product.platform && product.platform !== 'web' ? `<p><strong>Platform:</strong> ${product.platform}</p>` : ''}
-                    ${product.version ? `<p><strong>Version:</strong> ${product.version}</p>` : ''}
-                    ${product.build_number ? `<p><strong>Build:</strong> ${product.build_number}</p>` : ''}
-                    ${product.file_size ? `<p><strong>Size:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
-                    <p><strong>Created:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
-                </div>
-                
-                <div class="product-actions">
-                    <button class="btn btn-secondary" onclick="editProduct('${product.id}')">Edit</button>
-                    <button class="btn btn-danger" onclick="confirmDelete('${product.id}')">Delete</button>
+                    
+                    ${product.description ? `<p style="margin-bottom: 1rem; color: var(--text-secondary); line-height: 1.6;">${escapeHtml(product.description)}</p>` : ''}
+                    
+                    <div class="product-meta">
+                        ${product.type ? `<p>📦 <strong>Type:</strong> ${product.type}</p>` : ''}
+                        ${product.platform && product.platform !== 'web' ? `<p>🖥️ <strong>Platform:</strong> ${product.platform}</p>` : ''}
+                        ${product.version ? `<p>🔢 <strong>Version:</strong> ${product.version}</p>` : ''}
+                        ${product.build_number ? `<p>⚙️ <strong>Build:</strong> ${product.build_number}</p>` : ''}
+                        ${product.file_size ? `<p>💾 <strong>Size:</strong> ${(product.file_size / 1024 / 1024).toFixed(2)} MB</p>` : ''}
+                        <p>📅 <strong>Created:</strong> ${new Date(product.created_at).toLocaleDateString()}</p>
+                    </div>
+                    
+                    ${product.file_url ? `
+                        <div class="preview-section">
+                            <div class="preview-header">File Preview</div>
+                            <div class="preview-content">
+                                ${getFilePreview(product)}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="product-actions">
+                        <button class="btn btn-secondary" onclick="editProduct('${product.id}')">✏️ Edit</button>
+                        <button class="btn btn-danger" onclick="confirmDelete('${product.id}')">🗑️ Delete</button>
+                        ${product.file_url ? `<button class="btn btn-primary" onclick="downloadFile('${product.file_url}', '${product.title}')">⬇️ Download</button>` : ''}
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -477,6 +620,60 @@ async function loadUserProducts() {
     }
 }
 
+function getPlatformIcon(platform) {
+    const icons = {
+        'android': '🤖',
+        'ios': '📱',
+        'windows': '🪟',
+        'mac': '🍎',
+        'web': '🌐',
+        'multi': '🔀'
+    };
+    return icons[platform] || '💻';
+}
+
+function getFilePreview(product) {
+    if (!product.file_url) return '';
+    
+    const fileExt = product.file_url.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+        return `<img src="${product.file_url}" style="max-width: 100%; border-radius: 8px;" alt="File Preview">`;
+    }
+    else if (fileExt === 'pdf') {
+        return `<iframe src="${product.file_url}" class="pdf-preview" style="width: 100%; height: 400px; border: none;"></iframe>`;
+    }
+    else if (['mp4', 'avi', 'mkv', 'mov', 'wmv'].includes(fileExt)) {
+        return `<video controls class="video-preview" style="width: 100%; max-height: 300px;">
+                    <source src="${product.file_url}" type="video/${fileExt}">
+                    Your browser does not support the video tag.
+                </video>`;
+    }
+    else if (['mp3', 'wav', 'm4a'].includes(fileExt)) {
+        return `<audio controls style="width: 100%;">
+                    <source src="${product.file_url}" type="audio/${fileExt}">
+                    Your browser does not support the audio tag.
+                </audio>`;
+    }
+    else {
+        return `
+            <div class="text-center">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+                <p><strong>File Type:</strong> ${product.file_type || 'Unknown'}</p>
+                <p><strong>Size:</strong> ${product.file_size ? (product.file_size / 1024 / 1024).toFixed(2) + ' MB' : 'Unknown'}</p>
+                <button class="btn btn-primary mt-2" onclick="downloadFile('${product.file_url}', '${product.title}')">Download File</button>
+            </div>
+        `;
+    }
+}
+
+function downloadFile(url, filename) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+}
+
 function confirmDelete(productId) {
     if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
         deleteProductHandler(productId);
@@ -487,7 +684,6 @@ async function deleteProductHandler(productId) {
     try {
         showLoading('Deleting product...');
         
-        // Vérifier aloha raha misy ilay produit
         const { data: product, error: fetchError } = await supabase
             .from('products')
             .select('*')
@@ -498,7 +694,6 @@ async function deleteProductHandler(productId) {
             throw new Error('Product not found');
         }
 
-        // Delete le produit
         const { error: deleteError } = await supabase
             .from('products')
             .delete()
@@ -508,7 +703,6 @@ async function deleteProductHandler(productId) {
 
         showAlert('✅ Product deleted successfully', 'success');
         
-        // Attendre un peu avant de recharger
         setTimeout(async () => {
             await loadUserProducts();
         }, 500);
@@ -540,7 +734,7 @@ function setupFilePreviews() {
         }
     });
     
-    fileInput.addEventListener('change', function(e) {
+    fileInput.addEventListener('change', async function(e) {
         const file = e.target.files[0];
         if (file) {
             document.getElementById('filePreview').innerHTML = `
@@ -550,6 +744,9 @@ function setupFilePreviews() {
                     <p><strong>Type:</strong> ${file.type || 'Unknown'}</p>
                 </div>
             `;
+            
+            // Générer la prévisualisation
+            await handleFilePreview(file);
         }
     });
 }
@@ -664,6 +861,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.submitProduct = submitProduct;
     window.deleteProduct = deleteProductHandler;
     window.confirmDelete = confirmDelete;
+    window.downloadFile = downloadFile;
     
     getCurrentUser().then(user => {
         if (user) {
