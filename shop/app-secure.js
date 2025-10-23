@@ -1,5 +1,5 @@
 // shop/app-secure.js
-// Configuration Supabase - Ovao ny credentials anao eto
+// Configuration Supabase - OVAO IREO CREDENTIALS IREO!
 const SUPABASE_URL = 'https://zogohkfzplcuonkkfoov.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw';
 
@@ -235,8 +235,8 @@ async function uploadFile(file, folder = 'product-files') {
 function validateFile(file, options = {}) {
     const {
         maxSize = 10 * 1024 * 1024,
-        allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/zip'],
-        allowedExtensions = ['.jpg', '.jpeg', '.png', '.gzip', '.zip', '.apk', '.ipa']
+        allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/zip', 'application/pdf', 'video/mp4'],
+        allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.apk', '.ipa', '.pdf', '.mp4']
     } = options;
 
     if (file.size > maxSize) {
@@ -353,8 +353,8 @@ async function submitProduct() {
         if (productFile) {
             validateFile(productFile, {
                 maxSize: 50 * 1024 * 1024,
-                allowedTypes: ['application/zip', 'application/octet-stream'],
-                allowedExtensions: ['.zip', '.apk', '.ipa']
+                allowedTypes: ['application/zip', 'application/octet-stream', 'application/pdf', 'video/mp4'],
+                allowedExtensions: ['.zip', '.apk', '.ipa', '.pdf', '.mp4']
             });
             const fileUpload = await uploadFile(productFile, 'product-files');
             productData.file_url = fileUpload.url;
@@ -403,6 +403,9 @@ async function loadUserProducts() {
                             ${product.is_vip ? '<span style="background: gold; color: black; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">⭐ VIP</span>' : ''}
                             ${product.is_free ? '<span style="background: green; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🆓 FREE</span>' : ''}
                             ${product.type === 'promotion' ? '<span style="background: orange; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🔥 PROMO</span>' : ''}
+                            ${product.type === 'ebook' ? '<span style="background: purple; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">📚 eBook</span>' : ''}
+                            ${product.type === 'video' ? '<span style="background: red; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">🎥 Video</span>' : ''}
+                            ${product.type === 'app' ? '<span style="background: blue; color: white; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">📱 App/Jeux</span>' : ''}
                         </div>
                     </div>
                     <div class="product-price">
