@@ -1,5 +1,5 @@
-/* ================================
-   Theme variables
+
+   /* variables
    ================================ */
 :root{
   --accent: #ff9800;
@@ -27,7 +27,7 @@
 /* ================================
    Theme variants (override for theme switch)
    ================================ */
-body.theme-dark { }
+body.theme-dark 
 body.theme-light {
   --bg-card: rgba(255,255,255,0.95);
   --popup-bg: rgba(255,255,255,0.95);
@@ -504,4 +504,875 @@ p{color:#eee;line-height:1.5}
 @media (max-width: 480px){
   #home.home-fixed h1 { font-size: 22px; }
   #home.home-fixed p  { font-size: 13px; }
+}
+
+/* ================================
+   PATCHES MERGE — Shop scroll + disabled states
+   ================================ */
+
+/* Shop: cards ihany no miscroll, background body mijanona fixe */
+#shop{
+  display:flex;
+  flex-direction:column;
+  min-height: calc(var(--vh, 1vh) * 100 - 24px);
+}
+#shop h2,
+#shop .shop-header,
+#shop .filters{
+  flex: 0 0 auto;
+}
+#shop .products-section{
+  flex: 1 1 auto;
+  max-height: calc(var(--vh, 1vh) * 100 - 220px); /* amboary raha ilaina arakaraka ny header/filters */
+  overflow: auto;
+  padding-right: 6px;
+}
+
+/* Guard double scroll rehefa eo amin'ny Shop */
+body.shop-active{ overflow: hidden; }
+
+/* Disabled styles for tools/buttons (public sees but cannot use) */
+.param-btn[disabled], .icon-btn[disabled]{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+/* Optional: visual hover consistency */
+.icon-btn:hover{
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.10);
+}
+
+#product-modal{
+  position:fixed; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.6); z-index:3000;
+  opacity:0; pointer-events:none; transition: opacity .18s ease;
+}
+#product-modal.show{ opacity:1; pointer-events:auto; }
+#product-modal .info-card{ max-width:680px; width:92vw; }
+
+.form-grid{
+  display:grid; gap:10px; grid-template-columns: 1fr 1fr;
+  margin: 8px 0 12px;
+}
+.form-grid .full{ grid-column: 1 / -1; }
+.form-grid label{ display:flex; flex-direction:column; gap:6px; color:var(--text); }
+.form-grid input, .form-grid select{
+  background: rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px;
+  outline: none;
+}
+.form-grid input::placeholder{ color: #cbd5e1; }
+
+#shop{
+  /* Overlay maizina + sary */
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.55)),
+    url("https://i.ibb.co/rGwjX7y5/images-22.jpg") center/cover no-repeat;
+  border-radius: var(--radius);
+  /* Raha tianao tsy hifindra ny sary rehefa scroll: esory ity manaraka ity */
+  background-attachment: scroll; /* na 'fixed' raha te fixe ao anaty section */
+}
+
+/* Cards zone (scrollable) dia avela ho transparent mba hijery ilay background ao ambadika */
+#shop .products-section{
+  background: transparent;
+}
+
+/* Hamafiso contraste amin'ny Filters */
+#shop .filters .filter-btn{
+  background: rgba(8, 12, 20, 0.55);
+  border-color: rgba(255,255,255,0.18);
+  color: #f8fafc;
+}
+#shop .filters .filter-btn:hover{
+  background: rgba(8, 12, 20, 0.7);
+  border-color: rgba(255,255,255,0.28);
+}
+#shop .filters .filter-btn.active{
+  background: rgba(8, 12, 20, 0.78);
+  border-color: rgba(255,255,255,0.38);
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+
+/* Hamafiso contraste amin'ny cards sy texte anatiny */
+#shop .product-card{
+  background: rgba(10, 12, 16, 0.82);
+  border-color: rgba(255,255,255,0.12);
+}
+#shop .product-card h3{ color:#fff; }
+#shop .product-card .desc{ color:#e5e7eb; }
+#shop .product-card .product-price{ color:#fff; }
+
+/* Hamafiso ihany koa ny “Nos Produits Numériques” header */
+#shop h2{
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.45);
+}
+
+/* Raha theme-light no ampiasaina dia asio override kely hanajanonana contraste */
+body.theme-light #shop{
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.55)),
+    url("https://i.ibb.co/rGwjX7y5/images-22.jpg") center/cover no-repeat;
+}
+body.theme-light #shop .product-card{
+  background: rgba(255,255,255,0.92);
+  color: #111;
+}
+body.theme-light #shop .product-card .desc{ color:#334155; }
+body.theme-light #shop .filters .filter-btn{
+  background: rgba(255,255,255,0.85);
+  color:#111;
+  border-color: rgba(0,0,0,0.08);
+}
+body.theme-light #shop .filters .filter-btn.active{
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(0,0,0,0.18);
+}
+
+/* Mobile tweaks: Hamarino ny legibility amin'ny écran kely */
+@media (max-width: 480px){
+  #shop{
+    background:
+      linear-gradient(to bottom, rgba(0,0,0,0.28), rgba(0,0,0,0.58)),
+      url("https://i.ibb.co/rGwjX7y5/images-22.jpg") center/cover no-repeat;
+  }
+  #shop .filters .filter-btn{ padding:8px 10px; }
+}
+/* ===== Modal Preview Fade Effects ===== */
+#info-modal {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+#info-modal.show {
+  opacity: 1;
+  visibility: visible;
+}
+#info-modal.fade-in {
+  animation: modalFadeIn 0.2s ease forwards;
+}
+#info-modal.fade-out {
+  animation: modalFadeOut 0.2s ease forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes modalFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}/* ===== Frosted Glass Backdrop for Modal ===== */
+#info-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.55); /* semi-transparent dark layer */
+  backdrop-filter: blur(8px) saturate(160%);
+  -webkit-backdrop-filter: blur(8px) saturate(160%);
+  z-index: 1000;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Show state */
+#info-modal.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal content styling (optional enhancement) */
+#info-modal .info-container {
+  background: rgba(30, 30, 30, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  max-width: 90%;
+  width: 600px;
+  padding: 1rem;
+  color: #fff;
+  transition: transform 0.25s ease;
+}
+
+/* Fade effects from earlier */
+#info-modal.fade-in {
+  animation: modalFadeIn 0.2s ease forwards;
+}
+#info-modal.fade-out {
+  animation: modalFadeOut 0.2s ease forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes modalFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}#shop .search {
+  position: relative;
+  margin: 10px 0 14px;
+}
+
+#shop .search #search {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px 10px 40px; /* toerana ho an'ny icon ankavia */
+  border: 1px solid rgba(0,0,0,0.08);
+  background-color: #fff;
+  color: #222;
+  border-radius: 999px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+/* Icon loupe amin'ny background (tsy mila manova HTML) */
+#shop .search #search {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23909aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+}
+
+/* Focus state: ring manify sy border miloko */
+#shop .search #search:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.18);
+}
+
+/* Placeholder malefaka */
+#shop .search #search::placeholder {
+  color: #97a1ab;
+}
+
+/* Hover kely */
+#shop .search #search:hover {
+  border-color: rgba(0,0,0,0.12);
+}
+
+/* ===== Dark mode support (raha manana theme dark ianao) ===== */
+@media (prefers-color-scheme: dark) {
+  #shop .search #search {
+    background-color: #14161a;
+    border-color: rgba(255,255,255,0.08);
+    color: #e6e6e6;
+    box-shadow: 0 1px 2px rgba(0,0,0,.6);
+  }
+  #shop .search #search {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6b0bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  }
+  #shop .search #search:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96,165,250,.18);
+  }
+  #shop .search #search::placeholder {
+    color: #8c96a3;
+  }
+}
+
+/* Raha mampiasa data-theme='dark' ianao amin'ny <body> na wrapper */
+body[data-theme="dark"] #shop .search #search {
+  background-color: #14161a;
+  border-color: rgba(255,255,255,0.08);
+  color: #e6e6e6;
+  box-shadow: 0 1px 2px rgba(0,0,0,.6);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6b0bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+}
+body[data-theme="dark"] #shop .search #search:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96,165,250,.18);
+}
+body[data-theme="dark"] #shop .search #search::placeholder {
+  color: #8c96a3;
+}
+
+/* ===== Accessibility and mobile tweaks ===== */
+#shop .search #search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #9aa5b1 50%, transparent 51%);
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+@media (max-width: 420px) {
+  #shop .search #search {
+    height: 40px;
+    font-size: 13px;
+  }
+}
+
+/* ===== Optional: style mitovy ho an'ny popup search koa ===== */
+#shop-popup .search {
+  position: relative;
+  margin: 8px 0 12px;
+}
+#shop-popup .search #search-popup {
+  width: 100%;
+  height: 42px;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background-color: #fff;
+  color: #222;
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23909aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+}
+#shop-popup .search #search-popup:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.18);
+}
+@media (prefers-color-scheme: dark) {
+  #shop-popup .search #search-popup {
+    background-color: #14161a;
+    border-color: rgba(255,255,255,0.08);
+    color: #e6e6e6;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6b0bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  }
+}
+body[data-theme="dark"] #shop-popup .search #search-popup {
+  background-color: #14161a;
+  border-color: rgba(255,255,255,0.08);
+  color: #e6e6e6;
+}
+
+.bottom-menu {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  transform: translateY(0);
+  transition: transform .25s ease;
+  will-change: transform;
+  z-index: 50;
+}
+
+
+  /* Variables & Utils
+===================================================== */
+:root {
+  --edge-visible: 18px;    /* Hauteur visible du grabber quand le menu est caché */
+  --ring: #3b82f6;         /* Couleur principale du focus ring */
+  --ring-dark: #60a5fa;    /* Focus en dark */
+  --text: #222;
+  --text-muted: #97a1ab;
+  --bg: #fff;
+  --border: rgba(0,0,0,0.08);
+  --border-hover: rgba(0,0,0,0.12);
+  --shadow: 0 1px 2px rgba(0,0,0,.04);
+  --bg-dark: #14161a;
+  --text-dark: #e6e6e6;
+  --border-dark: rgba(255,255,255,0.08);
+  --shadow-dark: 0 1px 2px rgba(0,0,0,.6);
+}
+
+/* Visually hidden but accessible (pour <label class="sr-only">) */
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+/* =====================================================
+   Search bar - SHOP
+===================================================== */
+#shop .search {
+  position: relative;
+  margin: 10px 0 14px;
+}
+
+#shop .search #search {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px 10px 40px; /* place pour l’icône */
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  box-shadow: var(--shadow);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23909aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+}
+
+#shop .search #search::placeholder {
+  color: var(--text-muted);
+}
+
+#shop .search #search:hover {
+  border-color: var(--border-hover);
+}
+
+#shop .search #search:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
+}
+
+/* iOS clear button override (optionnel) */
+#shop .search #search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  height: 14px; width: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #9aa5b1 50%, transparent 51%);
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+/* Mobile tweaks */
+@media (max-width: 420px) {
+  #shop .search #search {
+    height: 40px;
+    font-size: 13px;
+  }
+}
+
+/* =====================================================
+   Search bar - POPUP (optionnel pour style aligné)
+===================================================== */
+#shop-popup .search {
+  position: relative;
+  margin: 8px 0 12px;
+}
+
+#shop-popup .search #search-popup {
+  width: 100%;
+  height: 42px;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid var(--border);
+  background-color: var(--bg);
+  color: var(--text);
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  box-shadow: var(--shadow);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23909aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 18px 18px;
+}
+
+#shop-popup .search #search-popup::placeholder {
+  color: var(--text-muted);
+}
+
+#shop-popup .search #search-popup:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 18%, transparent);
+}
+
+/* =====================================================
+   Bottom Menu - base + hide/show + drag fluide
+===================================================== */
+.bottom-menu {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  transform: translateY(0);
+  transition: transform .25s ease;
+  will-change: transform;
+  z-index: 50;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  /* Option: background blur si besoin
+  backdrop-filter: saturate(120%) blur(6px); 
+  */
+}
+
+/* Caché, mais garde une partie visible pour le “grabber” */
+.bottom-menu.is-hidden {
+  transform: translateY(calc(100% - (var(--edge-visible) + env(safe-area-inset-bottom))));
+  pointer-events: none; /* important: pas de tap direct sur le menu caché */
+}
+
+/* Pendant le drag: pas de transition pour suivre le doigt en temps réel */
+.bottom-menu.dragging {
+  transition: none !important;
+}
+
+/* Grabber visuel (barre en haut du menu) */
+.bottom-menu::before {
+  content: "";
+  position: absolute;
+  top: -8px; left: 50%;
+  width: 40px; height: 4px;
+  margin-left: -20px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.25);
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  pointer-events: none;
+}
+
+/* Zone “edge” pour capter le swipe up quand le menu est caché */
+.touch-edge-bottom {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  height: calc(24px + env(safe-area-inset-bottom));
+  z-index: 60; /* au-dessus du menu caché */
+}
+
+/* Si vous avez des boutons dans .bottom-menu, vous pouvez ajouter un petit style */
+.bottom-menu .menu-btn {
+  /* Exemple simple, adaptez selon votre design existant */
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+/* =====================================================
+   Dark mode (prefers-color-scheme et via data-theme)
+===================================================== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --text: #e6e6e6;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.14);
+    --shadow: var(--shadow-dark);
+  }
+
+  .bottom-menu::before {
+    background: rgba(255,255,255,.35);
+  }
+
+  #shop .search #search,
+  #shop-popup .search #search-popup {
+    background-color: var(--bg);
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  #shop .search #search:focus,
+  #shop-popup .search #search-popup:focus {
+    border-color: var(--ring-dark);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring-dark) 18%, transparent);
+  }
+
+  /* Icône loupe plus claire en dark */
+  #shop .search #search,
+  #shop-popup .search #search-popup {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6b0bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  }
+}
+
+/* Dark mode via attribut data-theme="dark" (si vous l’utilisez) */
+body[data-theme="dark"] {
+  --bg: #14161a;
+  --text: #e6e6e6;
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.14);
+  --shadow: var(--shadow-dark);
+}
+
+body[data-theme="dark"] .bottom-menu::before {
+  background: rgba(255,255,255,.35);
+}
+
+body[data-theme="dark"] #shop .search #search,
+body[data-theme="dark"] #shop-popup .search #search-popup {
+  background-color: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+body[data-theme="dark"] #shop .search #search:focus,
+body[data-theme="dark"] #shop-popup .search #search-popup:focus {
+  border-color: var(--ring-dark);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring-dark) 18%, transparent);
+}
+
+body[data-theme="dark"] #shop .search #search,
+body[data-theme="dark"] #shop-popup .search #search-popup {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6b0bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+}
+
+
+  /* Variables & Utils
+===================================================== */
+:root{
+  /* Colors */
+  --ring: #3b82f6;
+  --ring-dark: #60a5fa;
+  --text: #111111;
+  --text-muted: #8a96a3;
+  --bg: #ffffff;
+  --border: #cfd6df;
+
+  /* Dark */
+  --bg-dark: #0f1216;
+  --text-dark: #f5f7fa;
+  --border-dark: rgba(255,255,255,.14);
+
+  /* Bottom menu height (ampiasaina amin'ny padding-bottom an'ny #shop) */
+  --bottom-menu-h: 64px;
+
+  /* Tiles (menu colorés) */
+  --tile-home: #2563eb;
+  --tile-shop: #16a34a;
+  --tile-param: #f59e0b;
+  --tile-shadow: 0 6px 16px rgba(0,0,0,.18);
+  --tile-shadow-hover: 0 10px 22px rgba(0,0,0,.22);
+  --tile-shadow-active: 0 3px 10px rgba(0,0,0,.28);
+
+  /* Grabber visible height (rehefa afenina ny bottom menu) */
+  --edge-visible: 18px;
+}
+
+.sr-only,.visually-hidden{
+  position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* =====================================================
+   Base/Layout
+===================================================== */
+html,body{height:100%;}
+body{color:var(--text);background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+
+/* Sections default */
+section{display:block;}
+
+/* =====================================================
+   SHOP: scrollable section + layout
+===================================================== */
+#shop{
+  position:relative;
+  min-height:100vh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding-bottom:calc(var(--bottom-menu-h) + env(safe-area-inset-bottom) + 12px);
+}
+
+/* Tools toggle (corner gauche, absolute, tsy sticky) */
+#shop #shopToolsToggle{
+  position:absolute;
+  top:8px;left:10px;
+  z-index:15;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:10px;border:none;cursor:pointer;
+  color:#fff;
+  background:linear-gradient(180deg, color-mix(in srgb, #334155 92%, #fff 8%), #334155);
+  box-shadow:0 8px 18px rgba(0,0,0,.25);
+  touch-action:manipulation;
+}
+#shop #shopToolsToggle i{font-size:16px;}
+#shop.tools-open #shopToolsToggle i{transform:rotate(90deg);transition:transform .2s ease;}
+
+/* Tools wrapper: collapsed by default, animated open */
+#shop #shop-tools{
+  overflow:clip;
+  max-height:0;
+  opacity:0;
+  transform:translateY(-6px);
+  transition:max-height .28s ease,opacity .18s ease,transform .28s ease;
+  pointer-events:none;
+  margin:0 10px;
+}
+/* Open state (ampiasain'ny JS: #shop.tools-open) */
+#shop.tools-open #shop-tools{
+  max-height:520px;
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+  margin-top:46px;   /* tsy hikasika ny tools button */
+  margin-bottom:8px;
+}
+
+/* Topbar: titre afovoany, actions any amin'ny corner droite */
+#shop .shop-topbar{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  min-height:52px;
+  padding:8px 4px;
+}
+#shop .shop-title{
+  grid-column:2;justify-self:center;
+  margin:0;font-size:18px;font-weight:800;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#shop .shop-actions{
+  grid-column:3;justify-self:end;
+  display:inline-flex;align-items:center;gap:8px;
+  margin-right:max(2px, env(safe-area-inset-right));
+}
+#shop .shop-actions .icon-btn{
+  width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;
+  border:none;border-radius:10px;cursor:pointer;color:#fff;
+  background:linear-gradient(180deg, color-mix(in srgb, #2563eb 92%, #fff 8%), #2563eb);
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
+#shop .add-product-btn,
+#btnAddProduct{
+  height:36px;display:inline-flex;align-items:center;gap:8px;
+  border:none;border-radius:10px;padding:0 12px;color:#fff;font-weight:700;
+  background:linear-gradient(180deg, color-mix(in srgb, #16a34a 92%, #fff 8%), #16a34a);
+  box-shadow:0 6px 16px rgba(0,0,0,.18);
+}
+
+/* Toolbar container (Search + Filters) */
+#shop .shop-toolbar{display:grid;gap:10px;margin:6px 0 10px;}
+
+/* Search bar clean */
+#shop .search{position:relative;}
+#shop .search #search{
+  width:100%;height:40px;
+  padding:8px 12px 8px 38px;
+  border:1px solid var(--border);
+  background-color:#ffffff !important;
+  color:#111111 !important;
+  -webkit-text-fill-color:#111111 !important;
+  caret-color:#111111;
+  border-radius:999px;outline:none;font-size:14px;
+  transition:border-color .2s ease, box-shadow .2s ease;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23909aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:12px center;background-size:18px 18px;
+  appearance:none;-webkit-appearance:none;
+}
+#shop .search #search::placeholder{color:var(--text-muted) !important;}
+#shop .search #search:focus{border-color:var(--ring);box-shadow:0 0 0 3px rgba(59,130,246,.18);}
+
+/* Filters: chips compact scrollable */
+#shop .filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+#shop .filters .filter-btn{
+  flex:0 0 auto;height:34px;padding:0 12px;
+  border:1px solid rgba(0,0,0,.08);
+  background:#f7f9fc;color:#111;
+  border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .15s ease, color .15s ease, border-color .15s ease, transform .1s ease;
+}
+#shop .filters .filter-btn:hover{background:#eef3fb;border-color:rgba(0,0,0,.12);}
+#shop .filters .filter-btn.active{
+  background:#2563eb;color:#fff;border-color:#2563eb;
+  box-shadow:0 4px 10px rgba(37,99,235,.25);
+  transform:translateY(-2px);
+}
+
+/* Products list spacing */
+.products-section{padding:4px 10px 10px;}
+
+/* =====================================================
+   Bottom Menu — Colorful tiles + drag/hide support
+===================================================== */
+.bottom-menu{
+  position:fixed;left:0;right:0;bottom:0;
+  z-index:50;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  padding:10px max(12px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right));
+  transform:translateY(0);
+  transition:transform .25s ease;will-change:transform;
+}
+.bottom-menu.is-hidden{
+  transform:translateY(calc(100% - (var(--edge-visible) + env(safe-area-inset-bottom))));
+  pointer-events:none;
+}
+.bottom-menu.dragging{transition:none !important;}
+.bottom-menu::before{
+  content:"";position:absolute;top:-8px;left:50%;
+  width:40px;height:4px;margin-left:-20px;border-radius:999px;
+  background:rgba(0,0,0,.25);box-shadow:0 1px 2px rgba(0,0,0,.2);pointer-events:none;
+}
+
+/* Menu buttons style (Windows-like square tiles) */
+.bottom-menu .menu-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:54px;padding:0 14px;border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:600;
+  cursor:pointer;user-select:none;transition:transform .12s ease,box-shadow .12s ease,filter .12s ease,opacity .12s ease;
+  box-shadow:var(--tile-shadow);background:#444;
+}
+.bottom-menu .menu-btn i{font-size:16px;}
+.bottom-menu .menu-home{background:linear-gradient(180deg, color-mix(in srgb, var(--tile-home) 92%, #fff 8%), var(--tile-home));}
+.bottom-menu .menu-shop{background:linear-gradient(180deg, color-mix(in srgb, var(--tile-shop) 92%, #fff 8%), var(--tile-shop));}
+.bottom-menu .menu-param{background:linear-gradient(180deg, color-mix(in srgb, var(--tile-param) 92%, #fff 8%), var(--tile-param));}
+.bottom-menu .menu-btn:hover{transform:translateY(-2px);box-shadow:var(--tile-shadow-hover);filter:brightness(1.02);}
+.bottom-menu .menu-btn:active{transform:translateY(0);box-shadow:var(--tile-shadow-active);filter:brightness(.98);}
+.bottom-menu .menu-btn.active{transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.26);outline:2px solid color-mix(in srgb, #ffffff 30%, transparent);outline-offset:-2px;}
+
+/* Edge swipe zone (hanokatra raha miafina) — azo avela na esorina raha JS no mamorona azy */
+.touch-edge-bottom{
+  position:fixed;left:0;right:0;bottom:0;height:calc(24px + env(safe-area-inset-bottom));z-index:60;
+}
+
+/* =====================================================
+   Dark mode (prefers-color-scheme + data-theme)
+===================================================== */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1216; --text:#f5f7fa; --border:var(--border-dark);
+    --tile-shadow:0 6px 16px rgba(0,0,0,.5);
+    --tile-shadow-hover:0 10px 22px rgba(0,0,0,.6);
+    --tile-shadow-active:0 3px 10px rgba(0,0,0,.7);
+  }
+  .bottom-menu::before{background:rgba(255,255,255,.35);}
+  #shop .search #search{
+    background-color:var(--bg) !important;color:var(--text) !important;
+    -webkit-text-fill-color:var(--text) !important;border-color:var(--border) !important;
+  }
+  #shop .filters .filter-btn{background:#171a20;color:#e6e6e6;border-color:rgba(255,255,255,.08);}
+  #shop .filters .filter-btn:hover{background:#1c2129;border-color:rgba(255,255,255,.14);}
+}
+
+/* Explicit dark via attribute */
+body[data-theme="dark"]{
+  --bg:#0f1216; --text:#f5f7fa; --border:var(--border-dark);
+}
+body[data-theme="dark"] .bottom-menu::before{background:rgba(255,255,255,.35);}
+body[data-theme="dark"] #shop .search #search{
+  background-color:var(--bg) !important;color:var(--text) !important;-webkit-text-fill-color:var(--text) !important;border-color:var(--border) !important;
+}
+body[data-theme="dark"] #shop .filters .filter-btn{background:#171a20;color:#e6e6e6;border-color:rgba(255,255,255,.08);}
+body[data-theme="dark"] #shop .filters .filter-btn:hover{background:#1c2129;border-color:rgba(255,255,255,.14);}
+
+#shop { position: relative; overflow-y: auto; }
+
+/* Bouton outils: corner gauche, tsy sticky, ambony z-index, clickable */
+#shop #shopToolsToggle {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 2000;           /* avo mba tsy ho sarona */
+  pointer-events: auto;    /* antoka ho clickable */
+}
+
+/* Tools wrapper: miafina default (raha tsy efa ao amin'ny HTML inline) */
+#shop #shop-tools {
+  overflow: clip;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+/* Raha tianao ihany koa ny variant CSS-driven */
+#shop.tools-open #shop-tools {
+  max-height: 520px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  margin-top: 46px; /* mba tsy hikasika ny bouton */
+  margin-bottom: 8px;
 }
