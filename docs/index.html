@@ -1,0 +1,470 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+  <title>Mijoro Boutique — Version Pro</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+ <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e88e5">
+  
+  <!-- Apple Touch Icon (iOS) -->
+  <link rel="apple-touch-icon" href="https://i.ibb.co/p6CWgYWd/Logo.png">
+  
+  <!-- Preconnect pour performances -->
+  <link rel="preconnect" href="https://i.ibb.co">
+  <link rel="preconnect" href="https://zogohkfzplcuonkkfoov.supabase.co">
+  <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+ 
+  <noscript>
+    <style>
+      #loader{ display:none !important; }
+      .bottom-menu{ display:flex !important; }
+      section{ display:block !important; }
+    </style>
+  </noscript>
+</head>
+<body aria-busy="true">
+<!-- ========================================
+     NOUVEAU LOADER PREMIUM
+     ======================================== -->
+<div id="loader" aria-hidden="false" role="status" aria-label="Chargement">
+  <div class="loader-container">
+    <div class="icon-wrapper">
+      <svg class="boutique-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 10 L70 30 L70 70 L50 90 L30 70 L30 30 Z" stroke-width="2" fill="none" />
+        <circle cx="50" cy="50" r="15" stroke-width="2" fill="none" />
+        <path d="M50 35 L50 25 M50 75 L50 65 M35 50 L25 50 M75 50 L65 50" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+    </div>
+    
+    <div class="boutique-name">MiJORO BOUTIQUE</div>
+    
+    <div class="loading-dots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<section id="home" class="active" aria-label="Accueil" aria-hidden="false">
+  <div class="slideshow" aria-label="Promotion">
+    
+    <div class="slide-track" id="slide-track">
+      <!-- Slides rendered by JS -->
+    </div>
+    
+    <div class="slide-dots" id="slide-dots" aria-hidden="true"></div>
+  </div>
+  
+  <!-- ✅ PATCH: Bouton Add Slide (centré, sous slideshow) -->
+  <div style="margin-top:16px; display:flex; justify-content:center; padding:0 12px">
+    <button 
+      id="btnAddSlide" 
+      type="button" 
+      class="param-btn owner-tool" 
+      style="display:none; gap:6px; align-items:center" 
+      title="Ajouter un slide" 
+      aria-label="Ajouter un slide au carrousel">
+      <i class="fa-solid fa-plus"></i>
+      <span>Ajouter Slide</span>
+    </button>
+  </div>
+  <!-- 🆕 NOUVEAU: Bouton S'abonner aux notifications -->
+  <div style="margin-top:20px; display:flex; justify-content:center; padding:0 12px">
+    <button 
+      id="btnSubscribe" 
+      type="button" 
+      class="subscribe-btn"
+      title="Recevoir les notifications de nouveaux produits"
+      aria-label="S'abonner aux notifications">
+      <i class="fa-solid fa-bell"></i>
+      <span class="subscribe-text">S'abonner aux notifications</span>
+    </button>
+  </div>
+  <h1 id="home-title" data-i18n="home_title">Tongasoa eto amin'ny fivarotana Malagasy!</h1>
+  <p id="home-sub" data-i18n="home_sub">Découvre des eBooks, vidéos et apps/jeux pour t'aider à réussir en ligne.</p>
+</section>
+
+<section id="shop" class="section" aria-label="Boutique - Produits numériques" aria-hidden="true">
+  
+  <!-- ========== HEADER FIXE (Tools + Filters + Search) ========== -->
+  <div id="shop-header">
+    
+    <!-- Tools toggle button (gear) - CORNER GAUCHE -->
+    <div style="padding: 8px 10px;">
+      <button
+        id="shopToolsToggle"
+        class="tools-toggle"
+        type="button"
+        aria-label="Afficher/Masquer les outils du shop"
+        aria-expanded="false"
+        aria-controls="shop-tools"
+        style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;border:none;cursor:pointer;color:#fff;background:linear-gradient(180deg, color-mix(in srgb, #334155 92%, #fff 8%), #334155);box-shadow:0 8px 18px rgba(0,0,0,.25);"
+      >
+        <i class="fa-solid fa-sliders" style="font-size:16px;"></i>
+      </button>
+    </div>
+
+    <!-- SHOP TOOLS (collapse section) -->
+    <div id="shop-tools" class="shop-tools" role="region" aria-label="Outils de la boutique" style="overflow:clip;max-height:0;opacity:0;transform:translateY(-6px);transition:max-height .28s ease,opacity .18s ease,transform .28s ease;pointer-events:none;margin:0 10px;">
+      <!-- Topbar: titre afovoany, actions any amin'ny corner droite -->
+      <header class="shop-topbar" role="banner"
+        style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;min-height:52px;padding:8px 4px;">
+        <h2 class="shop-title"
+          style="grid-column:2;justify-self:center;margin:0;font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          Nos Produits Numériques
+        </h2>
+
+        <div class="shop-actions"
+          style="grid-column:3;justify-self:end;display:inline-flex;align-items:center;gap:8px;margin-right:max(2px, env(safe-area-inset-right));">
+          <button id="btnLogin" class="icon-btn" title="Login (Owner only)" aria-label="Login"
+            style="width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(180deg, color-mix(in srgb, #2563eb 92%, #fff 8%), #2563eb);color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.18);">
+            <i class="fa-solid fa-right-to-bracket"></i>
+          </button>
+          <button id="btnLogout" class="icon-btn" title="Logout" aria-label="Logout" style="display:none;width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;cursor:pointer;background:linear-gradient(180deg, color-mix(in srgb, #ef4444 92%, #fff 8%), #ef4444);color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.18);">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+          <button id="btnAddProduct" class="param-btn" title="Add product" style="display:none;height:36px;display:inline-flex;align-items:center;gap:8px;border:none;border-radius:10px;padding:0 12px;background:linear-gradient(180deg, color-mix(in srgb, #16a34a 92%, #fff 8%), #16a34a);color:#fff;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.18);">
+            <i class="fa-solid fa-plus"></i> <span>Ajouter</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Toolbar: Search + Filters -->
+      <div class="shop-toolbar" role="region" aria-label="Recherche et filtres" style="display:grid;gap:10px;margin:6px 0 10px;">
+        <!-- Search -->
+        <div class="search">
+          <label for="search" class="sr-only">Recherche produits</label>
+          <input
+            id="search"
+            type="search"
+            placeholder="Rechercher..."
+            aria-label="Recherche produits"
+            data-i18n="search_placeholder"
+            data-i18n-placeholder
+            autocomplete="off"
+            inputmode="search"
+            style="width:100%;height:40px;padding:8px 12px 8px 38px;border:1px solid #cfd6df;background-color:#ffffff;color:#111111;border-radius:999px;outline:none;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.04);background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2218%22 height=%2218%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%23909aa3 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2211%27 cy=%2211%27 r=%278%27/%3E%3Cpath d=%27m21 21-4.3-4.3%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:12px center;background-size:18px 18px;"
+          />
+        </div>
+
+        <!-- Filters -->
+        <div class="filters" id="filters" role="toolbar" aria-label="Filtrer les produits" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;">
+          <button type="button" class="filter-btn active" data-category="all" data-i18n="filter_all"
+            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+            Tous
+          </button>
+          <button type="button" class="filter-btn" data-category="ebooks" data-i18n="filter_ebooks"
+            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+            Ebooks
+          </button>
+          <button type="button" class="filter-btn" data-category="videos" data-i18n="filter_videos"
+            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+            Vidéos
+          </button>
+          <button type="button" class="filter-btn" data-category="vip" data-i18n="filter_vip"
+            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+            VIP
+          </button>
+          <button type="button" class="filter-btn" data-category="promo" data-i18n="filter_promo"
+            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+            Promo
+          </button>
+          <button type="button" class="filter-btn" data-category="free" data-i18n="filter_free"
+            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
+            Gratuit
+          </button>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <!-- ========== SCROLLABLE PRODUCTS WRAPPER ========== -->
+  <div id="products-wrapper">
+    <div id="products-row" class="products-row" role="list" aria-label="Liste des produits — défilement vertical">
+      <!-- Products cards rendered here by JS -->
+    </div>
+    <div id="products-box" style="display:none">
+      <!-- Alternative grid view -->
+    </div>
+  </div>
+  
+</section>
+
+<!-- SHOP POPUP (kept as is) -->
+<div id="shop-popup" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1">
+  <button type="button" class="close-popup" aria-label="Fermer" onclick="closeShop()"><i class="fa-solid fa-xmark"></i></button>
+  <div class="filters" id="popup-filters" role="toolbar" aria-label="Filtres Produits (popup)">
+    <button type="button" class="filter-btn active" data-category="ebooks" data-i18n="filter_ebooks">eBooks</button>
+    <button type="button" class="filter-btn" data-category="apps" data-i18n="filter_vip">Apps/Jeux</button>
+    <button type="button" class="filter-btn" data-category="videos" data-i18n="filter_videos">Vidéos</button>
+  </div>
+  <div class="search">
+    <label for="search-popup" class="sr-only">Recherche produits</label>
+    <input id="search-popup" placeholder="Rechercher..." aria-label="Recherche produits"
+      data-i18n="search_placeholder" data-i18n-placeholder autocomplete="off" inputmode="search">
+  </div>
+  <div id="products-box" aria-live="polite"></div>
+  <div class="pagination" id="pagination" role="navigation" aria-label="Pagination"></div>
+</div>
+
+<!-- CART PANEL (kept as is) -->
+<div id="cart-panel" aria-live="polite">
+  <button id="cart-toggle" title="Voir le panier" aria-label="Voir le panier"><i class="fa-solid fa-basket-shopping"></i></button>
+  <button type="button" title="Vider le panier" onclick="clearCart()" aria-label="Vider le panier"><i class="fa-solid fa-trash"></i></button>
+  <div>
+    <span data-i18n="cart_label">Cart</span>: <strong id="cart-count">0</strong> •
+    <span data-i18n="cart_total">Total</span>: <strong id="cart-total">0 AR</strong>
+  </div>
+</div>
+<div id="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+  <div id="cart-list"></div>
+  <div class="cart-footer">
+    <div>Total: <strong id="cart-total-drawer">0 AR</strong></div>
+    <div style="display:flex; gap:8px;">
+      <button type="button" class="param-btn" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Vider</button>
+      <button type="button" class="param-btn" onclick="checkoutWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Commander</button>
+    </div>
+  </div>
+</div>
+ <!-- ==========================================
+     BOTTOM NAVIGATION - GLASSMORPHISM DESIGN
+     ========================================== -->
+<nav class="bottom-nav" role="navigation" aria-label="Navigation principale">
+  <button type="button" class="nav-btn active" data-section="home" aria-label="Home">
+    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+      <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor" />
+    </svg>
+    <span class="label">Home</span>
+  </button>
+  
+  <button type="button" class="nav-btn" data-section="shop" aria-label="Shop">
+    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+      <path d="M3 7h18l-1.5 11.5a1 1 0 0 1-1 .9H6.5a1 1 0 0 1-1-.9L4 7zM7 4h10v2H7z" fill="currentColor" />
+    </svg>
+    <span class="label">Shop</span>
+  </button>
+  
+  <button type="button" class="nav-btn" data-section="params" aria-label="Paramètre">
+    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+      <path d="M19.4 12.9a7.2 7.2 0 0 0 0-1.8l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.4a.5.5 0 0 0-.6-.2l-2.5 1a7.1 7.1 0 0 0-1.6-.9L14 2.4a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.1 7.1 0 0 0-1.6.9l-2.5-1a.5.5 0 0 0-.6.2l-2 3.4a.5.5 0 0 0 .1.6L4.6 11a7.2 7.2 0 0 0 0 1.8L2.5 14.4a.5.5 0 0 0-.1.6l2 3.4c.1.2.4.3.6.2l2.5-1c.5.4 1 0 1.6.9l.4 2.7c.05.2.2.4.4.4h4c.2 0 .4-.2.4-.4l.4-2.7c.6-.9 1.1-.5 1.6-.9l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 0 0-.1-.6l-2.1-1.6zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" fill="currentColor" />
+    </svg>
+    <span class="label">Paramètre</span>
+  </button>
+</nav>
+
+  <!-- PARAM FIXED -->
+  <aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="https://i.ibb.co/zTvNMMQd/743c16d58accff74c1c37793816bd25f.jpg" alt="param" style="width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,.06)">
+      <div>
+        <h4 style="margin-bottom:4px" data-i18n="param_settings">Paramètres</h4>
+        <small style="color:#ddd">Personnalisez votre expérience</small>
+      </div>
+    </div>
+
+<!-- Langue -->
+<div class="settings-section">
+  <h4 data-i18n="param_language">Langue</h4>
+
+  <div id="lang-options"
+       class="option-grid"
+       role="radiogroup"
+       aria-label="Sélection de la langue">
+       
+    <!-- Malagasy -->
+    <button type="button"
+            class="option-card"
+            role="radio"
+            aria-checked="false"
+            tabindex="-1"
+            data-lang="mg">
+      <div class="option-icon icon-mg">
+        <span aria-hidden="true">🇲🇬</span>
+      </div>
+      <div class="option-texts">
+        <div class="option-title">Malagasy</div>
+        <div class="option-sub">Lazao amin’ny fiteny gasy</div>
+      </div>
+    </button>
+
+    <!-- Français -->
+    <button type="button"
+            class="option-card"
+            role="radio"
+            aria-checked="false"
+            tabindex="-1"
+            data-lang="fr">
+      <div class="option-icon icon-fr">
+        <span aria-hidden="true">🇫🇷</span>
+      </div>
+      <div class="option-texts">
+        <div class="option-title">Français</div>
+        <div class="option-sub">Interface en français</div>
+      </div>
+    </button>
+
+    <!-- English -->
+    <button type="button"
+            class="option-card"
+            role="radio"
+            aria-checked="false"
+            tabindex="-1"
+            data-lang="en">
+      <div class="option-icon icon-en">
+        <span aria-hidden="true">🇬🇧</span>
+      </div>
+      <div class="option-texts">
+        <div class="option-title">English</div>
+        <div class="option-sub">English interface</div>
+      </div>
+    </button>
+  </div>
+</div>
+
+
+
+<!-- Thème -->
+<div class="settings-section">
+  <h4 data-i18n="param_theme">Thème</h4>
+
+  <div id="theme-options"
+       class="option-grid"
+       role="radiogroup"
+       aria-label="Sélection du thème">
+
+    <!-- Sombre (Dark) -->
+    <button type="button"
+            class="option-card"
+            role="radio"
+            aria-checked="false"
+            tabindex="-1"
+            data-theme="dark">
+      <div class="option-icon icon-dark">
+        <i class="fa-solid fa-moon" aria-hidden="true"></i>
+      </div>
+      <div class="option-texts">
+        <div class="option-title">Sombre</div>
+        <div class="option-sub">Recommandé (défaut)</div>
+      </div>
+    </button>
+
+    <!-- Clair (Light) -->
+    <button type="button"
+            class="option-card"
+            role="radio"
+            aria-checked="false"
+            tabindex="-1"
+            data-theme="light">
+      <div class="option-icon icon-light">
+        <i class="fa-solid fa-sun" aria-hidden="true"></i>
+      </div>
+      <div class="option-texts">
+        <div class="option-title">Clair</div>
+        <div class="option-sub">Plus lumineux</div>
+      </div>
+    </button>
+  </div>
+</div>
+
+  <!-- Optionnel: Reset bouton -->
+  <div style="margin-top:10px">
+    <button type="button" id="theme-reset" class="btn-reset">Réinitialiser le thème</button>
+  </div>
+</div>
+
+
+    <div class="row" style="justify-content:space-between; margin-top:8px;">
+      <button type="button" class="param-btn" onclick="openInfo('about')" data-i18n="about">À propos</button>
+      <button type="button" class="param-btn" onclick="openInfo('contact')" data-i18n="contact">Contact</button>
+      <button type="button" class="param-btn" onclick="openQuitModal()" data-i18n="quit">Quit</button>
+    </div>
+  </aside>
+
+  <!-- QUIT MODAL -->
+  <div id="quit-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="quit-title">
+    <div class="modal-card" role="document">
+      <h3 id="quit-title">Voulez-vous quitter l’application ?</h3>
+      <p style="margin:8px 0 12px">Tsy ho very ny angon-drakitrao.</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:8px">
+        <button type="button" class="param-btn" onclick="closeQuitModal()">Annuler</button>
+        <button type="button" class="param-btn" style="background:#ef4444;border-color:#ef4444" onclick="quitApp()">Quitter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFO MODAL -->
+  <div id="info-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="info-title">
+    <div class="info-card" role="document">
+      <h3 id="info-title">Informations</h3>
+      <div id="info-content"></div>
+      <div class="info-actions">
+        <button type="button" class="param-btn" onclick="closeInfo()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader Guard + iOS VH patch (safe) -->
+  <script>
+    (function(){
+      var MAX_WAIT_MS = 8000, SOFT_WAIT_MS = 400;
+      function qs(s){ return document.querySelector(s); }
+      function hideLoader(){
+        var l = qs('#loader'); if(!l) return;
+        l.classList.add('fade-out');
+        l.setAttribute('aria-hidden','true');
+        l.style.pointerEvents = 'none';
+        setTimeout(function(){ l.style.display = 'none'; }, 500);
+      }
+      function revealBaseUI(){
+        try {
+          document.body.setAttribute('aria-busy','false');
+          var home = document.getElementById('home');
+          if (home){ home.classList.add('active'); home.setAttribute('aria-hidden','false'); }
+          var bm = qs('.bottom-menu');
+          if (bm){ bm.style.display = 'flex'; bm.style.pointerEvents = 'auto'; }
+        } catch(_) {}
+      }
+      function onReady(cb){
+        if (document.readyState === 'complete' || document.readyState === 'interactive') cb();
+        else document.addEventListener('DOMContentLoaded', cb, { once: true });
+      }
+      onReady(function(){
+        setTimeout(revealBaseUI, SOFT_WAIT_MS);
+        setTimeout(function(){ hideLoader(); revealBaseUI(); }, MAX_WAIT_MS);
+      });
+    })();
+  </script>
+  <script>
+    (function(){
+      function setVH(){ var vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', vh + 'px'); }
+      window.addEventListener('resize', setVH);
+      window.addEventListener('orientationchange', setVH);
+      setVH();
+    })();
+  </script>
+  
+
+<div class="touch-edge-bottom" aria-hidden="true"></div>
+  <!-- App bundle -->
+  <script src="app.js" defer></script>
+</body>
+</html>
+
