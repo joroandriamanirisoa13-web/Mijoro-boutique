@@ -1,88 +1,3 @@
-/* ========================================
-   VARIABLES & THEME SYSTEM
-   ======================================== */
-:root {
-  /* Colors */
-  --accent: #ff9800;
-  --bg-card: rgba(255,255,255,0.12);
-  --popup-bg: rgba(0,0,0,0.85);
-  --text: #fff;
-  --text-muted: #97a1ab;
-  --radius: 12px;
-
-  /* Menu colors */
-  --menu-home: #2563eb;
-  --menu-home-h: #1d4ed8;
-  --menu-shop: #16a34a;
-  --menu-shop-h: #15803d;
-  --menu-param: #14b8a6;
-  --menu-param-h: #0d9488;
-
-  /* Category colors */
-  --cat-ebooks: #3b82f6;
-  --cat-apps: #8b5cf6;
-  --cat-videos: #ef4444;
-  --cat-vip: #eab308;
-  --cat-promo: #22c55e;
-  --cat-free: #3b82f6;
-
-  /* Layout */
-  --bm-space: 96px;
-  --bottom-menu-h: 64px;
-  --edge-visible: 18px;
-
-  /* Search & UI */
-  --ring: #3b82f6;
-  --ring-dark: #60a5fa;
-  --bg: #ffffff;
-  --border: #cfd6df;
-  --border-hover: rgba(0,0,0,0.12);
-  --shadow: 0 1px 2px rgba(0,0,0,.04);
-
-  /* Dark mode defaults */
-  --bg-dark: #0f1216;
-  --text-dark: #f5f7fa;
-  --border-dark: rgba(255,255,255,.14);
-  --shadow-dark: 0 1px 2px rgba(0,0,0,.6);
-
-  /* Tiles */
-  --tile-shadow: 0 6px 16px rgba(0,0,0,.18);
-  --tile-shadow-hover: 0 10px 22px rgba(0,0,0,.22);
-  --tile-shadow-active: 0 3px 10px rgba(0,0,0,.28);
-}
-
-/* Theme variants */
-body.theme-light {
-  --bg-card: rgba(255,255,255,0.95);
-  --popup-bg: rgba(255,255,255,0.95);
-  --text: #111;
-  --accent: #ff9800;
-}
-
-
-
-/* ========================================
-   RESET & BASE
-   ======================================== */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-}
-
-body {
-  font-family: 'Montserrat', -apple-system, system-ui, sans-serif;
-  color: var(--text);
-  background: url("https://i.ibb.co/F4sjXGCN/images-21.jpg") no-repeat center center fixed;
-  background-size: cover;
-  -webkit-font-smoothing: antialiased;
-  transition: background-color .6s ease;
-  overflow-x: hidden;
-}
 
 /* ==========================================
    LOADER PREMIUM - MIJORO BOUTIQUE
@@ -416,40 +331,7 @@ p {
   line-height: 1.5;
 }
 
-/* ========================================
-   HOME SECTION (fixed layout)
-   ======================================== */
-#home.home-fixed {
-  display: flex;
-  flex-direction: column;
-  height: calc(var(--vh, 1vh) * 100 - var(--bm-space));
-  margin: 12px auto;
-  padding: 12px;
-  overflow: hidden;
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  box-shadow: 0 6px 18px rgba(0,0,0,.35);
-}
 
-#home.home-fixed .slideshow {
-  flex: 1 1 auto;
-  min-height: 0;
-  height: auto;
-  max-height: none;
-}
-
-#home.home-fixed .slide-track,
-#home.home-fixed .slide {
-  height: 100%;
-}
-
-#home.home-fixed .slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-  aspect-ratio: auto;
-}
 
 /* ========================================
    SLIDESHOW
@@ -3340,4 +3222,229 @@ body[data-theme="dark"] .nav-btn:hover {
     transition: none !important;
     animation: none !important;
   }
+}/* ========================================
+   VARIABLES & THEME SYSTEM
+   ======================================== */
+:root {
+  /* Colors */
+  --accent: #ff9800;
+  --bg-card: rgba(255,255,255,0.12);
+  --popup-bg: rgba(0,0,0,0.85);
+  --text: #fff;
+  --text-muted: #97a1ab;
+  --radius: 12px;
+
+  /* Menu colors */
+  --menu-home: #2563eb;
+  --menu-home-h: #1d4ed8;
+  --menu-shop: #16a34a;
+  --menu-shop-h: #15803d;
+  --menu-param: #14b8a6;
+  --menu-param-h: #0d9488;
+
+  /* Category colors */
+  --cat-ebooks: #3b82f6;
+  --cat-apps: #8b5cf6;
+  --cat-videos: #ef4444;
+  --cat-vip: #eab308;
+  --cat-promo: #22c55e;
+  --cat-free: #3b82f6;
+
+  /* Layout */
+  --bm-space: 96px;
+  --bottom-menu-h: 64px;
+  --edge-visible: 18px;
+
+  /* Search & UI */
+  --ring: #3b82f6;
+  --ring-dark: #60a5fa;
+  --bg: #ffffff;
+  --border: #cfd6df;
+  --border-hover: rgba(0,0,0,0.12);
+  --shadow: 0 1px 2px rgba(0,0,0,.04);
+
+  /* Dark mode defaults */
+  --bg-dark: #0f1216;
+  --text-dark: #f5f7fa;
+  --border-dark: rgba(255,255,255,.14);
+  --shadow-dark: 0 1px 2px rgba(0,0,0,.6);
+
+  /* Tiles */
+  --tile-shadow: 0 6px 16px rgba(0,0,0,.18);
+  --tile-shadow-hover: 0 10px 22px rgba(0,0,0,.22);
+  --tile-shadow-active: 0 3px 10px rgba(0,0,0,.28);
+}
+
+/* ========================================
+   RESET & BASE
+   ======================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Montserrat', -apple-system, system-ui, sans-serif;
+  color: var(--text);
+  background: url("https://i.ibb.co/F4sjXGCN/images-21.jpg") no-repeat center center;
+  background-size: cover;
+  background-attachment: fixed; /* ✅ FIXED - tsy scroll */
+  -webkit-font-smoothing: antialiased;
+  transition: background-color .6s ease;
+}
+
+/* ==========================================
+   HOME SECTION - NO SCROLL, BACKGROUND FIXED
+   ========================================== */
+
+#home {
+  display: flex !important;
+  flex-direction: column;
+  height: calc(100vh - var(--bottom-menu-h, 74px) - 20px);
+  overflow: hidden !important; /* ✅ Tsy scrollable */
+  padding: 12px;
+  margin: 10px auto;
+  max-width: 980px;
+  position: relative;
+}
+
+/* ✅ Garantit que le contenu reste au-dessus du background */
+#home > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Slideshow - flexible */
+#home .slideshow {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+#home .slide-track,
+#home .slide {
+  height: 100%;
+}
+
+#home .slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Titles et textes */
+#home h1 {
+  font-size: clamp(20px, 4vw, 28px);
+  margin: 16px 0 8px 0;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+#home p {
+  font-size: clamp(13px, 2.5vw, 15px);
+  margin: 0 0 16px 0;
+  flex-shrink: 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Buttons */
+#home > div[style*="margin-top"] {
+  flex-shrink: 0;
+  margin-top: 12px !important;
+}
+
+/* ========================================
+   MOBILE RESPONSIVE
+   ======================================== */
+@media (max-width: 768px) {
+  body {
+    background-attachment: fixed; /* ✅ Force fixe sur mobile */
+  }
+
+  #home {
+    height: calc(100vh - var(--bottom-menu-h, 74px) - 16px);
+    padding: 10px;
+    margin: 8px auto;
+  }
+  
+  #home h1 {
+    font-size: 20px;
+    margin: 12px 0 6px 0;
+  }
+  
+  #home p {
+    font-size: 13px;
+    margin: 0 0 12px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    background-attachment: fixed; /* ✅ Maintient fixe même sur petit écran */
+  }
+
+  #home {
+    height: calc(100vh - var(--bottom-menu-h, 74px) - 12px);
+    padding: 8px;
+    margin: 6px auto;
+  }
+  
+  #home h1 {
+    font-size: 18px;
+    margin: 10px 0 4px 0;
+  }
+  
+  #home p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
+/* Landscape mode */
+@media (max-height: 600px) and (orientation: landscape) {
+  #home {
+    padding: 8px;
+  }
+  
+  #home h1 {
+    font-size: 16px;
+    margin: 8px 0 4px 0;
+  }
+  
+  #home p {
+    font-size: 11px;
+    margin: 0 0 8px 0;
+  }
+}
+
+/* ========================================
+   SECTIONS (autres que home)
+   ======================================== */
+section {
+  position: relative;
+  z-index: 1;
+  max-width: 980px;
+  margin: 48px auto;
+  padding: 48px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 30px rgba(0,0,0,.45);
+  display: none;
+  opacity: 0;
+  transition: opacity .45s;
+}
+
+section.active {
+  display: block;
+  opacity: 1;
 }
