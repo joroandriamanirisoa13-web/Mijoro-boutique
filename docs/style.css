@@ -3640,3 +3640,58 @@ section.active {
 .promo-mini-badge {
   background: linear-gradient(135deg, #ec4899, #d946ef);
   color: #fef3c7;}
+/* ==========================================
+   QUICK ORDER - COLLAPSIBLE
+   ========================================== */
+
+.qo-toggle-btn:hover {
+  background: rgba(255,255,255,0.15) !important;
+  transform: scale(1.1);
+}
+
+.qo-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.qo-toggle-btn i {
+  transition: transform 0.3s ease;
+}
+
+.qo-toggle-btn.collapsed i {
+  transform: rotate(180deg);
+}
+
+#qoContent {
+  max-height: 1000px; /* Valeur initiale */
+  opacity: 1;
+}
+
+#qoContent.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}/* ========================================
+   ANIMATIONS ONLINE/OFFLINE
+   ======================================== */
+@keyframes slideUp {
+  from { 
+    transform: translateX(-50%) translateY(60px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateX(-50%) translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes slideDown {
+  from { 
+    transform: translateX(-50%) translateY(0); 
+    opacity: 1; 
+  }
+  to { 
+    transform: translateX(-50%) translateY(60px); 
+    opacity: 0; 
+  }
+}
