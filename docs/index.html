@@ -100,18 +100,34 @@
   <h1 id="home-title" data-i18n="home_title">Tongasoa eto amin'ny fivarotana Malagasy!</h1>
   <p id="home-sub" data-i18n="home_sub">Découvre des eBooks, vidéos et apps/jeux pour t'aider à réussir en ligne.</p>
 </section>
-<!-- 🆕 MODULE COMMANDE RAPIDE -->
+<!-- 🆕 MODULE COMMANDE RAPIDE (COLLAPSIBLE) -->
 <div id="quick-order-section" style="margin-top:20px; padding:0 12px">
   <div class="quick-order-card">
-    <div class="qo-header">
-      <i class="fa-solid fa-bolt"></i>
-      <h3>Commande Express</h3>
+    <!-- Header avec bouton toggle -->
+    <div class="qo-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="fa-solid fa-bolt"></i>
+        <h3 style="margin:0;">Commande Express</h3>
+      </div>
+      <button 
+        id="qoToggle" 
+        type="button" 
+        class="qo-toggle-btn"
+        aria-label="Réduire/Agrandir commande express"
+        aria-expanded="true"
+        style="width:32px;height:32px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;">
+        <i class="fa-solid fa-chevron-up"></i>
+      </button>
     </div>
     
-    <div class="qo-grid" id="featured-products">
-      <!-- Produits vedettes seront chargés ici par JS -->
+    <!-- Contenu collapsible -->
+    <div id="qoContent" style="overflow:hidden;transition:max-height 0.3s ease,opacity 0.2s ease;">
+      <div class="qo-grid" id="featured-products">
+        <!-- Produits vedettes seront chargés ici par JS -->
+      </div>
     </div>
-    
+  </div>
+</div>  
   
 <section id="shop" class="section" aria-label="Boutique - Produits numériques" aria-hidden="true">
   
