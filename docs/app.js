@@ -1,3 +1,17 @@
+async function subscribeNotifications() {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const sub = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array('YOUR_PUBLIC_VAPID_KEY')
+    });
+    // TODO: Alefaso any amin'ny backend ny sub JSON
+    console.log('Push subscribed:', JSON.stringify(sub));
+  } catch (e) {
+    console.error('Push subscribe failed:', e);
+  }
+}
+document.getElementById('btnSubscribe')?.addEventListener('click', subscribeNotifications);
 
 /* ================================
    GLOBAL CONFIG (accessible partout)
@@ -216,14 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
    ========================================= */
 
 /* SAFETY / DEBUG / POLYFILLS */
-(function safetyInit() {
-  // CSS.escape polyfill
-  if (!window.CSS || typeof window.CSS.escape !== 'function') {
-    window.CSS = window.CSS || {};
-    window.CSS.escape = function (value) {
-      return String(value).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
-    };
-  }
+
 
   // Global error logs
   window.addEventListener('error', function (e) {
@@ -264,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Placeholder if closeShop not yet defined
   if (typeof window.closeShop !== 'function') window.closeShop = function () {};
-})();
+;
 
 /* CONSTANTES + HELPERS */
 var WHATSAPP_PHONE_INTL = '261333106055';
