@@ -396,25 +396,23 @@ function buildWAProductMessage(p, action) {
   action = action || 'buy';
   var title = (p && p.title) ? p.title : '';
   var cat = (p && p.category) ? p.category : '';
-  var price = p && p.price;
+  var price = Number(p && p.price) || 0;
   var id = (p && p.id) ? p.id : '';
-  var isFree = Number(price) === 0;
+  var isFree = price === 0;
   var actionText = isFree ? 'Demande: Obtenir (gratuit)' : (action === 'read' ? 'Demande: Lire' : 'Demande: Acheter');
+  
+  // ✅ Format prix simple pour WhatsApp (sans HTML)
+  var priceText = isFree ? 'Gratuit' : price.toLocaleString('fr-FR') + ' AR';
+  
   var lines = [
     'Salama! ' + actionText,
     '• Produit: ' + title,
     '• Catégorie: ' + cat,
-    '• Prix: ' + fmtPrice(price)
+    '• Prix: ' + priceText // ✅ TEXTE SIMPLE
   ];
   if (id) lines.push('• ID: ' + id);
   lines.push('Misaotra!');
   return lines.join('\n');
-}
-function buyOrRead(product) {
-  if (!product) return;
-  try { if (typeof addToCart === 'function') addToCart(product); } catch (e) { console.warn('[addToCart]', e); }
-  var isFree = Number(product.price) === 0;
-  openWhatsAppMessage(buildWAProductMessage(product, isFree ? 'read' : 'buy'));
 }
 
 
@@ -1179,12 +1177,35 @@ function handleSlideFile(file) {
     return;
   }
   
-  slideFileData = file;
-  var url = URL.createObjectURL(file);
-  var preview = document.getElementById('slide-preview');
-  var previewImg = document.getElementById('slide-preview-img');
-  previewImg.src = url;
-  preview.style.display = 'block';
+  // ✅ Load image mba ahafantarana ny dimensions
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var ratio = img.width / img.height;
+      
+      // ✅ Warn raha tsy 16:9 (1.77)
+      if (ratio < 1.5 || ratio > 2.0) {
+        var confirmed = confirm(
+          '⚠️ Sary ratio: ' + ratio.toFixed(2) + '\n\n' +
+          'Recommended: 16:9 (1.77)\n\n' +
+          'Hanohy ve?'
+        );
+        if (!confirmed) {
+          return;
+        }
+      }
+      
+      // ✅ Proceed
+      slideFileData = file;
+      var preview = document.getElementById('slide-preview');
+      var previewImg = document.getElementById('slide-preview-img');
+      previewImg.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 async function submitSlide() {
@@ -1576,13 +1597,17 @@ function checkoutWhatsApp() {
       openWhatsAppMessage('Salama! Te-hanao commande (panier vide).');
       return;
     }
-    var lines = ['Salama! Commande avy amin’ny Mijoro Boutique:', ''];
+    var lines = ['Salama! Commande avy amin"ny Mijoro Boutique:', ''];
     var total = 0;
     cartItems.forEach(function (item) {
-      total += (Number(item.price) || 0) * item.qty;
-      lines.push('• ' + item.title + ' x' + item.qty + ' — ' + fmtPrice((Number(item.price) || 0) * item.qty));
+      var itemPrice = (Number(item.price) || 0) * item.qty;
+      total += itemPrice;
+      // ✅ FORMAT SIMPLE
+      var priceText = itemPrice.toLocaleString('fr-FR') + ' AR';
+      lines.push('• ' + item.title + ' x' + item.qty + ' — ' + priceText);
     });
-    lines.push('', 'Total: ' + fmtPrice(total), 'Misaotra!');
+    var totalText = total.toLocaleString('fr-FR') + ' AR';
+    lines.push('', 'Total: ' + totalText, 'Misaotra!');
     openWhatsAppMessage(lines.join('\n'));
   } catch (err) {
     console.error('[checkoutWhatsApp error]', err);
@@ -4054,13 +4079,22 @@ function checkoutWhatsApp() {
       openWhatsAppMessage('Salama! Te-hanao commande (panier vide).');
       return;
     }
-    var lines = ['Salama! Commande avy amin’ny Mijoro Boutique:', ''];
+    var lines = ['Salama! Commande avy amin\'ny Mijoro Boutique:', ''];
     var total = 0;
-    cartItems.forEach(function (item) {
-      total += (Number(item.price) || 0) * item.qty;
-      lines.push('• ' + item.title + ' x' + item.qty + ' — ' + fmtPrice((Number(item.price) || 0) * item.qty));
+    cartItems.forEach(function(item) {
+      var itemPrice = (Number(item.price) || 0) * item.qty;
+      total += itemPrice;
+      // ✅ TEXTE SIMPLE - Pas de HTML
+      var priceText = itemPrice > 0 ?
+        itemPrice.toLocaleString('fr-FR') + ' AR' :
+        'Gratuit';
+      lines.push('• ' + item.title + ' x' + item.qty + ' — ' + priceText);
     });
-    lines.push('', 'Total: ' + fmtPrice(total), 'Misaotra!');
+    // ✅ Total en texte simple
+    var totalText = total > 0 ?
+      total.toLocaleString('fr-FR') + ' AR' :
+      'Gratuit';
+    lines.push('', 'Total: ' + totalText, 'Misaotra!');
     openWhatsAppMessage(lines.join('\n'));
   } catch (err) {
     console.error('[checkoutWhatsApp error]', err);
@@ -6076,3 +6110,328 @@ if (document.readyState === 'loading') {
 }
 
 })();
+/* DEBUG - À SUPPRIMER APRÈS */
+console.log('[DEBUG] Checking available data...');
+console.log('window.allProducts:', window.allProducts);
+console.log('window.products:', window.products);
+console.log('window.productsData:', window.productsData);
+
+// Liste toutes les variables globales contenant "product"
+Object.keys(window).filter(k => k.toLowerCase().includes('product')).forEach(k => {
+  console.log(`[DEBUG] window.${k}:`, window[k]);
+});
+/* ==========================================
+   QUICK ORDER MODULE - FIXED VERSION ✅
+   ========================================== */
+
+const QuickOrder = {
+  loaded: false,
+  retryCount: 0,
+  maxRetries: 40, // Augmenté pour laisser plus de temps
+  
+  // Initialisation
+  async init() {
+    console.log('[Quick Order] Starting initialization...');
+    const container = document.getElementById('featured-products');
+    if (!container) {
+      console.warn('[Quick Order] Container #featured-products not found');
+      return;
+    }
+    
+    this.showLoader(container);
+    await this.waitForProducts();
+  },
+  
+  // Affiche le loader
+  showLoader(container) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:30px;color:#94a3b8">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size:32px;margin-bottom:12px;color:#4ade80"></i>
+        <p style="margin:0;font-size:14px">Chargement des produits...</p>
+      </div>
+    `;
+  },
+  
+  // ✅ FIXED: Attend window.products (votre variable globale)
+  async waitForProducts() {
+    return new Promise((resolve) => {
+      const checkProducts = () => {
+        this.retryCount++;
+        
+        // ✅ Utilise votre variable products globale
+        if (window.products && Array.isArray(window.products) && window.products.length > 0) {
+          console.log('[Quick Order] ✓ Products loaded:', window.products.length);
+          this.render();
+          this.loaded = true;
+          resolve(true);
+          return;
+        }
+        
+        // Max retries
+        if (this.retryCount >= this.maxRetries) {
+          console.warn('[Quick Order] Max retries reached. Using fallback data.');
+          this.render(); // Render quand même avec données fallback
+          resolve(false);
+          return;
+        }
+        
+        // Retry
+        setTimeout(checkProducts, 250);
+      };
+      
+      checkProducts();
+    });
+  },
+  
+  // Affiche les produits
+  render() {
+    const container = document.getElementById('featured-products');
+    if (!container) return;
+    
+    // ✅ Utilise window.products directement
+    const allProducts = window.products || [];
+    
+    if (allProducts.length === 0) {
+      this.showEmpty(container);
+      return;
+    }
+    
+    // Filtre VIP/Promo en priorité
+    let featured = allProducts.filter(p => {
+      const cat = (p.category || '').toLowerCase();
+      return cat === 'vip' || cat === 'promo' || cat === 'promotion';
+    });
+    
+    // Fallback: premiers produits si pas assez
+    if (featured.length < 4) {
+      featured = [...featured, ...allProducts.filter(p => {
+        const cat = (p.category || '').toLowerCase();
+        return cat !== 'vip' && cat !== 'promo' && cat !== 'promotion';
+      })];
+    }
+    
+    // Limite à 4
+    featured = featured.slice(0, 4);
+    
+    if (featured.length === 0) {
+      this.showEmpty(container);
+      return;
+    }
+    
+    container.innerHTML = featured.map(p => this.createProductCard(p)).join('');
+    console.log('[Quick Order] ✓ Rendered', featured.length, 'products');
+  },
+  
+  // Crée une card produit
+  createProductCard(product) {
+    const price = Number(product.price) || 0;
+    const priceText = price > 0 ? `${price} AR` : 'Gratuit';
+    
+    // ✅ Compatible avec votre structure d'image
+    let imgSrc = 'https://via.placeholder.com/300x169/1e293b/4ade80?text=Image';
+    if (product.image && product.image.url) {
+      imgSrc = product.image.url;
+    } else if (product.thumbnail_url) {
+      imgSrc = product.thumbnail_url;
+    } else if (product._db && product._db.thumbnail_url) {
+      imgSrc = product._db.thumbnail_url;
+    }
+    
+    const name = this.escapeHtml(product.title || product.name || 'Produit');
+    const cat = (product.category || '').toLowerCase();
+    
+    // Badge selon catégorie
+    let badge = '';
+    if (cat === 'vip') {
+      badge = `<span class="qo-badge qo-badge-vip"><i class="fa-solid fa-crown"></i></span>`;
+    } else if (cat === 'promo' || cat === 'promotion') {
+      badge = `<span class="qo-badge qo-badge-promo"><i class="fa-solid fa-fire"></i></span>`;
+    } else if (price === 0 || cat === 'free' || cat === 'gratuit') {
+      badge = `<span class="qo-badge qo-badge-free"><i class="fa-solid fa-gift"></i></span>`;
+    }
+    
+    return `
+      <div class="qo-product" data-product-id="${product.id || ''}">
+        ${badge}
+        <img 
+          src="${imgSrc}" 
+          alt="${name}" 
+          class="qo-product-img" 
+          loading="lazy"
+          onerror="this.src='https://via.placeholder.com/300x169/1e293b/4ade80?text=Image'">
+        <div class="qo-product-title">${name}</div>
+        <div class="qo-product-price">
+          <i class="fa-solid fa-coins"></i>
+          <span>${priceText}</span>
+        </div>
+      </div>
+    `;
+  },
+  
+  // Affiche message vide
+  showEmpty(container) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:30px;color:#94a3b8">
+        <i class="fa-solid fa-box-open" style="font-size:36px;margin-bottom:12px;opacity:0.5"></i>
+        <p style="margin:0;font-size:14px">Aucun produit disponible</p>
+      </div>
+    `;
+  },
+  
+  // Escape HTML
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  },
+  
+  // Gère le clic sur un produit
+  handleClick(productId) {
+    if (!productId) return;
+    
+    const product = (window.products || []).find(p => p.id === productId);
+    
+    if (!product) {
+      console.warn('[Quick Order] Product not found:', productId);
+      this.showToast('❌ Produit introuvable', 'error');
+      return;
+    }
+    
+    // ✅ Utilise votre fonction addToCart existante
+    if (typeof window.addToCart !== 'function') {
+      console.error('[Quick Order] addToCart function not found');
+      this.showToast('❌ Erreur système', 'error');
+      return;
+    }
+    
+    window.addToCart(product);
+    
+    // Ouvre le drawer du panier
+    const drawer = document.getElementById('cart-drawer');
+    if (drawer) {
+      drawer.classList.add('show');
+      drawer.setAttribute('aria-hidden', 'false');
+    }
+    
+    // Feedback visuel
+    const card = document.querySelector(`.qo-product[data-product-id="${CSS.escape(productId)}"]`);
+    if (card) {
+      card.style.animation = 'quickAddPulse 0.4s ease';
+      setTimeout(() => card.style.animation = '', 400);
+    }
+    
+    // Toast notification
+    this.showToast(`✅ ${product.title || 'Produit'} ajouté au panier`, 'success');
+  },
+  
+  // Toast notification
+  showToast(message, type = 'success') {
+    document.querySelectorAll('.qo-toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'qo-toast';
+    toast.textContent = message;
+    
+    const bgColor = type === 'success' ? '#10b981' : '#ef4444';
+    
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${bgColor};
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      animation: qoToastIn 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      max-width: 90vw;
+      text-align: center;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'qoToastOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+};
+
+// ✅ Event delegation global pour les clics
+document.addEventListener('click', (e) => {
+  const productCard = e.target.closest('.qo-product');
+  if (productCard) {
+    const productId = productCard.dataset.productId;
+    if (productId) {
+      QuickOrder.handleClick(productId);
+    }
+  }
+});
+
+// ✅ Initialisation automatique
+(function initQuickOrder() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => QuickOrder.init(), 800); // Delay pour laisser products se charger
+    });
+  } else {
+    setTimeout(() => QuickOrder.init(), 800);
+  }
+})();
+
+// ✅ Styles CSS
+if (!document.getElementById('qo-premium-styles')) {
+  const styles = document.createElement('style');
+  styles.id = 'qo-premium-styles';
+  styles.textContent = `
+    @keyframes qoToastIn {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    @keyframes qoToastOut {
+      from { transform: translateX(-50%) translateY(0); opacity: 1; }
+      to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    }
+    @keyframes quickAddPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.95); background: rgba(74,222,128,0.2); }
+    }
+    
+    .qo-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 13px;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .qo-badge-vip {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #78350f;
+    }
+    
+    .qo-badge-promo {
+      background: linear-gradient(135deg, #ec4899, #d946ef);
+      color: #fef3c7;
+    }
+    
+    .qo-badge-free {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: #064e3b;
+    }
+  `;
+  document.head.appendChild(styles);
+}
