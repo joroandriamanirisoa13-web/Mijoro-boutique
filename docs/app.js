@@ -115,7 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 (function offlineIndicator() {
   let indicator = null;
-
+  let isShowing = false;
+  
   function createIndicator() {
     if (indicator) return indicator;
     
@@ -141,33 +142,71 @@ document.addEventListener('DOMContentLoaded', () => {
       gap: 8px;
       z-index: 9000;
       box-shadow: 0 8px 24px rgba(0,0,0,.4);
-      transition: transform .3s ease;
+      transition: transform .3s ease, opacity .3s ease;
       pointer-events: none;
     `;
     document.body.appendChild(indicator);
     return indicator;
   }
-
+  
   function show() {
+    if (isShowing) return;
     const el = createIndicator();
     el.style.transform = 'translateX(-50%) translateY(0)';
+    el.style.opacity = '1';
+    isShowing = true;
   }
-
+  
   function hide() {
-    if (!indicator) return;
+    if (!indicator || !isShowing) return;
     indicator.style.transform = 'translateX(-50%) translateY(100px)';
+    indicator.style.opacity = '0';
+    isShowing = false;
+    
+    // ✅ FIX: Supprimer l'élément après l'animation
+    setTimeout(() => {
+      if (indicator && indicator.parentNode) {
+        indicator.parentNode.removeChild(indicator);
+        indicator = null;
+      }
+    }, 400);
   }
-
+  
+  // ✅ FIX: Meilleure gestion des événements
   window.addEventListener('online', () => {
-    console.log('[Network] Online');
+    console.log('[Network] ✅ Online');
     hide();
+    
+    // ✅ Notification visuelle
+    const toast = document.createElement('div');
+    toast.textContent = '✅ Connexion rétablie';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: calc(var(--bottom-menu-h, 64px) + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      z-index: 9001;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      animation: slideUp 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.animation = 'slideDown 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
   });
-
+  
   window.addEventListener('offline', () => {
-    console.log('[Network] Offline');
+    console.log('[Network] ❌ Offline');
     show();
   });
-
+  
   // Check initial state
   if (!navigator.onLine) {
     setTimeout(show, 1000);
@@ -838,18 +877,31 @@ function makeLike(p) {
    
 
     function makeCard(p, compact) {
-  var imgUrl = escapeAttr((p.image && p.image.url) ? p.image.url : FALLBACK_IMG);
-  var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
-  var priceStr = fmtPrice(p.price);
-  var badgeHTML = makeBadge(p); // ✅ Badge corner gauche
-  var actions = makeActions(p);
-  var likeBtn = makeLike(p);
-  var titleSafe = escapeHtml(p.title || 'Produit');
-  var descShort = escapeHtml(p.description_short || '');
+  // ✅ FIX: Meilleure gestion des images avec validation
+  let imgUrl = FALLBACK_IMG;
+  
+  if (p.image && p.image.url && p.image.url.startsWith('http')) {
+    imgUrl = p.image.url;
+  } else if (p._db && p._db.thumbnail_url && p._db.thumbnail_url.startsWith('http')) {
+    imgUrl = p._db.thumbnail_url;
+  } else if (p.thumbnail_url && p.thumbnail_url.startsWith('http')) {
+    imgUrl = p.thumbnail_url;
+  }
+  
+  const imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
+  const priceStr = fmtPrice(p.price);
+  const badgeHTML = makeBadge(p);
+  const actions = makeActions(p);
+  const likeBtn = makeLike(p);
+  const titleSafe = escapeHtml(p.title || 'Produit');
+  const descShort = escapeHtml(p.description_short || '');
+  
+  // ✅ AJOUT: Gestion d'erreur de chargement d'image
+  const imgErrorHandler = `onerror="this.onerror=null;this.src='${FALLBACK_IMG}';this.style.opacity='0.6'"`;
   
   if (compact) {
-    return badgeHTML + // ✅ Badge absolute top-left
-      '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
+    return badgeHTML +
+      `<img src="${imgUrl}" alt="${imgAlt}" loading="lazy" decoding="async" ${imgErrorHandler}>` +
       '<h3>' + titleSafe + '</h3>' +
       '<p class="desc">' + descShort + '</p>' +
       '<div class="meta" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">' +
@@ -860,8 +912,8 @@ function makeLike(p) {
       likeBtn + '</div>';
   }
   
-  return badgeHTML + // ✅ Badge absolute top-left
-    '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
+  return badgeHTML +
+    `<img src="${imgUrl}" alt="${imgAlt}" loading="lazy" decoding="async" ${imgErrorHandler}>` +
     '<div style="padding:8px 4px; flex:1; display:flex; flex-direction:column; justify-content:space-between">' +
     '<div>' +
     '<h3 style="font-size:15px; margin:0">' + titleSafe + '</h3>' +
@@ -1513,19 +1565,22 @@ function updateCartUI() {
     var totals = cartTotals();
     var count = totals.count;
     var total = totals.total;
+    
     var countEl = document.getElementById('cart-count');
     var totalEl = document.getElementById('cart-total');
     if (countEl) countEl.textContent = String(count);
     if (totalEl) totalEl.innerHTML = fmtPrice(total);
+    
     var drawer = document.getElementById('cart-list');
     var totalDrawer = document.getElementById('cart-total-drawer');
+    
     if (drawer && totalDrawer) {
       drawer.innerHTML = '';
       if (cartItems.size === 0) {
         drawer.innerHTML = '<div class="cart-empty">Panier vide.</div>';
       } else {
         var frag = document.createDocumentFragment();
-        cartItems.forEach(function (it, id) {
+        cartItems.forEach(function(it, id) {
           var div = document.createElement('div');
           div.className = 'cart-item';
           div.setAttribute('data-id', id);
@@ -1549,8 +1604,19 @@ function updateCartUI() {
         });
         drawer.appendChild(frag);
       }
-      totalDrawer.textContent = fmtPrice(total);
+      totalDrawer.innerHTML = fmtPrice(total);
     }
+    
+    // ✅ FIX: Masquer le module Quick Order si panier vide
+    var qoSection = document.getElementById('quick-order-section');
+    if (qoSection) {
+      if (count === 0) {
+        qoSection.style.display = 'none';
+      } else {
+        qoSection.style.display = 'block';
+      }
+    }
+    
     saveCartToStorage(cartMapToArray());
   } catch (err) {
     console.error('[updateCartUI error]', err);
@@ -6435,3 +6501,81 @@ if (!document.getElementById('qo-premium-styles')) {
   `;
   document.head.appendChild(styles);
 }
+/* ==========================================
+   QUICK ORDER - COLLAPSE/EXPAND LOGIC
+   ========================================== */
+
+(function initQuickOrderToggle() {
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('qoToggle');
+    const content = document.getElementById('qoContent');
+    
+    if (!toggleBtn || !content) {
+      console.warn('[QO Toggle] Elements not found');
+      return;
+    }
+    
+    let isExpanded = true;
+    
+    // Load saved state
+    try {
+      const saved = localStorage.getItem('qo-expanded');
+      if (saved !== null) {
+        isExpanded = saved === 'true';
+        updateUI(false); // No animation on load
+      }
+    } catch (e) {
+      console.warn('[QO Toggle] LocalStorage error:', e);
+    }
+    
+    // Toggle handler
+    toggleBtn.addEventListener('click', function() {
+      isExpanded = !isExpanded;
+      updateUI(true); // With animation
+      
+      // Save state
+      try {
+        localStorage.setItem('qo-expanded', String(isExpanded));
+      } catch (e) {
+        console.warn('[QO Toggle] Save error:', e);
+      }
+    });
+    
+    function updateUI(animate) {
+      if (!animate) {
+        content.style.transition = 'none';
+      }
+      
+      if (isExpanded) {
+        // Expand
+        toggleBtn.classList.remove('collapsed');
+        content.classList.remove('collapsed');
+        content.style.maxHeight = content.scrollHeight + 'px';
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.setAttribute('title', 'Réduire');
+      } else {
+        // Collapse
+        toggleBtn.classList.add('collapsed');
+        content.classList.add('collapsed');
+        content.style.maxHeight = '0px';
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.setAttribute('title', 'Agrandir');
+      }
+      
+      if (!animate) {
+        setTimeout(() => {
+          content.style.transition = '';
+        }, 50);
+      }
+    }
+    
+    // Recalculate max-height on window resize
+    window.addEventListener('resize', function() {
+      if (isExpanded) {
+        content.style.maxHeight = content.scrollHeight + 'px';
+      }
+    });
+    
+    console.log('[QO Toggle] ✓ Initialized');
+  });
+})();
