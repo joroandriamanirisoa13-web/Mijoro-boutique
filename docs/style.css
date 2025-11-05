@@ -3462,4 +3462,181 @@ section.active {
   flex-shrink: 0;
   line-height: 1.3;
   text-align: center;
+}/* ==========================================
+   QUICK ORDER MODULE - HOME
+   ========================================== */
+
+.quick-order-card {
+  background: rgba(15, 18, 25, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
 }
+
+.qo-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.qo-header i {
+  font-size: 22px;
+  color: #fbbf24;
+  animation: flashBolt 2s ease-in-out infinite;
+}
+
+@keyframes flashBolt {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.qo-header h3 {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+}
+
+/* Grid produits */
+.qo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Mini product card */
+.qo-product {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.qo-product:hover {
+  transform: translateY(-4px);
+  border-color: rgba(74,222,128,0.5);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.qo-product-img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.qo-product-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.qo-product-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: #4ade80;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qo-product-price i {
+  font-size: 12px;
+}
+
+/* Bouton voir tout */
+.qo-view-all {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(74,222,128,0.3);
+}
+
+.qo-view-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74,222,128,0.5);
+}
+
+.qo-view-all i {
+  transition: transform 0.3s ease;
+}
+
+.qo-view-all:hover i {
+  transform: translateX(4px);
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .quick-order-card {
+    padding: 16px;
+  }
+  
+  .qo-grid {
+    gap: 10px;
+  }
+  
+  .qo-product {
+    padding: 10px;
+  }
+  
+  .qo-product-title {
+    font-size: 12px;
+  }
+  
+  .qo-product-price {
+    font-size: 13px;
+  }
+}/* Mini badges VIP/Promo pour Quick Order */
+.qo-product {
+  position: relative !important;
+}
+
+.vip-mini-badge,
+.promo-mini-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 12px;
+  z-index: 5;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.vip-mini-badge {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+}
+
+.promo-mini-badge {
+  background: linear-gradient(135deg, #ec4899, #d946ef);
+  color: #fef3c7;}
