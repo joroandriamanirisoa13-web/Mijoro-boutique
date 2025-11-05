@@ -1,8 +1,8 @@
 /* ==========================================
-   SERVICE WORKER - OFFLINE MODE
+   SERVICE WORKER - OFFLINE MODE (merged + patched)
    ========================================== */
 
-const CACHE_NAME = 'mijoro-v1.2';
+const CACHE_NAME = 'mijoro-v1.3';           // bumped version
 const OFFLINE_CACHE = 'mijoro-offline-v1';
 
 // Assets critiques à mettre en cache (pre-cache)
@@ -18,17 +18,17 @@ const STATIC_ASSETS = [
 // Patterns d'URLs à mettre en cache dynamiquement
 const CACHE_PATTERNS = [
   /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/i, // Images
-  /\.(?:woff2?|ttf|eot|otf)$/i, // Fonts
-  /\.(?:css|js)$/i, // Styles & Scripts
-  /ibb\.co/i, // ImgBB (vos images hébergées)
-  /supabase\.co/i // Supabase assets
+  /\.(?:woff2?|ttf|eot|otf)$/i,            // Fonts
+  /\.(?:css|js)$/i,                        // Styles & Scripts
+  /ibb\.co/i,                              // ImgBB (vos images hébergées)
+  /supabase\.co/i                          // Supabase assets
 ];
 
 // URLs à ne JAMAIS mettre en cache
 const SKIP_CACHE = [
   /chrome-extension:/,
   /localhost:.*hot-update/, // HMR dev
-  /\.map$/i // Source maps
+  /\.map$/i                 // Source maps
 ];
 
 /* ==========================================
@@ -48,26 +48,30 @@ self.addEventListener('install', (e) => {
 });
 
 /* ==========================================
-   ACTIVATE - Nettoyage des anciens caches
+   ACTIVATE - Nettoyage des anciens caches + nav preload
    ========================================== */
 self.addEventListener('activate', (e) => {
   console.log('[SW] Activation...');
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME && key !== OFFLINE_CACHE)
-          .map((key) => {
-            console.log('[SW] Suppression cache obsolète:', key);
-            return caches.delete(key);
-          })
-      );
-    }).then(() => self.clients.claim())
-  );
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys
+        .filter((key) => key !== CACHE_NAME && key !== OFFLINE_CACHE)
+        .map((key) => {
+          console.log('[SW] Suppression cache obsolète:', key);
+          return caches.delete(key);
+        })
+    );
+    // Optionnel: activer navigation preload (perf)
+    if (self.registration.navigationPreload) {
+      try { await self.registration.navigationPreload.enable(); } catch {}
+    }
+    await self.clients.claim();
+  })());
 });
 
 /* ==========================================
-   FETCH - Stratégie de cache intelligente
+   FETCH - Stratégie de cache intelligente (patched)
    ========================================== */
 self.addEventListener('fetch', (e) => {
   const { request } = e;
@@ -76,12 +80,40 @@ self.addEventListener('fetch', (e) => {
   // Ignore les requêtes non-http(s)
   if (!url.protocol.startsWith('http')) return;
 
+  // Laisse passer les requêtes non-GET (POST/PUT/DELETE...)
+  if (request.method !== 'GET') return;
+
   // Skip cache pour certaines URLs
   if (SKIP_CACHE.some((pattern) => pattern.test(url.href))) {
     return;
   }
 
-  // Stratégie: Cache First pour assets statiques
+  // Navigation requests (HTML) — app shell fallback offline
+  if (request.mode === 'navigate') {
+    e.respondWith((async () => {
+      try {
+        // Essaye le réseau d'abord
+        const network = await fetch(request);
+        // Re-cache la route pour usage offline
+        const c = await caches.open(OFFLINE_CACHE);
+        c.put(request, network.clone()).catch(() => {});
+        return network;
+      } catch {
+        // Essaye la route en cache
+        const cachedRoute = await caches.match(request);
+        if (cachedRoute) return cachedRoute;
+        // Fallback: index.html (app shell), sinon offline page
+        const shell =
+          (await caches.match('./index.html')) ||
+          (await caches.match('/')) ||
+          null;
+        return shell || offlineFallback();
+      }
+    })());
+    return;
+  }
+
+  // Stratégie: Cache First pour assets statiques (images, fonts, css/js)
   if (shouldCache(url.href)) {
     e.respondWith(cacheFirst(request));
     return;
@@ -100,49 +132,55 @@ function shouldCache(url) {
   return CACHE_PATTERNS.some((pattern) => pattern.test(url));
 }
 
-// Cache First: Cherche en cache d'abord, sinon réseau
+// Cache First: Cherche en cache d'abord, sinon réseau (patched opaque)
 async function cacheFirst(request) {
   try {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
-    
+
     if (cached) {
       console.log('[SW] Cache hit:', request.url);
-      
-      // Mise à jour en arrière-plan (stale-while-revalidate)
+
+      // Mise à jour en arrière-plan (stale-while-revalidate) — accepte opaque
       fetch(request).then((response) => {
-        if (response && response.ok) {
+        if (response && (response.ok || response.type === 'opaque')) {
           cache.put(request, response.clone());
         }
       }).catch(() => {});
-      
+
       return cached;
     }
 
-    // Pas en cache -> fetch + mise en cache
+    // Pas en cache -> fetch + mise en cache (accepte opaque)
     const response = await fetch(request);
-    if (response && response.ok && request.method === 'GET') {
-      cache.put(request, response.clone());
+    if (response && request.method === 'GET') {
+      const okOrOpaque = response.ok || response.type === 'opaque';
+      if (okOrOpaque) {
+        cache.put(request, response.clone());
+      }
     }
     return response;
-    
+
   } catch (err) {
     console.warn('[SW] Erreur cache first:', err);
     return caches.match(request).then((r) => r || offlineFallback());
   }
 }
 
-// Network First: Réseau d'abord, sinon cache
+// Network First: Réseau d'abord, sinon cache (patched opaque)
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
-    
-    // Met en cache si GET et réponse OK
-    if (response && response.ok && request.method === 'GET') {
-      const cache = await caches.open(OFFLINE_CACHE);
-      cache.put(request, response.clone());
+
+    // Met en cache si GET et réponse OK ou opaque
+    if (response && request.method === 'GET') {
+      const okOrOpaque = response.ok || response.type === 'opaque';
+      if (okOrOpaque) {
+        const cache = await caches.open(OFFLINE_CACHE);
+        cache.put(request, response.clone());
+      }
     }
-    
+
     return response;
   } catch (err) {
     console.warn('[SW] Network failed, trying cache:', err);
@@ -183,9 +221,7 @@ function offlineFallback() {
       </div>
     </body>
     </html>`,
-    {
-      headers: { 'Content-Type': 'text/html' }
-    }
+    { headers: { 'Content-Type': 'text/html' } }
   );
 }
 
@@ -204,35 +240,43 @@ async function syncOfflineData() {
 }
 
 /* ==========================================
-   MESSAGE HANDLER (communication avec app)
+   MESSAGE HANDLER (communication avec app) (patched CLEAR_CACHE)
    ========================================== */
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
-  if (e.data && e.data.type === 'CLEAR_CACHE') {
-    caches.keys().then((keys) => {
-      return Promise.all(keys.map((key) => caches.delete(key)));
-    }).then(() => {
-      e.ports[0].postMessage({ success: true });
-    });
-  }
-});/* ==========================================
-   PUSH NOTIFICATIONS HANDLER
-   ========================================== */
 
+  if (e.data && e.data.type === 'CLEAR_CACHE') {
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+      .then(() => {
+        if (e.ports && e.ports[0]) {
+          e.ports[0].postMessage({ success: true });
+        } else {
+          self.clients.matchAll().then((clientsArr) => {
+            clientsArr.forEach((c) => c.postMessage({ type: 'CACHE_CLEARED' }));
+          });
+        }
+      });
+  }
+});
+
+/* ==========================================
+   PUSH NOTIFICATIONS HANDLER (patched icons/badge local)
+   ========================================== */
 self.addEventListener('push', function(event) {
   console.log('[SW] Push received:', event);
 
   let notificationData = {
     title: 'Nouveau produit Mijoro!',
     body: 'Découvrez les dernières nouveautés',
-    icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
-    badge: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
+    icon: '/icons/notification-icon-192.png',     // local PNG
+    badge: '/icons/notification-badge-72.png',    // local PNG (monochrome recommended)
     tag: 'new-product',
     requireInteraction: false,
-    vibrate: [200, 100, 200]
+    vibrate: [200, 100, 200],
+    data: {}
   };
 
   // Parse data if available
@@ -241,9 +285,11 @@ self.addEventListener('push', function(event) {
       const payload = event.data.json();
       notificationData = {
         ...notificationData,
-        title: payload.title || notificationData.title,
-        body: payload.body || notificationData.body,
-        data: payload.data || {}
+        title: payload.title ?? notificationData.title,
+        body: payload.body ?? notificationData.body,
+        icon: payload.icon ?? notificationData.icon,
+        badge: payload.badge ?? notificationData.badge,
+        data: payload.data ?? {}
       };
     } catch (err) {
       console.warn('[SW] Failed to parse push data:', err);
@@ -258,75 +304,39 @@ self.addEventListener('push', function(event) {
   event.waitUntil(promiseChain);
 });
 
-// Handle notification click
+// Handle notification click (patched: focus + navigate or open)
 self.addEventListener('notificationclick', function(event) {
   console.log('[SW] Notification clicked:', event);
-
   event.notification.close();
 
   const action = event.action;
   const productId = event.notification.data?.productId;
 
-  if (action === 'dismiss') {
-    return;
-  }
+  if (action === 'dismiss') return;
 
-  // Open app and navigate to product
-  const urlToOpen = productId 
+  const urlToOpen = productId
     ? new URL(`/?product=${productId}`, self.location.origin).href
     : new URL('/', self.location.origin).href;
 
-  const promiseChain = clients.matchAll({
-    type: 'window',
-    includeUncontrolled: true
-  }).then(function(windowClients) {
-    // Check if app is already open
-    for (let i = 0; i < windowClients.length; i++) {
-      const client = windowClients[i];
-      if (client.url === urlToOpen && 'focus' in client) {
-        return client.focus();
+  const promiseChain = (async () => {
+    const windowClients = await clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    });
+
+    for (const client of windowClients) {
+      if ('focus' in client) {
+        await client.focus();
+        if ('navigate' in client) return client.navigate(urlToOpen);
+        client.postMessage({ type: 'NAVIGATE', url: urlToOpen });
+        return;
       }
     }
-    // Open new window
+
     if (clients.openWindow) {
       return clients.openWindow(urlToOpen);
     }
-  });
+  })();
 
   event.waitUntil(promiseChain);
-});// ✅ FIX: Ne pas mettre en cache les images en erreur
-async function cacheFirst(request) {
-  try {
-    const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request);
-    
-    if (cached) {
-      console.log('[SW] Cache hit:', request.url);
-      
-      // Mise à jour en arrière-plan
-      fetch(request).then((response) => {
-        if (response && response.ok && response.status === 200) {
-          cache.put(request, response.clone());
-        }
-      }).catch(() => {});
-      
-      return cached;
-    }
-
-    // Pas en cache -> fetch + mise en cache
-    const response = await fetch(request);
-    
-    // ✅ FIX: Vérifier que c'est une vraie image avant de mettre en cache
-    if (response && response.ok && request.method === 'GET' && response.status === 200) {
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.startsWith('image/') || request.url.includes('.jpg') || request.url.includes('.png')) {
-        cache.put(request, response.clone());
-      }
-    }
-    return response;
-    
-  } catch (err) {
-    console.warn('[SW] Erreur cache first:', err);
-    return caches.match(request).then((r) => r || offlineFallback());
-  }
-}
+});
