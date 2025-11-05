@@ -294,4 +294,39 @@ self.addEventListener('notificationclick', function(event) {
   });
 
   event.waitUntil(promiseChain);
-});
+});// ✅ FIX: Ne pas mettre en cache les images en erreur
+async function cacheFirst(request) {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request);
+    
+    if (cached) {
+      console.log('[SW] Cache hit:', request.url);
+      
+      // Mise à jour en arrière-plan
+      fetch(request).then((response) => {
+        if (response && response.ok && response.status === 200) {
+          cache.put(request, response.clone());
+        }
+      }).catch(() => {});
+      
+      return cached;
+    }
+
+    // Pas en cache -> fetch + mise en cache
+    const response = await fetch(request);
+    
+    // ✅ FIX: Vérifier que c'est une vraie image avant de mettre en cache
+    if (response && response.ok && request.method === 'GET' && response.status === 200) {
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.startsWith('image/') || request.url.includes('.jpg') || request.url.includes('.png')) {
+        cache.put(request, response.clone());
+      }
+    }
+    return response;
+    
+  } catch (err) {
+    console.warn('[SW] Erreur cache first:', err);
+    return caches.match(request).then((r) => r || offlineFallback());
+  }
+}
