@@ -1093,29 +1093,70 @@ document.addEventListener('DOMContentLoaded', function() {
 /* ================================
    Optimized delegated actions
    ================================ */
-document.addEventListener('DOMContentLoaded', function(){
-  try {
-    function delegateCardActions(e){
-      var tgt = e.target;
-      var card = tgt.closest?.('.product-card');
-      if (!card) return;
-      var id = card.getAttribute('data-id');
-      var p = products.find(x => x.id === id);
-      if (!p) return;
-
-      if (tgt.closest('.icon-info')) { showProduct?.(id); return; }
-      if (tgt.closest('.icon-buy')) { buyOrRead?.(p); return; }
-      if (tgt.closest('[data-action="read"]')) {
-        if (p.preview_url || p._db?.preview_url) openPreview(p);
-        else openWhatsAppMessage(buildWAProductMessage(p, 'read'));
-        return;
+try {
+  function delegateCardActions(e) {
+    var tgt = e.target;
+    var card = tgt.closest?.('.product-card');
+    if (!card) return;
+    var id = card.getAttribute('data-id');
+    var p = products.find(x => x.id === id);
+    if (!p) return;
+    
+    // Like button
+    var likeBtn = tgt.closest('.icon-like');
+    if (likeBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var productId = likeBtn.getAttribute('data-product-id');
+      if (productId && typeof toggleLike === 'function') {
+        toggleLike(productId);
       }
-      if (tgt.closest('.icon-like')) { toggleLike?.(id); return; }
+      return;
     }
+    
+    // Info button
+    if (tgt.closest('.icon-info')) {
+      console.log('[Delegation] Info clicked for:', id);
+      showProduct?.(id);
+      return;
+    }
+    
+    // Buy button
+    if (tgt.closest('.icon-buy')) {
+      console.log('[Delegation] Buy clicked for:', id);
+      buyOrRead?.(p);
+      return;
+    }
+    
+    // ✅ Read/Preview button
+    if (tgt.closest('[data-action="read"]') || tgt.closest('.icon-read')) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[Delegation] Read clicked for:', id, p);
+      
+      var previewUrl = p.preview_url || (p._db && p._db.preview_url);
+      
+      if (previewUrl) {
+        console.log('[Delegation] Opening preview:', previewUrl);
+        openPreview(p);
+      } else {
+        console.log('[Delegation] No preview URL, opening WhatsApp');
+        openWhatsAppMessage(buildWAProductMessage(p, 'read'));
+      }
+      return;
+    }
+  }
+  
+  [document.getElementById('products-row'), document.getElementById('products-box')].forEach(c => {
+    if (c) c.addEventListener('click', delegateCardActions);
+  });
+  
+  console.log('[Delegation] ✓ Card actions wired');
+  
+} catch (err) {
+  console.error('[Optimized Actions error]', err);
+}
 
-    [document.getElementById('products-row'), document.getElementById('products-box')].forEach(c => {
-      if (c) c.addEventListener('click', delegateCardActions);
-    });
 /* ========================================
    ADD SLIDE MODAL (FIXED)
    ======================================== */
@@ -1459,21 +1500,28 @@ document.addEventListener('DOMContentLoaded', function() {
       renderProducts(btn.getAttribute('data-category') || 'all', document.getElementById('search')?.value || '');
     });
 
-    /* Search input */
-    var search = document.getElementById('search');
-    if (search){
-      var t=null;
-      search.addEventListener('input', function(){
-        if(t) clearTimeout(t);
-        t = setTimeout(()=> {
-          var activeBtn = document.querySelector('#filters .filter-btn.active');
-          renderProducts(activeBtn?.getAttribute('data-category') || 'all', search.value || '');
-        }, 200);
-      });
-    }
+try {
+  /* Search input */
+  const search = document.getElementById('search');
+  if (search) {
+    let t = null;
+    search.addEventListener('input', function () {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => {
+        const activeBtn = document.querySelector('#filters .filter-btn.active');
+        // If your environment doesn’t support optional chaining, see the note below.
+        renderProducts(
+          activeBtn?.getAttribute('data-category') || 'all',
+          search.value || ''
+        );
+      }, 200);
+    });
+  }
+} catch (err) {
+  console.error('[Optimized Actions error]', err);
+}
 
-  } catch(err){ console.error('[Optimized Actions error]', err); }
-});/* ================================
+/* ================================
    PART 3/4 — CART, SLIDESHOW, NAV, MODALS
    ========================================= */
 
@@ -2008,76 +2056,80 @@ function openPreview(p) {
     var title = document.getElementById('info-title');
     var content = document.getElementById('info-content');
     if (!modal || !content || !title) return;
-
-    var url = null;
-    if (p && p._db && p._db.preview_url) url = p._db.preview_url;
-    else if (p && p.preview_url) url = p.preview_url;
-
-    title.textContent = (p && p.title) ? p.title + ' — Preview' : 'Preview';
-
-    if (!url) {
-      content.innerHTML = '<p style="color:#ddd">Tsy misy Preview URL ho an\'ity produit ity.</p>';
-    } else if (/\.pdf(\?|#|$)/i.test(url)) {
-      content.innerHTML = '<embed type="application/pdf" src="' + escapeAttr(url) + '#toolbar=1&navpanes=0&statusbar=0" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)">';
-    } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(url)) {
-      content.innerHTML = '<video controls src="' + escapeAttr(url) + '" style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></video>';
-    } else if (/\.m3u8(\?|#|$)/i.test(url)) {
-      // HLS support with hls.js
-      var vidId = 'hls-player-' + Date.now();
-      content.innerHTML = '<video id="'+vidId+'" controls style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></video>';
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js';
-      script.onload = function(){
-        var video = document.getElementById(vidId);
-        if (window.Hls && window.Hls.isSupported()) {
+    
+    // ✅ FIX: Manadio TANTERAKA ny content aloha
+    // Stop all media
+    var vids = content.querySelectorAll('video');
+    vids.forEach(function(v) {
+      if (!v.paused) v.pause();
+      v.src = '';
+      v.load();
+    });
+    
+    // Remove all embeds/iframes
+    content.querySelectorAll('embed, iframe, video').forEach(function(el) {
+      el.remove();
+    });
+    
+    // Clear content completely
+    content.innerHTML = '';
+    
+    // Small delay for cleanup
+    setTimeout(function() {
+      var url = null;
+      if (p && p._db && p._db.preview_url) url = p._db.preview_url;
+      else if (p && p.preview_url) url = p.preview_url;
+      
+      title.textContent = (p && p.title) ? p.title + ' — Preview' : 'Preview';
+      
+      if (!url) {
+        content.innerHTML = '<p style="color:#ddd;padding:20px;text-align:center">Tsy misy Preview URL ho an\'ity produit ity.</p>';
+      } else if (/\.pdf(\?|#|$)/i.test(url)) {
+        content.innerHTML = '<embed type="application/pdf" src="' + escapeAttr(url) + '#toolbar=1&navpanes=0&statusbar=0" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)">';
+      } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(url)) {
+        // ✅ Create fresh video element
+        var vid = document.createElement('video');
+        vid.controls = true;
+        vid.src = url;
+        vid.style.cssText = 'width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)';
+        content.appendChild(vid);
+      } else if (/\.m3u8(\?|#|$)/i.test(url)) {
+        var vidId = 'hls-player-' + Date.now();
+        content.innerHTML = '<video id="' + vidId + '" controls style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></video>';
+        
+        // Load HLS.js if needed
+        if (!window.Hls && !document.querySelector('script[src*="hls.js"]')) {
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js';
+          script.onload = function() {
+            var video = document.getElementById(vidId);
+            if (window.Hls && window.Hls.isSupported()) {
+              var hls = new Hls();
+              hls.loadSource(url);
+              hls.attachMedia(video);
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              video.src = url;
+            }
+          };
+          document.body.appendChild(script);
+        } else if (window.Hls) {
+          var video = document.getElementById(vidId);
           var hls = new Hls();
           hls.loadSource(url);
           hls.attachMedia(video);
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = url;
-        } else {
-          video.replaceWith(Object.assign(document.createElement('iframe'), {
-            src: escapeAttr(url),
-            style: 'width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)'
-          }));
         }
-      };
-      document.body.appendChild(script);
-    } else {
-      // generic URL -> iframe
-      content.innerHTML = '<iframe src="' + escapeAttr(url) + '" allow="autoplay; fullscreen" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></iframe>';
-    }
-
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-    var closeBtn = modal.querySelector('.info-actions .param-btn');
-    if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll: true });
-    // PATCH: add close handler ho an'ny info-modal preview
-var closeBtn = modal.querySelector('.info-actions .param-btn');
-if (closeBtn && !closeBtn._bound) {
-  closeBtn.addEventListener('click', function() {
-    try {
-      // Atsahatra aloha ny video raha misy
-      var vids = modal.querySelectorAll('video');
-      vids.forEach(function(v){ if (!v.paused) v.pause(); v.src = ''; });
-
-      // Esorina koa ny embed sy iframe raha mila manadio mémoire
-      modal.querySelectorAll('embed, iframe').forEach(function(el){
-        el.remove();
-      });
-
-      // Fenoy fotsy indray ny content
-      content.innerHTML = '';
-
-      // Akatona tanteraka ny modal
-      modal.classList.remove('show');
-      modal.setAttribute('aria-hidden', 'true');
-    } catch (err2) {
-      console.error('[close preview error]', err2);
-    }
-  });
-  closeBtn._bound = true;
-}
+      } else {
+        content.innerHTML = '<iframe src="' + escapeAttr(url) + '" allow="autoplay; fullscreen" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></iframe>';
+      }
+      
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      modal.style.display = 'flex';
+      
+      var closeBtn = modal.querySelector('.info-actions .param-btn');
+      if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll: true });
+    }, 100); // Small delay
+    
   } catch (err) {
     console.error('[openPreview error]', err);
   }
@@ -2890,23 +2942,37 @@ function closeInfo() {
   try {
     const modal = document.getElementById('info-modal');
     if (!modal) return;
+    
+    // ✅ Stop all media FIRST
+    const content = document.getElementById('info-content');
+    if (content) {
+      const videos = content.querySelectorAll('video');
+      videos.forEach(v => {
+        try {
+          if (!v.paused) v.pause();
+          v.removeAttribute('src');
+          v.load();
+        } catch (_) {}
+      });
+      
+      // Remove all media elements
+      content.querySelectorAll('embed, iframe, video, audio').forEach(el => {
+        try {
+          el.remove();
+        } catch (_) {}
+      });
+      
+      // Clear completely
+      content.innerHTML = '';
+    }
+    
+    // Hide modal
     modal.classList.remove('show');
     modal.setAttribute('aria-hidden', 'true');
+    modal.style.display = 'none';
+    
   } catch (err) {
     console.error('[closeInfo error]', err);
-  }
-}
-window.closeInfo = closeInfo;
-
-/* ✅ CORRECTION: openQuitModal / closeQuitModal / quitApp (manquaient) */
-function openQuitModal() {
-  try {
-    const modal = document.getElementById('quit-modal');
-    if (!modal) return;
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-  } catch (err) {
-    console.error('[openQuitModal error]', err);
   }
 }
 window.openQuitModal = openQuitModal;
@@ -4317,82 +4383,130 @@ document.addEventListener('click', function (e) {
 /* Preview avancé (PDF / Video / HLS / iframe) */
 function openPreview(p) {
   try {
+    console.log('[openPreview] Starting...', p);
+    
     var modal = document.getElementById('info-modal');
     var title = document.getElementById('info-title');
     var content = document.getElementById('info-content');
-    if (!modal || !content || !title) return;
-
-    var url = null;
-    if (p && p._db && p._db.preview_url) url = p._db.preview_url;
-    else if (p && p.preview_url) url = p.preview_url;
-
-    title.textContent = (p && p.title) ? p.title + ' — Preview' : 'Preview';
-
-    if (!url) {
-      content.innerHTML = '<p style="color:#ddd">Tsy misy Preview URL ho an\'ity produit ity.</p>';
-    } else if (/\.pdf(\?|#|$)/i.test(url)) {
-      content.innerHTML = '<embed type="application/pdf" src="' + escapeAttr(url) + '#toolbar=1&navpanes=0&statusbar=0" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)">';
-    } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(url)) {
-      content.innerHTML = '<video controls src="' + escapeAttr(url) + '" style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></video>';
-    } else if (/\.m3u8(\?|#|$)/i.test(url)) {
-      // HLS support with hls.js
-      var vidId = 'hls-player-' + Date.now();
-      content.innerHTML = '<video id="'+vidId+'" controls style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></video>';
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js';
-      script.onload = function(){
-        var video = document.getElementById(vidId);
-        if (window.Hls && window.Hls.isSupported()) {
-          var hls = new Hls();
-          hls.loadSource(url);
-          hls.attachMedia(video);
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = url;
-        } else {
-          video.replaceWith(Object.assign(document.createElement('iframe'), {
-            src: escapeAttr(url),
-            style: 'width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)'
-          }));
-        }
-      };
-      document.body.appendChild(script);
+    
+    if (!modal || !content || !title) {
+      console.error('[openPreview] Modal elements not found');
+      return;
+    }
+    
+    // ✅ STEP 1: Close if already open
+    if (modal.classList.contains('show')) {
+      console.log('[openPreview] Modal already open, closing first...');
+      closeInfo();
+      // Wait for close animation
+      setTimeout(function() { continueOpen(); }, 150);
     } else {
-      // generic URL -> iframe
-      content.innerHTML = '<iframe src="' + escapeAttr(url) + '" allow="autoplay; fullscreen" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)"></iframe>';
+      continueOpen();
     }
-
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-    var closeBtn = modal.querySelector('.info-actions .param-btn');
-    if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll: true });
-    // PATCH: add close handler ho an'ny info-modal preview
-var closeBtn = modal.querySelector('.info-actions .param-btn');
-if (closeBtn && !closeBtn._bound) {
-  closeBtn.addEventListener('click', function() {
-    try {
-      // Atsahatra aloha ny video raha misy
-      var vids = modal.querySelectorAll('video');
-      vids.forEach(function(v){ if (!v.paused) v.pause(); v.src = ''; });
-
-      // Esorina koa ny embed sy iframe raha mila manadio mémoire
-      modal.querySelectorAll('embed, iframe').forEach(function(el){
-        el.remove();
+    
+    function continueOpen() {
+      console.log('[openPreview] Continue opening...');
+      
+      // ✅ STEP 2: Clean content
+      var vids = content.querySelectorAll('video');
+      vids.forEach(function(v) {
+        try {
+          if (!v.paused) v.pause();
+          v.removeAttribute('src');
+          v.load();
+        } catch (_) {}
       });
-
-      // Fenoy fotsy indray ny content
+      
+      content.querySelectorAll('embed, iframe, video, audio').forEach(function(el) {
+        try { el.remove(); } catch (_) {}
+      });
+      
       content.innerHTML = '';
-
-      // Akatona tanteraka ny modal
-      modal.classList.remove('show');
-      modal.setAttribute('aria-hidden', 'true');
-    } catch (err2) {
-      console.error('[close preview error]', err2);
+      
+      // ✅ STEP 3: Get preview URL
+      var url = null;
+      if (p && p._db && p._db.preview_url) url = p._db.preview_url;
+      else if (p && p.preview_url) url = p.preview_url;
+      
+      title.textContent = (p && p.title) ? p.title + ' — Preview' : 'Preview';
+      console.log('[openPreview] Preview URL:', url);
+      
+      // ✅ STEP 4: Render content
+      if (!url) {
+        content.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8"><i class="fa-solid fa-circle-info" style="font-size:48px;margin-bottom:16px;opacity:0.5"></i><p style="margin:0">Tsy misy Preview URL ho an\'ity produit ity.</p></div>';
+      } else if (/\.pdf(\?|#|$)/i.test(url)) {
+        console.log('[openPreview] Rendering PDF...');
+        content.innerHTML = '<embed type="application/pdf" src="' + escapeAttr(url) + '#toolbar=1&navpanes=0&statusbar=0" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12)">';
+      } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(url)) {
+        console.log('[openPreview] Rendering video...');
+        var vidId = 'preview-video-' + Date.now();
+        var vidHtml = '<video id="' + vidId + '" controls preload="metadata" playsinline style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12); display:block; background:#000">' +
+          '<source src="' + escapeAttr(url) + '" type="video/mp4">' +
+          'Votre navigateur ne supporte pas la vidéo.' +
+          '</video>';
+        content.innerHTML = vidHtml;
+        
+        // Force video load
+        setTimeout(function() {
+          var vid = document.getElementById(vidId);
+          if (vid) {
+            vid.load();
+            console.log('[openPreview] Video loaded');
+          }
+        }, 100);
+        
+      } else if (/\.m3u8(\?|#|$)/i.test(url)) {
+        console.log('[openPreview] Rendering HLS...');
+        var vidId = 'hls-player-' + Date.now();
+        content.innerHTML = '<video id="' + vidId + '" controls style="width:100%; height:auto; max-height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#000"></video>';
+        
+        if (!window.Hls && !document.querySelector('script[src*="hls.js"]')) {
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js';
+          script.onload = function() {
+            var video = document.getElementById(vidId);
+            if (window.Hls && window.Hls.isSupported()) {
+              var hls = new Hls();
+              hls.loadSource(url);
+              hls.attachMedia(video);
+              console.log('[openPreview] HLS loaded');
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+              video.src = url;
+            }
+          };
+          document.body.appendChild(script);
+        } else if (window.Hls) {
+          var video = document.getElementById(vidId);
+          if (video && window.Hls.isSupported()) {
+            var hls = new Hls();
+            hls.loadSource(url);
+            hls.attachMedia(video);
+          }
+        }
+      } else {
+        console.log('[openPreview] Rendering iframe...');
+        content.innerHTML = '<iframe src="' + escapeAttr(url) + '" allow="autoplay; fullscreen" style="width:100%; height:70vh; border-radius:10px; border:1px solid rgba(255,255,255,.12); border:none"></iframe>';
+      }
+      
+      // ✅ STEP 5: Show modal
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      modal.style.display = 'flex';
+      
+      console.log('[openPreview] Modal shown');
+      
+      // Focus close button
+      setTimeout(function() {
+        var closeBtn = modal.querySelector('.info-actions .param-btn');
+        if (closeBtn && closeBtn.focus) {
+          closeBtn.focus({ preventScroll: true });
+        }
+      }, 100);
     }
-  });
-  closeBtn._bound = true;
-}
+    
   } catch (err) {
     console.error('[openPreview error]', err);
+    alert('Erreur lors de l\'ouverture du preview: ' + err.message);
   }
 }
 /* ================================
