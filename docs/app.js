@@ -1621,58 +1621,65 @@ function updateCartUI() {
     var count = totals.count;
     var total = totals.total;
     
+    // ✅ UPDATE: Cart count badge (drawer + collapsed icon)
     var countEl = document.getElementById('cart-count');
-    var totalEl = document.getElementById('cart-total');
-    if (countEl) countEl.textContent = String(count);
-    if (totalEl) totalEl.innerHTML = fmtPrice(total);
+    var countHeader = document.getElementById('cart-count-header');
+    var countCollapsed = document.getElementById('cart-badge-collapsed');
     
-    var drawer = document.getElementById('cart-list');
+    if (countEl) countEl.textContent = String(count);
+    if (countHeader) countHeader.textContent = String(count);
+    if (countCollapsed) countCollapsed.textContent = String(count);
+    
+    // ✅ UPDATE: Total
+    var totalEl = document.getElementById('cart-total');
     var totalDrawer = document.getElementById('cart-total-drawer');
     
-    if (drawer && totalDrawer) {
+    if (totalEl) totalEl.innerHTML = fmtPrice(total);
+    if (totalDrawer) totalDrawer.innerHTML = fmtPrice(total);
+    
+    // ✅ UPDATE: Liste produits (drawer)
+    var drawer = document.getElementById('cart-list');
+    
+    if (drawer) {
       drawer.innerHTML = '';
+      
       if (cartItems.size === 0) {
-        drawer.innerHTML = '<div class="cart-empty">Panier vide.</div>';
+        drawer.innerHTML = '<div class="cart-empty" style="text-align:center;color:#94a3b8;padding:20px">Panier vide.</div>';
       } else {
         var frag = document.createDocumentFragment();
+        
         cartItems.forEach(function(it, id) {
           var div = document.createElement('div');
           div.className = 'cart-item';
           div.setAttribute('data-id', id);
+          
           var imgUrl = escapeAttr(it.image || 'https://via.placeholder.com/56?text=~');
           var imgAlt = escapeAttr(it.title || 'Produit');
+          
           div.innerHTML = '' +
-            '<img src="' + imgUrl + '" alt="' + imgAlt + '">' +
-            '<div>' +
-            '  <h4>' + escapeHtml(it.title || 'Produit') + '</h4>' +
-            '  <div class="qty">' +
-            '    <button type="button" data-action="dec" aria-label="Moins"><i class="fa-solid fa-minus"></i></button>' +
-            '    <span>' + String(it.qty) + '</span>' +
-            '    <button type="button" data-action="inc" aria-label="Plus"><i class="fa-solid fa-plus"></i></button>' +
+            '<img src="' + imgUrl + '" alt="' + imgAlt + '" style="width:56px;height:56px;border-radius:8px;object-fit:cover">' +
+            '<div style="flex:1">' +
+            '  <h4 style="font-size:14px;margin:0;color:#fff">' + escapeHtml(it.title || 'Produit') + '</h4>' +
+            '  <div class="qty" style="display:flex;align-items:center;gap:6px;margin-top:6px">' +
+            '    <button type="button" data-action="dec" aria-label="Moins" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;cursor:pointer"><i class="fa-solid fa-minus"></i></button>' +
+            '    <span style="color:#fff;font-weight:700">' + String(it.qty) + '</span>' +
+            '    <button type="button" data-action="inc" aria-label="Plus" style="width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;cursor:pointer"><i class="fa-solid fa-plus"></i></button>' +
             '  </div>' +
             '</div>' +
-            '<div style="display:flex; flex-direction:column; align-items:end; gap:6px;">' +
-            '  <div>' + fmtPrice((Number(it.price) || 0) * it.qty) + '</div>' +
-            '  <button type="button" data-action="remove" title="Supprimer" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>' +
+            '<div style="text-align:right">' +
+            '  <div style="font-weight:700;color:#4ade80">' + fmtPrice((Number(it.price) || 0) * it.qty) + '</div>' +
+            '  <button type="button" data-action="remove" title="Supprimer" style="margin-top:6px;width:32px;height:32px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.15);color:#fca5a5;cursor:pointer"><i class="fa-solid fa-xmark"></i></button>' +
             '</div>';
+          
           frag.appendChild(div);
         });
+        
         drawer.appendChild(frag);
-      }
-      totalDrawer.innerHTML = fmtPrice(total);
-    }
-    
-    // ✅ FIX: Masquer le module Quick Order si panier vide
-    var qoSection = document.getElementById('quick-order-section');
-    if (qoSection) {
-      if (count === 0) {
-        qoSection.style.display = 'none';
-      } else {
-        qoSection.style.display = 'block';
       }
     }
     
     saveCartToStorage(cartMapToArray());
+    
   } catch (err) {
     console.error('[updateCartUI error]', err);
   }
@@ -6699,4 +6706,112 @@ if (!document.getElementById('qo-premium-styles')) {
     
     console.log('[QO Toggle] ✓ Initialized');
   });
+})();
+/* ==========================================
+   CART DRAWER - DRAG + COLLAPSE LOGIC ✅
+   ========================================== */
+
+(function initCartDrawer() {
+  const drawer = document.getElementById('cart-drawer');
+  const iconCollapsed = document.getElementById('cart-icon-collapsed');
+  const content = document.getElementById('cart-content');
+  const collapseBtn = document.getElementById('cart-collapse-btn');
+  const dragHandle = document.getElementById('cart-drag-handle');
+  
+  if (!drawer || !iconCollapsed || !content || !collapseBtn || !dragHandle) {
+    console.warn('[Cart Drawer] Missing elements');
+    return;
+  }
+  
+  let isDragging = false;
+  let currentX, currentY, initialX, initialY;
+  let xOffset = 0, yOffset = 0;
+  
+  // ✅ Expand drawer (potehana ny icon)
+  function expand() {
+    drawer.classList.add('expanded');
+    drawer.setAttribute('aria-hidden', 'false');
+    content.style.display = 'flex';
+    iconCollapsed.style.display = 'none';
+  }
+  
+  // ✅ Collapse drawer (potehana ny collapse button)
+  function collapse() {
+    drawer.classList.remove('expanded');
+    drawer.setAttribute('aria-hidden', 'true');
+    content.style.display = 'none';
+    iconCollapsed.style.display = 'flex';
+  }
+  
+  // ✅ Click ny icon -> expand
+  iconCollapsed.addEventListener('click', function(e) {
+    if (!isDragging) {
+      expand();
+    }
+  });
+  
+  // ✅ Click ny collapse button -> collapse
+  collapseBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    collapse();
+  });
+  
+  // ========================================
+  // DRAG LOGIC (icon + header)
+  // ========================================
+  
+  function dragStart(e) {
+    const target = e.target.closest('#cart-icon-collapsed, #cart-drag-handle');
+    if (!target) return;
+    
+    initialX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX) - xOffset;
+    initialY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY) - yOffset;
+    
+    isDragging = true;
+    drawer.style.transition = 'none';
+  }
+  
+  function drag(e) {
+    if (!isDragging) return;
+    
+    e.preventDefault();
+    
+    currentX = (e.type === 'touchmove' ? e.touches[0].clientX : e.clientX) - initialX;
+    currentY = (e.type === 'touchmove' ? e.touches[0].clientY : e.clientY) - initialY;
+    
+    xOffset = currentX;
+    yOffset = currentY;
+    
+    setTranslate(currentX, currentY, drawer);
+  }
+  
+  function dragEnd() {
+    if (!isDragging) return;
+    
+    initialX = currentX;
+    initialY = currentY;
+    isDragging = false;
+    
+    drawer.style.transition = '';
+  }
+  
+  function setTranslate(xPos, yPos, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+  }
+  
+  // Wire events (icon)
+  iconCollapsed.addEventListener('mousedown', dragStart);
+  iconCollapsed.addEventListener('touchstart', dragStart);
+  
+  // Wire events (header)
+  dragHandle.addEventListener('mousedown', dragStart);
+  dragHandle.addEventListener('touchstart', dragStart);
+  
+  // Global move/end
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('touchmove', drag, { passive: false });
+  document.addEventListener('mouseup', dragEnd);
+  document.addEventListener('touchend', dragEnd);
+  
+  console.log('[Cart Drawer] ✓ Drag + Collapse initialized');
 })();
