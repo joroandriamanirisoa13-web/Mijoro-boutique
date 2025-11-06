@@ -254,16 +254,65 @@
 </div>
 
 
-</div>
-<div id="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
-  <div id="cart-list"></div>
-  <div class="cart-footer">
-    <div>Total: <strong id="cart-total-drawer">0 AR</strong></div>
-    <div style="display:flex; gap:8px;">
-      <button type="button" class="param-btn" onclick="clearCart()"><i class="fa-solid fa-trash"></i> Vider</button>
-      <button type="button" class="param-btn" onclick="checkoutWhatsApp()"><i class="fa-brands fa-whatsapp"></i> Commander</button>
-    </div>
+<!-- ========================================
+     CART DRAWER - DRAGGABLE + COLLAPSIBLE
+     ======================================== -->
+
+<div id="cart-drawer" class="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+  
+  <!-- Icon Collapsed (afenina par défaut) -->
+  <div class="cart-icon-collapsed" id="cart-icon-collapsed">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span class="cart-badge-collapsed" id="cart-badge-collapsed">0</span>
   </div>
+  
+  <!-- Contenu Full Drawer -->
+  <div class="cart-content" id="cart-content">
+    
+    <!-- Header (drag handle + collapse button) -->
+    <div class="cart-header" id="cart-drag-handle">
+      <div class="cart-title">
+        <i class="fa-solid fa-cart-shopping"></i>
+        <span>Panier</span>
+        <span class="badge" id="cart-count-header">0</span>
+      </div>
+      
+      <button 
+        type="button" 
+        class="cart-collapse-btn" 
+        id="cart-collapse-btn"
+        title="Réduire"
+        aria-label="Réduire le panier">
+        <i class="fa-solid fa-minus"></i>
+      </button>
+    </div>
+    
+    <!-- Liste produits (scrollable) -->
+    <div id="cart-list" class="cart-list">
+      <!-- Cart items rendus ici par JS -->
+    </div>
+    
+    <!-- Footer (Total + Actions) -->
+    <div class="cart-footer">
+      <div class="cart-total-row">
+        <span class="cart-total-label">Total</span>
+        <div class="cart-total-amount" id="cart-total-drawer">0 AR</div>
+      </div>
+      
+      <div class="cart-actions">
+        <button type="button" class="cart-clear-btn" onclick="clearCart()">
+          <i class="fa-solid fa-trash"></i>
+          Vider
+        </button>
+        <button type="button" class="cart-checkout-btn" onclick="checkoutWhatsApp()">
+          <i class="fa-brands fa-whatsapp"></i>
+          Commander
+        </button>
+      </div>
+    </div>
+    
+  </div>
+  
 </div>
  <!-- ==========================================
      BOTTOM NAVIGATION - GLASSMORPHISM DESIGN
