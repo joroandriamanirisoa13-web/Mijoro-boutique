@@ -253,14 +253,7 @@
   <div class="pagination" id="pagination" role="navigation" aria-label="Pagination"></div>
 </div>
 
-<!-- CART PANEL (kept as is) -->
-<div id="cart-panel" aria-live="polite">
-  <button id="cart-toggle" title="Voir le panier" aria-label="Voir le panier"><i class="fa-solid fa-basket-shopping"></i></button>
-  <button type="button" title="Vider le panier" onclick="clearCart()" aria-label="Vider le panier"><i class="fa-solid fa-trash"></i></button>
-  <div>
-    <span data-i18n="cart_label">Cart</span>: <strong id="cart-count">0</strong> •
-    <span data-i18n="cart_total">Total</span>: <strong id="cart-total">0 AR</strong>
-  </div>
+
 </div>
 <div id="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
   <div id="cart-list"></div>
@@ -297,7 +290,14 @@
     <span class="label">Paramètre</span>
   </button>
 </nav>
-
+<!-- Add before/after existing nav buttons -->
+<button type="button" id="cart-toggle" class="nav-btn" aria-label="Panier">
+  <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+    <path d="M7 4h10l1.5 12H5.5L7 4zM9 2h6v2H9z" fill="currentColor"/>
+  </svg>
+  <span class="label">Panier</span>
+  <span id="cart-count" class="badge">0</span>
+</button>
   <!-- PARAM FIXED -->
   <aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
     <div style="display:flex;align-items:center;gap:10px">
