@@ -1,85 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7"; // ✅ AMPIO ITO
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+// ✅ VAPID Setup
+const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
+const VAPID_EMAIL = "mailto:joroandriamanirisoa13@gmail.com";
 
-  try {
-    const { action, subscription } = await req.json();
-
-    if (!subscription?.endpoint) {
-      throw new Error("Invalid subscription data");
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const userAgent = req.headers.get("user-agent") || "Unknown";
-
-    if (action === "subscribe") {
-      const { data, error } = await supabase
-        .from("push_subscriptions")
-        .upsert(
-          {
-            endpoint: subscription.endpoint,
-            keys: subscription.keys,
-            user_agent: userAgent,
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "endpoint" }
-        )
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return new Response(
-        JSON.stringify({ success: true, message: "Subscribed" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } 
-    
-    if (action === "unsubscribe") {
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("endpoint", subscription.endpoint);
-
-      if (error) throw error;
-
-      return new Response(
-        JSON.stringify({ success: true, message: "Unsubscribed" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    throw new Error("Invalid action");
-  } catch (error) {
-    console.error("[Subscribe Error]", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-});import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -114,40 +47,64 @@ serve(async (req) => {
 
     console.log(`[Send Push] Sending to ${subscribers.length} subscribers`);
 
-    // Prepare notification
-    const notification = {
+    // ✅ PAYLOAD
+    const payload = JSON.stringify({
       title: "🆕 Nouveau produit Mijoro!",
-      body: `${productTitle}${productPrice ? ` - ${productPrice} AR` : ""}`,
-     icon: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
-badge: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
+      body: `${productTitle}${productPrice ? ` - ${productPrice.toLocaleString('fr-MG')} AR` : ""}`,
+      icon: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
+      badge: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
+      tag: "new-product-" + (productId || Date.now()),
       data: {
         productId: productId || "new",
-        url: productId ? `/?product=${productId}` : "/",
+        url: productId ? `/?product=${productId}#shop` : "/#shop",
       },
-      tag: "new-product",
-    };
+    });
 
-    // Send to all (simplified - use web-push in production)
+    // ✅ SEND TO ALL
     let sent = 0;
-    for (const sub of subscribers) {
+    const sendPromises = subscribers.map(async (sub) => {
       try {
-        // Here you would use web-push library
-        // For now, just log and count
-        console.log("Would send to:", sub.endpoint.substring(0, 50));
+        const subscription = {
+          endpoint: sub.endpoint,
+          keys: sub.keys,
+        };
+
+        await webpush.sendNotification(subscription, payload);
         sent++;
         
-        // Log to database
+        // Log success
         await supabase.from("notification_logs").insert({
           subscription_id: sub.id,
-          title: notification.title,
-          body: notification.body,
+          title: "🆕 Nouveau produit Mijoro!",
+          body: `${productTitle}`,
           success: true,
           product_id: productId || null,
         });
-      } catch (err) {
-        console.error("Send failed:", err);
+
+        console.log(`✅ Sent to ${sub.endpoint.substring(0, 50)}`);
+      } catch (err: any) {
+        console.error(`❌ Failed for ${sub.endpoint.substring(0, 30)}:`, err.message);
+        
+        // Mark as failed + disable if gone
+        if (err.statusCode === 410) {
+          await supabase
+            .from("push_subscriptions")
+            .update({ is_active: false })
+            .eq("id", sub.id);
+        }
+        
+        await supabase.from("notification_logs").insert({
+          subscription_id: sub.id,
+          title: "🆕 Nouveau produit Mijoro!",
+          body: `${productTitle}`,
+          success: false,
+          error_message: err.message,
+          product_id: productId || null,
+        });
       }
-    }
+    });
+
+    await Promise.allSettled(sendPromises);
 
     return new Response(
       JSON.stringify({
@@ -157,7 +114,7 @@ badge: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Send Push Error]", error);
     return new Response(
       JSON.stringify({ error: error.message }),
