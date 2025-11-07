@@ -3,7 +3,7 @@ async function subscribeNotifications() {
     const registration = await navigator.serviceWorker.ready;
     const sub = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array('BG5oqQPUgQGgS0Xj9wXVcXGfZYB1yZcKaaDVbi1DCatuOaYWmkkC1-kaKHQ9wZeq_jU9zZTjvkIgMoIT3ip-y-g')
+      applicationServerKey: urlBase64ToUint8Array('BL8QmGLYoAXQnhXStyuriTFZF_hsIMkHpuxwmRUaCVVRWuyRN5cICB8smSeorTEGQ-3welHD9lFHDma7b--l5Ic')
     });
     // TODO: Alefaso any amin'ny backend ny sub JSON
     console.log('Push subscribed:', JSON.stringify(sub));
@@ -6173,7 +6173,7 @@ window.closeInfo = closeInfo;/* /* /* ==========================================
 
 (function initPushNotifications() {
   // ✅ UTILISER LES CONSTANTES GLOBALES
-  const VAPID_PUBLIC_KEY = 'BG5oqQPUgQGgS0Xj9wXVcXGfZYB1yZcKaaDVbi1DCatuOaYWmkkC1-kaKHQ9wZeq_jU9zZTjvkIgMoIT3ip-y-g'; // ← À remplacer
+  const VAPID_PUBLIC_KEY = 'BL8QmGLYoAXQnhXStyuriTFZF_hsIMkHpuxwmRUaCVVRWuyRN5cICB8smSeorTEGQ-3welHD9lFHDma7b--l5Ic'; // ← À remplacer
   const SUBSCRIBE_ENDPOINT = window.SUPABASE_URL + '/functions/v1/subscribe-push';
   const NOTIFY_ENDPOINT = window.SUPABASE_URL + '/functions/v1/smooth-action';
   const ANON_KEY = window.SUPABASE_ANON_KEY; // ✅ Utilise la variable globale
