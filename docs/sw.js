@@ -276,16 +276,21 @@ self.addEventListener('push', function(event) {
    ========================================== */
 
 self.addEventListener('notificationclick', function(event) {
-  console.log('[SW] Notification clicked:', event);
-
-  event.notification.close();
-
-  const action = event.action;
-  const data = event.notification.data || {};
-  const productId = data.productId; // ✅ Alaina avy ao data
-
-  console.log('[SW] Click data:', { action, productId, data });
-
+      event.notification.close();
+      
+      const action = event.action;
+      const data = event.notification.data || {};
+      
+      // ✅ Handle specific actions
+      if (action === 'dismiss') {
+        console.log('[SW] User dismissed notification');
+        return; // Tsy manao na inona
+      }
+      
+      if (action === 'view') {
+        console.log('[SW] User wants to view product');
+        // Mitovy ihany amin'ny click fotsiny
+      }
   // ✅ Handle actions (raha misy)
   if (action === 'dismiss' || action === 'close') {
     return; // Tsy manao na inona na inona
