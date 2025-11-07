@@ -3025,40 +3025,64 @@ async function fetchSupabaseProducts() {
       description
     };
 
-    if (peLocal.mode === 'add') {
-  const { error } = await sb.from('products').insert(payload);
+    // ✅ VAHAOLANA 1: Asehoy kely ny endpoint
+if (peLocal.mode === 'add') {
+  const { data: inserted, error } = await sb
+    .from('products')
+    .insert(payload)
+    .select()
+    .single();
+  
   if (error) throw error;
   
-  console.log('[peSubmitForm] ✓ Product added to database');
+  console.log('[peSubmitForm] ✓ Product inserted:', inserted);
   
-  // ✅ TRIGGER NOTIFICATION
-  console.log('[peSubmitForm] Triggering notification...');
-  console.log('[peSubmitForm] notifyNewProduct exists?', typeof window.notifyNewProduct);
+  // 🔥 CRITICAL FIX: Asehoy tsara ny URL
+  const notifEndpoint = window.SUPABASE_URL + '/functions/v1/send-push-notification';
+  console.log('[peSubmitForm] Calling:', notifEndpoint);
+  console.log('[peSubmitForm] Payload:', {
+    productId: inserted.id,
+    productTitle: title,
+    productPrice: price
+  });
   
-  if (typeof window.notifyNewProduct === 'function') {
-    try {
-      window.notifyNewProduct({
-        id: payload.id || 'new-' + Date.now(),
-        title: title,
-        price: price,
-        category: category
-      });
-      console.log('[peSubmitForm] ✓ Notification triggered');
-    } catch (notifErr) {
-      console.error('[peSubmitForm] Notification error:', notifErr);
-    }
-  } else {
-    console.warn('[peSubmitForm] notifyNewProduct function not found!');
-  }
-  
-  alert('Produit ajouté avec succès! 🎉');
-
+  try {
+    const notifResponse = await fetch(notifEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY,
+        'apikey': window.SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({
+        productId: inserted.id,
+        productTitle: title,
+        productPrice: price
+      })
+    });
+    
+    console.log('[peSubmitForm] Response status:', notifResponse.status);
+    
+    if (notifResponse.ok) {
+      const result = await notifResponse.json();
+      console.log('[peSubmitForm] ✓ Sent to', result.sent || 0, 'subscribers');
+      
+      // ✅ Asehoy success message
+      if (result.sent > 0) {
+        alert('Produit ajouté! 🎉\n' + result.sent + ' client(s) notifié(s)');
+      } else {
+        alert('Produit ajouté! ⚠️\nTsy nisy subscriber nahazo notif.');
+      }
     } else {
-      const { error } = await sb.from('products').update(payload).eq('id', peLocal.recordId);
-      if (error) throw error;
-      alert('Produit modifié.');
+      const errorText = await notifResponse.text();
+      console.error('[peSubmitForm] ❌ Push failed:', notifResponse.status, errorText);
+      alert('Produit ajouté mais notification tsy lasa:\n' + errorText.substring(0, 100));
     }
+  } catch (notifErr) {
+    console.error('[peSubmitForm] ❌ Notification error:', notifErr);
+    alert('Produit ajouté mais erreur notification:\n' + notifErr.message);
   }
+}}
 
   /* ---------- CRUD API exposed ---------- */
   async function addProductPrompt() { peOpen({ mode: 'add', product: null }); }
@@ -6175,7 +6199,7 @@ window.closeInfo = closeInfo;/* /* /* ==========================================
   // ✅ UTILISER LES CONSTANTES GLOBALES
   const VAPID_PUBLIC_KEY = 'BL8QmGLYoAXQnhXStyuriTFZF_hsIMkHpuxwmRUaCVVRWuyRN5cICB8smSeorTEGQ-3welHD9lFHDma7b--l5Ic'; // ← À remplacer
   const SUBSCRIBE_ENDPOINT = window.SUPABASE_URL + '/functions/v1/subscribe-push';
-  const NOTIFY_ENDPOINT = window.SUPABASE_URL + '/functions/v1/smooth-action';
+  const NOTIFY_ENDPOINT = window.SUPABASE_URL + '/functions/v1/smart-api';
   const ANON_KEY = window.SUPABASE_ANON_KEY; // ✅ Utilise la variable globale
   
   let isSubscribed = false;
