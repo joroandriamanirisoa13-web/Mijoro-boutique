@@ -258,62 +258,48 @@
      CART DRAWER - DRAGGABLE + COLLAPSIBLE
      ======================================== -->
 
-<div id="cart-drawer" class="cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
-  
-  <!-- Icon Collapsed (afenina par défaut) -->
-  <div class="cart-icon-collapsed" id="cart-icon-collapsed">
-    <i class="fa-solid fa-cart-shopping"></i>
-    <span class="cart-badge-collapsed" id="cart-badge-collapsed">0</span>
+<!-- ================= Cart Drawer (cd-) ================= -->
+<!-- Backdrop -->
+<div id="cdBackdrop" class="cd-backdrop" hidden></div>
+
+<!-- Drawer -->
+<aside id="cdCartDrawer" class="cd-cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+  <!-- Header -->
+  <div class="cd-cart-header">
+    <h3 class="cd-cart-title">Panier</h3>
+    <button class="cd-cart-close" aria-label="Fermer panier">&times;</button>
   </div>
-  
-  <!-- Contenu Full Drawer -->
-  <div class="cart-content" id="cart-content">
-    
-    <!-- Header (drag handle + collapse button) -->
-    <div class="cart-header" id="cart-drag-handle">
-      <div class="cart-title">
-        <i class="fa-solid fa-cart-shopping"></i>
-        <span>Panier</span>
-        <span class="badge" id="cart-count-header">0</span>
-      </div>
-      
-      <button 
-        type="button" 
-        class="cart-collapse-btn" 
-        id="cart-collapse-btn"
-        title="Réduire"
-        aria-label="Réduire le panier">
-        <i class="fa-solid fa-minus"></i>
-      </button>
-    </div>
-    
-    <!-- Liste produits (scrollable) -->
-    <div id="cart-list" class="cart-list">
-      <!-- Cart items rendus ici par JS -->
-    </div>
-    
-    <!-- Footer (Total + Actions) -->
-    <div class="cart-footer">
-      <div class="cart-total-row">
-        <span class="cart-total-label">Total</span>
-        <div class="cart-total-amount" id="cart-total-drawer">0 AR</div>
-      </div>
-      
-      <div class="cart-actions">
-        <button type="button" class="cart-clear-btn" onclick="clearCart()">
-          <i class="fa-solid fa-trash"></i>
-          Vider
-        </button>
-        <button type="button" class="cart-checkout-btn" onclick="checkoutWhatsApp()">
-          <i class="fa-brands fa-whatsapp"></i>
-          Commander
-        </button>
-      </div>
-    </div>
-    
+
+  <!-- Body (liste produits) -->
+  <div id="cdCartBody" class="cd-cart-body" tabindex="0" aria-live="polite" aria-relevant="all">
+    <!-- Rempli par JS -->
   </div>
-  
+
+  <!-- Footer (total + commander) -->
+  <div class="cd-cart-footer">
+  <div class="cd-total-line">
+    <span>Total</span>
+    <strong id="cdCartTotal">0 Ar</strong>
+  </div>
+  <div class="cd-footer-actions">
+    <button id="cdClearBtn" class="cd-btn-clear" title="Vider le panier">
+      <i class="fa-solid fa-trash-can"></i>
+      <span>Vider</span>
+    </button>
+    <button id="cdCheckoutBtn" class="cd-btn-checkout">
+      <i class="fa-brands fa-whatsapp"></i>
+      <span>Commander</span>
+    </button>
+  </div>
 </div>
+  </div>
+</aside>
+
+<!-- Floating icon (minimized) -->
+<button id="cdCartFab" class="cd-cart-fab" aria-label="Ouvrir panier">
+  <i class="fa-solid fa-cart-shopping"></i>
+  <span id="cdCartBadge" class="cd-badge" style="display:none">0</span>
+</button>
  <!-- ==========================================
      BOTTOM NAVIGATION - GLASSMORPHISM DESIGN
      ========================================== -->
@@ -341,12 +327,31 @@
 </nav>
 <!-- Add before/after existing nav buttons -->
 <button type="button" id="cart-toggle" class="nav-btn" aria-label="Panier">
+
   <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
     <path d="M7 4h10l1.5 12H5.5L7 4zM9 2h6v2H9z" fill="currentColor"/>
   </svg>
   <span class="label">Panier</span>
   <span id="cart-count" class="badge">0</span>
 </button>
+<!-- Inside drawer -->
+<div id="cart-drawer">
+  <div id="cart-icon-collapsed">
+    <span id="cart-badge-collapsed">0</span>
+  </div>
+  
+  <div id="cart-content">
+    <div id="cart-drag-handle" class="cart-header">
+      <span id="cart-count-header">0</span>
+      <button id="cart-collapse-btn">...</button>
+    </div>
+    <div id="cart-list"></div>
+    <div class="cart-footer">
+      <div id="cart-total-drawer">0 AR</div>
+    </div>
+  </div>
+</div>
+
   <!-- PARAM FIXED -->
   <aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
     <div style="display:flex;align-items:center;gap:10px">
