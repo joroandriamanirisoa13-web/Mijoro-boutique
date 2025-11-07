@@ -6175,7 +6175,7 @@ window.closeInfo = closeInfo;/* /* /* ==========================================
   // ✅ UTILISER LES CONSTANTES GLOBALES
   const VAPID_PUBLIC_KEY = 'BG5oqQPUgQGgS0Xj9wXVcXGfZYB1yZcKaaDVbi1DCatuOaYWmkkC1-kaKHQ9wZeq_jU9zZTjvkIgMoIT3ip-y-g'; // ← À remplacer
   const SUBSCRIBE_ENDPOINT = window.SUPABASE_URL + '/functions/v1/subscribe-push';
-  const NOTIFY_ENDPOINT = window.SUPABASE_URL + '/functions/v1/send-push-notification';
+  const NOTIFY_ENDPOINT = window.SUPABASE_URL + '/functions/v1/smooth-action';
   const ANON_KEY = window.SUPABASE_ANON_KEY; // ✅ Utilise la variable globale
   
   let isSubscribed = false;
