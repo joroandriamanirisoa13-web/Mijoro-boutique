@@ -219,78 +219,115 @@ self.addEventListener('message', (e) => {
     });
   }
 });/* ==========================================
-   PUSH NOTIFICATIONS HANDLER
+   PUSH NOTIFICATIONS HANDLER (FIXED)
    ========================================== */
 
 self.addEventListener('push', function(event) {
   console.log('[SW] Push received:', event);
-
+  
+  // ✅ DEFAULT fallback
   let notificationData = {
-    title: 'Nouveau produit Mijoro!',
+    title: '🆕 Nouveau produit Mijoro!',
     body: 'Découvrez les dernières nouveautés',
     icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
     badge: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
     tag: 'new-product',
-    requireInteraction: false,
-    vibrate: [200, 100, 200]
+    requireInteraction: true, // ✅ OVAINA: true (mba hijanona)
+    vibrate: [200, 100, 200],
+    data: {} // ✅ AMPIO: default empty data
   };
-
-  // Parse data if available
+  
+  // ✅ Parse payload avy backend
   if (event.data) {
     try {
       const payload = event.data.json();
+      console.log('[SW] Parsed payload:', payload);
+      
+      // ✅ MERGE amin'ny defaults
       notificationData = {
-        ...notificationData,
         title: payload.title || notificationData.title,
         body: payload.body || notificationData.body,
-        data: payload.data || {}
+        icon: payload.icon || notificationData.icon,
+        badge: payload.badge || notificationData.badge,
+        tag: payload.tag || notificationData.tag,
+        requireInteraction: typeof payload.requireInteraction !== 'undefined' ?
+          payload.requireInteraction :
+          true,
+        vibrate: payload.vibrate || notificationData.vibrate,
+        data: payload.data || notificationData.data, // ✅ CRITICAL: productId ao anatiny
+        actions: payload.actions || [] // ✅ AMPIO: action buttons (optional)
       };
     } catch (err) {
       console.warn('[SW] Failed to parse push data:', err);
+      // Use defaults
     }
   }
-
+  
+  // ✅ Show notification
   const promiseChain = self.registration.showNotification(
     notificationData.title,
     notificationData
   );
-
+  
   event.waitUntil(promiseChain);
 });
+/* ==========================================
+   NOTIFICATION CLICK HANDLER (FIXED)
+   ========================================== */
 
-// Handle notification click
 self.addEventListener('notificationclick', function(event) {
   console.log('[SW] Notification clicked:', event);
 
   event.notification.close();
 
   const action = event.action;
-  const productId = event.notification.data?.productId;
+  const data = event.notification.data || {};
+  const productId = data.productId; // ✅ Alaina avy ao data
 
-  if (action === 'dismiss') {
-    return;
+  console.log('[SW] Click data:', { action, productId, data });
+
+  // ✅ Handle actions (raha misy)
+  if (action === 'dismiss' || action === 'close') {
+    return; // Tsy manao na inona na inona
   }
 
-  // Open app and navigate to product
-  const urlToOpen = productId 
-    ? new URL(`/?product=${productId}`, self.location.origin).href
-    : new URL('/', self.location.origin).href;
+  // ✅ Build URL
+  let urlToOpen = self.location.origin + '/';
+  
+  if (productId) {
+    urlToOpen = self.location.origin + '/?product=' + productId + '#shop';
+  } else if (data.url) {
+    urlToOpen = self.location.origin + data.url;
+  }
 
+  console.log('[SW] Opening URL:', urlToOpen);
+
+  // ✅ Open/focus window
   const promiseChain = clients.matchAll({
     type: 'window',
     includeUncontrolled: true
   }).then(function(windowClients) {
+    console.log('[SW] Found', windowClients.length, 'windows');
+    
     // Check if app is already open
     for (let i = 0; i < windowClients.length; i++) {
       const client = windowClients[i];
-      if (client.url === urlToOpen && 'focus' in client) {
-        return client.focus();
+      
+      // ✅ FIX: Check domain, tsy URL feno
+      if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+        console.log('[SW] Focusing existing window');
+        // ✅ Navigate then focus
+        return client.navigate(urlToOpen).then(() => client.focus());
       }
     }
-    // Open new window
+    
+    // ✅ Open new window
     if (clients.openWindow) {
+      console.log('[SW] Opening new window');
       return clients.openWindow(urlToOpen);
     }
+  }).catch(err => {
+    console.error('[SW] Error opening window:', err);
   });
 
   event.waitUntil(promiseChain);
