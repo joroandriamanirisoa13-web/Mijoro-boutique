@@ -49,16 +49,29 @@ serve(async (req) => {
 
     // ✅ PAYLOAD
     const payload = JSON.stringify({
-      title: "🆕 Nouveau produit Mijoro!",
-      body: `${productTitle}${productPrice ? ` - ${productPrice.toLocaleString('fr-MG')} AR` : ""}`,
-      icon: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
-      badge: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
-      tag: "new-product-" + (productId || Date.now()),
-      data: {
-        productId: productId || "new",
-        url: productId ? `/?product=${productId}#shop` : "/#shop",
-      },
-    });
+  title: "🆕 Nouveau produit Mijoro!",
+  body: `${productTitle}${productPrice ? ` - ${productPrice.toLocaleString('fr-MG')} AR` : ""}`,
+  icon: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
+  badge: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
+  tag: "new-product-" + (productId || Date.now()),
+  requireInteraction: true,
+  data: {
+    productId: productId || "new",
+    url: productId ? `/?product=${productId}#shop` : "/#shop",
+  },
+  // ✅ AMPIO: Action buttons
+  actions: [
+    { 
+      action: 'view', 
+      title: '👀 Voir le produit',
+      icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg' 
+    },
+    { 
+      action: 'dismiss', 
+      title: 'Fermer' 
+    }
+  ]
+});
 
     // ✅ SEND TO ALL
     let sent = 0;
