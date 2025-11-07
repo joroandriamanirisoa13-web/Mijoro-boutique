@@ -3,7 +3,7 @@ async function subscribeNotifications() {
     const registration = await navigator.serviceWorker.ready;
     const sub = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array('YOUR_PUBLIC_VAPID_KEY')
+      applicationServerKey: urlBase64ToUint8Array('BG5oqQPUgQGgS0Xj9wXVcXGfZYB1yZcKaaDVbi1DCatuOaYWmkkC1-kaKHQ9wZeq_jU9zZTjvkIgMoIT3ip-y-g')
     });
     // TODO: Alefaso any amin'ny backend ny sub JSON
     console.log('Push subscribed:', JSON.stringify(sub));
