@@ -1,139 +1,138 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7"; // ✅ AMPIO ITO
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ✅ VAPID Setup
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
-const VAPID_EMAIL = "mailto:joroandriamanirisoa13@gmail.com";
-
-webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+// ✅ Web Push key
+const VAPID_PUBLIC_KEY = "BL8QmGLYoAXQnhXStyuriTFZF_hsIMkHpuxwmRUaCVVRWuyRN5cICB8smSeorTEGQ-3welHD9lFHDma7b--l5Ic";
+const VAPID_PRIVATE_KEY = Deno.env.get("atpho5yHLFsOFsYLMTJgLrqzabhipvz06MYG_Jok8nw") || ""; // ← AMPIO ao Dashboard
 
 serve(async (req) => {
+  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('[Send Push] Request received');
+    
     const { productId, productTitle, productPrice } = await req.json();
-
+    
     if (!productTitle) {
-      throw new Error("Missing product data");
+      throw new Error('Missing productTitle');
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    console.log('[Send Push] Product:', productTitle);
+    
+    // ✅ Connect Supabase
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase credentials');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Get active subscribers
-    const { data: subscribers, error: fetchError } = await supabase
-      .from("push_subscriptions")
-      .select("*")
-      .eq("is_active", true);
-
+    
+    // ✅ Fetch active subscriptions
+    const { data: subscriptions, error: fetchError } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .eq('is_active', true);
+    
     if (fetchError) throw fetchError;
-
-    if (!subscribers || subscribers.length === 0) {
+    
+    console.log('[Send Push] Found', subscriptions?.length || 0, 'subscribers');
+    
+    if (!subscriptions || subscriptions.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: "No subscribers" }),
+        JSON.stringify({ success: true, sent: 0, message: 'No active subscribers' }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log(`[Send Push] Sending to ${subscribers.length} subscribers`);
-
-    // ✅ PAYLOAD
-    const payload = JSON.stringify({
-  title: "🆕 Nouveau produit Mijoro!",
-  body: `${productTitle}${productPrice ? ` - ${productPrice.toLocaleString('fr-MG')} AR` : ""}`,
-  icon: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
-  badge: "https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg",
-  tag: "new-product-" + (productId || Date.now()),
-  requireInteraction: true,
-  data: {
-    productId: productId || "new",
-    url: productId ? `/?product=${productId}#shop` : "/#shop",
-  },
-  // ✅ AMPIO: Action buttons
-  actions: [
-    { 
-      action: 'view', 
-      title: '👀 Voir le produit',
-      icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg' 
-    },
-    { 
-      action: 'dismiss', 
-      title: 'Fermer' 
-    }
-  ]
-});
-
-    // ✅ SEND TO ALL
+    
+    // ✅ Build notification payload
+    const priceText = productPrice > 0 ? `${productPrice} AR` : 'Gratuit';
+    const notificationPayload = {
+      title: '🆕 Nouveau produit!',
+      body: `${productTitle}\n💰 ${priceText}`,
+      icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
+      badge: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
+      tag: 'new-product-' + productId,
+      requireInteraction: true,
+      vibrate: [200, 100, 200],
+      data: {
+        productId: productId,
+        url: '/?product=' + productId + '#shop'
+      },
+      actions: [
+        { action: 'view', title: '👀 Voir' },
+        { action: 'dismiss', title: 'Fermer' }
+      ]
+    };
+    
+    // ✅ Send to all subscribers
     let sent = 0;
-    const sendPromises = subscribers.map(async (sub) => {
-      try {
-        const subscription = {
-          endpoint: sub.endpoint,
-          keys: sub.keys,
-        };
-
-        await webpush.sendNotification(subscription, payload);
-        sent++;
-        
-        // Log success
-        await supabase.from("notification_logs").insert({
-          subscription_id: sub.id,
-          title: "🆕 Nouveau produit Mijoro!",
-          body: `${productTitle}`,
-          success: true,
-          product_id: productId || null,
-        });
-
-        console.log(`✅ Sent to ${sub.endpoint.substring(0, 50)}`);
-      } catch (err: any) {
-        console.error(`❌ Failed for ${sub.endpoint.substring(0, 30)}:`, err.message);
-        
-        // Mark as failed + disable if gone
-        if (err.statusCode === 410) {
-          await supabase
-            .from("push_subscriptions")
-            .update({ is_active: false })
-            .eq("id", sub.id);
+    const results = await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        try {
+          const response = await fetch(sub.endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'TTL': '86400',
+              // ✅ AMPIO JWT authentication (raha ilaina)
+            },
+            body: JSON.stringify(notificationPayload)
+          });
+          
+          if (response.ok || response.status === 201) {
+            sent++;
+            console.log('[Send Push] ✓ Sent to:', sub.endpoint.substring(0, 50));
+            return { success: true };
+          } else {
+            console.error('[Send Push] ❌ Failed:', response.status);
+            
+            // ✅ Desactivate invalid subscriptions
+            if (response.status === 404 || response.status === 410) {
+              await supabase
+                .from('push_subscriptions')
+                .update({ is_active: false })
+                .eq('endpoint', sub.endpoint);
+              console.log('[Send Push] Deactivated invalid subscription');
+            }
+            
+            return { success: false, error: response.statusText };
+          }
+        } catch (err) {
+          console.error('[Send Push] Error:', err);
+          return { success: false, error: err.message };
         }
-        
-        await supabase.from("notification_logs").insert({
-          subscription_id: sub.id,
-          title: "🆕 Nouveau produit Mijoro!",
-          body: `${productTitle}`,
-          success: false,
-          error_message: err.message,
-          product_id: productId || null,
-        });
-      }
-    });
-
-    await Promise.allSettled(sendPromises);
-
+      })
+    );
+    
+    console.log('[Send Push] ✓ Sent to', sent, '/', subscriptions.length);
+    
     return new Response(
       JSON.stringify({
         success: true,
-        sent,
-        total: subscribers.length,
+        sent: sent,
+        total: subscriptions.length,
+        details: results
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+    
   } catch (error: any) {
-    console.error("[Send Push Error]", error);
+    console.error('[Send Push] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
       }
     );
   }
