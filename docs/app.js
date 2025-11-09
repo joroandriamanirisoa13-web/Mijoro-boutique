@@ -6629,6 +6629,9 @@ async function sendSubscriptionToServer(subscription, action) {
   try {
     console.log('[Notifications] Sending to server:', SUBSCRIBE_ENDPOINT);
     
+    // ✅ Parse subscription properly
+    const subJSON = subscription.toJSON();
+    
     const response = await fetch(SUBSCRIBE_ENDPOINT, {
       method: 'POST',
       headers: {
@@ -6638,20 +6641,22 @@ async function sendSubscriptionToServer(subscription, action) {
       },
       body: JSON.stringify({
         action: action,
-        subscription: subscription.toJSON()
+        subscription: {
+          endpoint: subJSON.endpoint,
+          p256dh: subJSON.keys.p256dh,
+          auth: subJSON.keys.auth
+        }
       })
     });
     
     console.log('[Notifications] Response status:', response.status);
     
-    // ✅ CRITICAL FIX: Check content-type before parsing
     const contentType = response.headers.get('content-type');
     console.log('[Notifications] Content-Type:', contentType);
     
     if (!response.ok) {
       let errorMsg = 'Server error: ' + response.status;
       
-      // Try to parse error if JSON
       if (contentType && contentType.includes('application/json')) {
         try {
           const error = await response.json();
@@ -6669,7 +6674,6 @@ async function sendSubscriptionToServer(subscription, action) {
       throw new Error(errorMsg);
     }
     
-    // Parse success response
     if (contentType && contentType.includes('application/json')) {
       const result = await response.json();
       console.log('[Notifications] Server response:', result);
@@ -6683,7 +6687,6 @@ async function sendSubscriptionToServer(subscription, action) {
   } catch (err) {
     console.error('[Notifications] Failed to sync with server:', err);
     
-    // ✅ User-friendly error messages
     if (err.message.includes('Failed to fetch')) {
       throw new Error('Impossible de contacter le serveur. Vérifiez votre connexion.');
     } else if (err.message.includes('404')) {
