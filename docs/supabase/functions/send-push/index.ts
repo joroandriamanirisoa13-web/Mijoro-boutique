@@ -6,12 +6,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ✅ Web Push key
+// ✅ FIXED: Alaina ny private key avy any amin'ny env
 const VAPID_PUBLIC_KEY = "BL8QmGLYoAXQnhXStyuriTFZF_hsIMkHpuxwmRUaCVVRWuyRN5cICB8smSeorTEGQ-3welHD9lFHDma7b--l5Ic";
-const VAPID_PRIVATE_KEY = Deno.env.get("atpho5yHLFsOFsYLMTJgLrqzabhipvz06MYG_Jok8nw") || ""; // ← AMPIO ao Dashboard
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || "";
+
+// ✅ AJOUTEZ: Import web-push library
+import webpush from "npm:web-push@3.6.6";
 
 serve(async (req) => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,9 +27,14 @@ serve(async (req) => {
       throw new Error('Missing productTitle');
     }
     
-    console.log('[Send Push] Product:', productTitle);
+    // ✅ Setup web-push
+    webpush.setVapidDetails(
+      'mailto:joroandriamanirisoa13@gmail.com',
+      VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY
+    );
     
-    // ✅ Connect Supabase
+    // Connect Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
@@ -37,7 +44,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // ✅ Fetch active subscriptions
+    // ✅ Fetch ACTIVE subscriptions only
     const { data: subscriptions, error: fetchError } = await supabase
       .from('push_subscriptions')
       .select('*')
@@ -45,7 +52,7 @@ serve(async (req) => {
     
     if (fetchError) throw fetchError;
     
-    console.log('[Send Push] Found', subscriptions?.length || 0, 'subscribers');
+    console.log('[Send Push] Found', subscriptions?.length || 0, 'active subscribers');
     
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(
@@ -54,7 +61,7 @@ serve(async (req) => {
       );
     }
     
-    // ✅ Build notification payload
+    // Build notification payload
     const priceText = productPrice > 0 ? `${productPrice} AR` : 'Gratuit';
     const notificationPayload = {
       title: '🆕 Nouveau produit!',
@@ -74,41 +81,42 @@ serve(async (req) => {
       ]
     };
     
-    // ✅ Send to all subscribers
+    // ✅ Send using web-push library
     let sent = 0;
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         try {
-          const response = await fetch(sub.endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'TTL': '86400',
-              // ✅ AMPIO JWT authentication (raha ilaina)
-            },
-            body: JSON.stringify(notificationPayload)
-          });
-          
-          if (response.ok || response.status === 201) {
-            sent++;
-            console.log('[Send Push] ✓ Sent to:', sub.endpoint.substring(0, 50));
-            return { success: true };
-          } else {
-            console.error('[Send Push] ❌ Failed:', response.status);
-            
-            // ✅ Desactivate invalid subscriptions
-            if (response.status === 404 || response.status === 410) {
-              await supabase
-                .from('push_subscriptions')
-                .update({ is_active: false })
-                .eq('endpoint', sub.endpoint);
-              console.log('[Send Push] Deactivated invalid subscription');
+          // ✅ Parse subscription object
+          const pushSubscription = {
+            endpoint: sub.endpoint,
+            keys: {
+              auth: sub.auth,
+              p256dh: sub.p256dh
             }
-            
-            return { success: false, error: response.statusText };
-          }
+          };
+          
+          // ✅ Send using web-push
+          await webpush.sendNotification(
+            pushSubscription,
+            JSON.stringify(notificationPayload)
+          );
+          
+          sent++;
+          console.log('[Send Push] ✓ Sent to:', sub.endpoint.substring(0, 50));
+          return { success: true };
+          
         } catch (err) {
-          console.error('[Send Push] Error:', err);
+          console.error('[Send Push] ❌ Failed:', err);
+          
+          // ✅ Deactivate invalid subscriptions
+          if (err.statusCode === 404 || err.statusCode === 410 || err.statusCode === 401) {
+            await supabase
+              .from('push_subscriptions')
+              .update({ is_active: false })
+              .eq('endpoint', sub.endpoint);
+            console.log('[Send Push] Deactivated invalid subscription');
+          }
+          
           return { success: false, error: err.message };
         }
       })
