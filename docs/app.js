@@ -2916,10 +2916,11 @@ function updateCategoryOptions(productType) {
           body: JSON.stringify({
             productId: inserted.id,
             productTitle: title,
-            productPrice: price
-          })
-        }
-      );
+            productPrice: price,
+productType: product_type // 'numeric' ou 'physical'
+})
+}
+);
       
       if (notifResponse.ok) {
         const result = await notifResponse.json();
@@ -2929,7 +2930,8 @@ function updateCategoryOptions(productType) {
       console.error('[peSubmitForm] Notification error:', notifErr);
     }
     
-    alert('Produit ajouté avec succès! 🎉');
+    const typeLabel = product_type === 'physical' ? 'Produit physique' : 'Produit numérique';
+alert(`${typeLabel} ajouté avec succès! 🎉`);
   } else {
     const { error } = await sb.from('products').update(payload).eq('id', peLocal.recordId);
     if (error) throw error;
@@ -5568,7 +5570,8 @@ function applyAuthUI() {
     });
   }
   
-  alert('Produit ajouté avec succès! 🎉');
+  const typeLabel = product_type === 'physical' ? '📦 Produit physique' : '💻 Produit numérique';
+alert(`${typeLabel} ajouté avec succès! 🎉\nNotifications envoyées aux abonnés.`);
 
     } else {
       const { error } = await sb.from('products').update(payload).eq('id', peLocal.recordId);
