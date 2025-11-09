@@ -2573,10 +2573,17 @@ async function fetchSupabaseProducts() {
       </div>
 
       <form id="pe-form" style="display:grid;gap:10px">
-        <!-- ✅ CHAMP CACHÉ pour product_type -->
-        <input type="hidden" id="pe-product-type" value="numeric">
-        
         <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
+          
+          <!-- ✅ TYPE DE PRODUIT - EN PREMIER -->
+          <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">
+            <span style="font-weight:700;font-size:15px">Type de produit</span>
+            <select id="pe-product-type" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;font-size:14px">
+              <option value="numeric">💻 Numérique (eBooks, vidéos, apps)</option>
+              <option value="physical">📦 Physique (vêtements, électronique, etc.)</option>
+            </select>
+          </label>
+          
           <label style="display:flex;flex-direction:column;gap:6px">
             <span>Titre</span>
             <input id="pe-title-input" required placeholder="Titre du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
@@ -2590,7 +2597,7 @@ async function fetchSupabaseProducts() {
           <label style="display:flex;flex-direction:column;gap:6px">
             <span>Catégorie</span>
             <select id="pe-category" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-              <!-- Les options seront remplies dynamiquement -->
+              <!-- Sera rempli dynamiquement -->
             </select>
           </label>
 
@@ -2653,9 +2660,77 @@ async function fetchSupabaseProducts() {
   
   document.body.appendChild(modal);
 
+  // ✅ WIRE EVENTS
   modal.querySelector('#pe-close').addEventListener('click', () => peClose());
   modal.querySelector('#pe-cancel').addEventListener('click', () => peClose());
 
+  // ✅ PRODUCT TYPE CHANGE -> Update categories
+  const productTypeSelect = modal.querySelector('#pe-product-type');
+  const categorySelect = modal.querySelector('#pe-category');
+  const previewUploader = modal.querySelector('#pe-preview-uploader');
+  const previewUrlContainer = modal.querySelector('#pe-preview-url-container');
+
+  const categoryOptions = {
+    numeric: [
+      { value: 'ebooks', label: 'eBooks' },
+      { value: 'videos', label: 'Vidéos' },
+      { value: 'apps', label: 'Apps/Jeux' },
+      { value: 'vip', label: 'VIP' },
+      { value: 'promo', label: 'Promo' },
+      { value: 'free', label: 'Gratuit' }
+    ],
+    physical: [
+      { value: 'clothing', label: '👕 Vêtements' },
+      { value: 'electronics', label: '📱 Électronique' },
+      { value: 'accessories', label: '💍 Accessoires' },
+      { value: 'books', label: '📚 Livres physiques' },
+      { value: 'home', label: '🏠 Maison & Déco' },
+      { value: 'sports', label: '⚽ Sports & Loisirs' },
+      { value: 'beauty', label: '💄 Beauté & Santé' },
+      { value: 'other', label: '📦 Autre' }
+    ]
+  };
+
+  function updateCategories(productType) {
+    const options = categoryOptions[productType] || categoryOptions.numeric;
+    const currentValue = categorySelect.value;
+    
+    categorySelect.innerHTML = '';
+    options.forEach(opt => {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      categorySelect.appendChild(option);
+    });
+
+    // Restore value if exists
+    const optionExists = options.find(opt => opt.value === currentValue);
+    if (optionExists) {
+      categorySelect.value = currentValue;
+    } else {
+      categorySelect.value = options[0].value;
+    }
+
+    // Show/hide preview fields
+    if (productType === 'physical') {
+      previewUploader.style.display = 'none';
+      previewUrlContainer.style.display = 'none';
+    } else {
+      previewUploader.style.display = '';
+      previewUrlContainer.style.display = '';
+    }
+    
+    console.log('[Modal] Categories updated for:', productType);
+  }
+
+  productTypeSelect.addEventListener('change', function() {
+    updateCategories(this.value);
+  });
+
+  // Initial load
+  updateCategories('numeric');
+
+  // Drag & drop
   modal.querySelectorAll('.pe-uploader').forEach(box => {
     box.addEventListener('dragover', e => { e.preventDefault(); box.style.borderColor = '#5b78ff'; });
     box.addEventListener('dragleave', () => { box.style.borderColor = '#2a2d38'; });
@@ -2675,51 +2750,49 @@ async function fetchSupabaseProducts() {
   const peLocal = { imageFile: null, previewFile: null, mode: 'add', recordId: null };
 
   function peOpen({ mode = 'add', product = null, productType = 'numeric' } = {}) {
-  if (!isOwner()) { alert('Owner ihany no afaka manao izao.'); return; }
+  if (!isOwner()) {
+    alert('Owner ihany no afaka manao izao.');
+    return;
+  }
+  
   const modal = ensureProductModal();
   peLocal.mode = mode;
   peLocal.recordId = product?.id || null;
   peLocal.imageFile = null;
   peLocal.previewFile = null;
   
-  // ✅ Définir le product_type
-  const productTypeInput = modal.querySelector('#pe-product-type');
-  if (productTypeInput) {
-    productTypeInput.value = product?.product_type || product?._db?.product_type || productType;
+  // ✅ SET PRODUCT TYPE (priorité: product existant, sinon paramètre, sinon 'numeric')
+  const productTypeSelect = modal.querySelector('#pe-product-type');
+  const finalProductType = product?.product_type || product?._db?.product_type || productType;
+  
+  if (productTypeSelect) {
+    productTypeSelect.value = finalProductType;
+    console.log('[peOpen] Product type set to:', finalProductType);
+    
+    // ✅ Trigger change pour update categories
+    productTypeSelect.dispatchEvent(new Event('change'));
   }
   
-  // ✅ Titre du modal selon le type
-  const currentType = productTypeInput.value;
-  const typeLabel = currentType === 'physical' ? 'Produit Physique' : 'Produit Numérique';
+  // Title
+  const typeLabel = finalProductType === 'physical' ? '📦 Produit Physique' : '💻 Produit Numérique';
   modal.querySelector('#pe-title').textContent = (mode === 'add') ? `Ajouter ${typeLabel}` : `Éditer ${typeLabel}`;
   
-  // ✅ Remplir les catégories selon le type
-  updateCategoryOptions(currentType);
-  
+  // Fill fields
   modal.querySelector('#pe-title-input').value = product?.title || '';
   modal.querySelector('#pe-price-input').value = Number(product?.price || 0);
-  modal.querySelector('#pe-category').value = normalizeCategory(product?.category || (currentType === 'physical' ? 'other' : 'ebooks'));
+  modal.querySelector('#pe-category').value = normalizeCategory(product?.category || (finalProductType === 'physical' ? 'other' : 'ebooks'));
   modal.querySelector('#pe-badge').value = product?._db?.badge || '';
   modal.querySelector('#pe-tags').value = Array.isArray(product?._db?.tags) ? product._db.tags.join(', ') : '';
   modal.querySelector('#pe-description').value = product?.description || product?.description_short || '';
   modal.querySelector('#pe-preview-url').value = product?.preview_url || product?._db?.preview_url || '';
   
-  // ✅ Preview: caché pour produits physiques
-  const previewUploader = modal.querySelector('#pe-preview-uploader');
-  const previewUrlContainer = modal.querySelector('#pe-preview-url-container');
-  if (currentType === 'physical') {
-    if (previewUploader) previewUploader.style.display = 'none';
-    if (previewUrlContainer) previewUrlContainer.style.display = 'none';
-  } else {
-    if (previewUploader) previewUploader.style.display = '';
-    if (previewUrlContainer) previewUrlContainer.style.display = '';
-  }
-  
+  // Image preview
   const imgPrev = modal.querySelector('#pe-image-preview');
   imgPrev.innerHTML = product?.image?.url ?
     `<img src="${escapeAttr(product.image.url)}" alt="thumbnail" style="width:100%;height:110px;object-fit:cover">` :
     `<span style="opacity:.6">Tsy misy sary</span>`;
   
+  // Preview preview
   const pvPrev = modal.querySelector('#pe-preview-preview');
   const existingPreview = product?.preview_url || product?._db?.preview_url || '';
   if (existingPreview) {
@@ -2734,10 +2807,12 @@ async function fetchSupabaseProducts() {
     pvPrev.innerHTML = `<span style="opacity:.6">Tsy misy vidéo/PDF</span>`;
   }
   
+  // Wire file pickers
   modal.querySelector('#pe-pick-image').onclick = async () => {
     const files = await pickFiles({ multiple: false });
     if (files && files[0]) peSetLocalFile('image', files[0]);
   };
+  
   modal.querySelector('#pe-pick-preview').onclick = async () => {
     const files = await pickFiles({ multiple: false });
     if (files && files[0]) peSetLocalFile('preview', files[0]);
@@ -2751,6 +2826,7 @@ async function fetchSupabaseProducts() {
     }
   };
   
+  // Submit form
   modal.querySelector('#pe-form').onsubmit = async (e) => {
     e.preventDefault();
     try {
@@ -2763,11 +2839,11 @@ async function fetchSupabaseProducts() {
     }
   };
   
+  // Show modal
   modal.style.display = 'flex';
   modal.setAttribute('aria-hidden', 'false');
   modal.querySelector('#pe-title-input').focus();
 }
-
 // ✅ Helper function pour remplir les catégories
 function updateCategoryOptions(productType) {
   const categorySelect = document.getElementById('pe-category');
@@ -2859,51 +2935,84 @@ function updateCategoryOptions(productType) {
   }
 
   async function peSubmitForm() {
-    if (!isOwner()) throw new Error('Owner ihany no afaka manova.');
-    const sb = await ensureSupabase();
-    
-    const title = document.getElementById('pe-title-input').value.trim();
-    const price = Number(document.getElementById('pe-price-input').value || 0);
-    const category = normalizeCategory(document.getElementById('pe-category').value || 'ebooks');
-    const badge = document.getElementById('pe-badge').value.trim() || null;
-    const tagsRaw = document.getElementById('pe-tags').value.trim();
-    const description = document.getElementById('pe-description').value.trim() || null;
-    let preview_url = document.getElementById('pe-preview-url').value.trim() || null;
-    
-    // ✅ AJOUT MANQUANT: Récupérer product_type
-    const productTypeSelect = document.getElementById('pe-product-type');
-    const product_type = productTypeSelect ? productTypeSelect.value : 'numeric';
-    
-    const uploaded = await peUploadSelectedFiles();
-    let thumbnail_url = uploaded.thumbnail_url || null;
-    if (!preview_url) preview_url = uploaded.preview_url || null;
-    
-    const payload = {
-      title,
-      category,
-      price,
-      is_free: price === 0,
-      preview_url,
-      thumbnail_url,
-      badge,
-      tags: tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
-      description,
-      product_type // ✅ AJOUTÉ ICI
-    };
-
+  if (!isOwner()) throw new Error('Owner ihany no afaka manova.');
+  const sb = await ensureSupabase();
+  
+  // ✅ GET FORM VALUES
+  const title = document.getElementById('pe-title-input').value.trim();
+  const price = Number(document.getElementById('pe-price-input').value || 0);
+  const category = normalizeCategory(document.getElementById('pe-category').value || 'ebooks');
+  const badge = document.getElementById('pe-badge').value.trim() || null;
+  const tagsRaw = document.getElementById('pe-tags').value.trim();
+  const description = document.getElementById('pe-description').value.trim() || null;
+  let preview_url = document.getElementById('pe-preview-url').value.trim() || null;
+  
+  // ✅ CRITICAL: Get product_type
+  const productTypeSelect = document.getElementById('pe-product-type');
+  if (!productTypeSelect) {
+    console.error('[peSubmitForm] ❌ product_type select not found!');
+    throw new Error('Product type field missing');
+  }
+  
+  const product_type = productTypeSelect.value || 'numeric';
+  console.log('[peSubmitForm] 📋 Product type:', product_type);
+  console.log('[peSubmitForm] 📋 Title:', title);
+  console.log('[peSubmitForm] 📋 Price:', price);
+  
+  // Upload files
+  const uploaded = await peUploadSelectedFiles();
+  let thumbnail_url = uploaded.thumbnail_url || null;
+  if (!preview_url) preview_url = uploaded.preview_url || null;
+  
+  // ✅ BUILD PAYLOAD
+  const payload = {
+    title,
+    category,
+    price,
+    is_free: price === 0,
+    preview_url,
+    thumbnail_url,
+    badge,
+    tags: tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
+    description,
+    product_type // ✅ CRITICAL
+  };
+  
+  console.log('[peSubmitForm] 📦 Payload:', payload);
+  
   if (peLocal.mode === 'add') {
+    // ========================================
+    // INSERT NEW PRODUCT
+    // ========================================
     const { data: inserted, error } = await sb
       .from('products')
       .insert(payload)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('[peSubmitForm] ❌ Insert error:', error);
+      throw error;
+    }
     
-    console.log('[peSubmitForm] ✓ Product inserted:', inserted);
+    console.log('[peSubmitForm] ✅ Product inserted:', inserted);
     
-    // Push notification (garde le code existant)
+    // ========================================
+    // 🔥 SEND PUSH NOTIFICATIONS
+    // ========================================
     try {
+      console.log('[peSubmitForm] 📤 Sending push notifications...');
+      console.log('[peSubmitForm] 📤 Product type for notification:', product_type);
+      
+      const notifPayload = {
+        productId: inserted.id,
+        productTitle: title,
+        productPrice: price,
+        productType: product_type // ✅ CRITICAL
+      };
+      
+      console.log('[peSubmitForm] 📤 Notification payload:', notifPayload);
+      
       const notifResponse = await fetch(
         window.SUPABASE_URL + '/functions/v1/send-push',
         {
@@ -2913,32 +3022,56 @@ function updateCategoryOptions(productType) {
             'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY,
             'apikey': window.SUPABASE_ANON_KEY
           },
-          body: JSON.stringify({
-            productId: inserted.id,
-            productTitle: title,
-            productPrice: price,
-productType: product_type // 'numeric' ou 'physical'
-})
-}
-);
+          body: JSON.stringify(notifPayload)
+        }
+      );
+      
+      console.log('[peSubmitForm] 📤 Response status:', notifResponse.status);
       
       if (notifResponse.ok) {
         const result = await notifResponse.json();
-        console.log('[peSubmitForm] ✓ Sent to', result.sent || 0, 'subscribers');
+        console.log('[peSubmitForm] ✅ Notifications sent:', result);
+        console.log('[peSubmitForm] ✅ Sent to', result.sent || 0, '/', result.total || 0, 'subscribers');
+      } else {
+        const errorText = await notifResponse.text();
+        console.error('[peSubmitForm] ❌ Push notification failed:', errorText);
       }
     } catch (notifErr) {
-      console.error('[peSubmitForm] Notification error:', notifErr);
+      console.error('[peSubmitForm] ❌ Notification error:', notifErr);
+      // Don't block success for notification failure
     }
     
-    const typeLabel = product_type === 'physical' ? 'Produit physique' : 'Produit numérique';
-alert(`${typeLabel} ajouté avec succès! 🎉`);
+    // ========================================
+    // 🔥 LOCAL NOTIFICATION
+    // ========================================
+    if (typeof window.notifyNewProduct === 'function') {
+      console.log('[peSubmitForm] 🔔 Showing local notification');
+      window.notifyNewProduct({
+        id: inserted.id,
+        title: title,
+        price: price,
+        product_type: product_type
+      });
+    }
+    
+    // ========================================
+    // SUCCESS MESSAGE
+    // ========================================
+    const typeLabel = product_type === 'physical' ? '📦 Produit physique' : '💻 Produit numérique';
+    const message = `${typeLabel} ajouté avec succès! 🎉\n\nNotifications envoyées aux abonnés.`;
+    
+    alert(message);
+    console.log('[peSubmitForm] ✅ Complete');
+    
   } else {
+    // ========================================
+    // UPDATE EXISTING PRODUCT
+    // ========================================
     const { error } = await sb.from('products').update(payload).eq('id', peLocal.recordId);
     if (error) throw error;
     alert('Produit modifié.');
   }
 }
-  
 
 // ✅ Make it global
 window.peSubmitForm = peSubmitForm;
@@ -2963,22 +3096,29 @@ window.peSubmitForm = peSubmitForm;
   window.addPhysicalProductPrompt = addPhysicalProductPrompt;
   window.editProductPrompt = editProductPrompt;
   window.deleteProductConfirm = deleteProductConfirm;
-
-  /* ---------- Wire buttons + init ---------- */
-  document.addEventListener('DOMContentLoaded', function () {
-    const login = document.getElementById('btnLogin');
-    const logout = document.getElementById('btnLogout');
-    const addBtn = document.getElementById('btnAddProduct');
-    const addPhysicalBtn = document.getElementById('btnAddPhysical');
-
-    if (login) login.addEventListener('click', openOwnerLoginModal);
-    if (logout) logout.addEventListener('click', signOutOwner);
-    if (addBtn) addBtn.addEventListener('click', addProductPrompt);
-    if (addPhysicalBtn) addPhysicalBtn.addEventListener('click', addPhysicalProductPrompt);
-
-    initAuth();
-    fetchSupabaseProducts();
-  });
+ // ========================================
+ // WIRE BUTTONS + INIT
+ // ========================================
+ 
+ document.addEventListener('DOMContentLoaded', function() {
+ const login = document.getElementById('btnLogin');
+ const logout = document.getElementById('btnLogout');
+ const addBtn = document.getElementById('btnAddProduct');
+ const addPhysicalBtn = document.getElementById('btnAddPhysical');
+ 
+ if (login) login.addEventListener('click', openOwnerLoginModal);
+ if (logout) logout.addEventListener('click', signOutOwner);
+ if (addBtn) addBtn.addEventListener('click', addProductPrompt);
+ if (addPhysicalBtn) addPhysicalBtn.addEventListener('click', addPhysicalProductPrompt);
+ 
+ initAuth();
+ fetchSupabaseProducts();
+ });
+ 
+ // Note: Les autres fonctions (uploadAssets, editProductPrompt, etc.) 
+ // restent telles quelles dans votre code
+ 
+ ;
 
   async function deleteProductConfirm(id) {
     if (!isOwner()) return alert('Owner ihany no afaka mamafa.');
@@ -4631,11 +4771,19 @@ function clearCart() {
     console.error('[initCartDrawer error]', err);
   }
 })();
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
   try {
-    var initial = loadCartFromStorage();
-    cartArrayToMap(initial);
-    updateCartUI();
+    // ✅ Le cart drawer gère maintenant son propre état
+    console.log('[Cart] Using Cart Drawer API');
+    
+    // Load legacy cart if exists
+    var legacyCart = loadCartFromStorage();
+    if (legacyCart && legacyCart.length > 0 && typeof window.CartAPI !== 'undefined') {
+      legacyCart.forEach(function(item) {
+        window.CartAPI.add(item);
+      });
+      console.log('[Cart] Migrated', legacyCart.length, 'items to Cart Drawer');
+    }
   } catch (err) {
     console.error('[Cart init error]', err);
   }
@@ -5490,7 +5638,7 @@ function applyAuthUI() {
       preview_url: vid?.url || pdf?.url || null
     };
   }
-
+ 
   async function peSubmitForm() {
     if (!isOwner()) throw new Error('Owner ihany no afaka manova.');
     const sb = await ensureSupabase();
@@ -7688,9 +7836,4 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initial sync
     syncDesktopBadge();
-  }
-  
-  console.log('[Desktop Nav] ✓ Initialized');
-});
-console.log('📤 Sending push notification...');
-console.log('✅ Push notification sent to 5 / 10 subscribers');
+  }});
