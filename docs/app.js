@@ -556,71 +556,787 @@ var THEME_KEY = 'settings:theme';
 var LANG_KEY = 'settings:lang';
 
 var TRANSLATIONS = {
-  fr: {
-    "home_title": "Tongasoa eto  amin'ny varotra malagasy!",
-    "home_sub": "Découvre des eBooks, vidéos et apps/jeux pour t’aider à réussir en ligne.",
-    "filter_all": "Tous",
-    "filter_ebooks": "Ebooks",
-    "filter_videos": "Vidéos",
-    "filter_vip": "VIP",
-    "filter_promo": "Promo",
-    "filter_free": "Gratuit",
-    "shop_no_products": "Aucun produit trouvé.",
-    "search_placeholder": "Rechercher...",
-    "cart_label": "Cart",
-    "cart_total": "Total",
-    "param_settings": "Paramètres",
-    "param_language": "Langue",
-    "param_theme": "Thème",
-    "about": "À propos",
-    "contact": "Contact",
-    "quit": "Quit",
-    "read": "Lire"
-  },
-  en: {
-    "home_title": "Welcome to our boutique!",
-    "home_sub": "Discover eBooks, videos and apps/games to help you succeed online.",
-    "filter_all": "All",
-    "filter_ebooks": "Ebooks",
-    "filter_videos": "Videos",
-    "filter_vip": "VIP",
-    "filter_promo": "Promo",
-    "filter_free": "Free",
-    "shop_no_products": "No products found.",
-    "search_placeholder": "Search...",
-    "cart_label": "Cart",
-    "cart_total": "Total",
-    "param_settings": "Settings",
-    "param_language": "Language",
-    "param_theme": "Theme",
-    "about": "About",
-    "contact": "Contact",
-    "quit": "Quit",
-    "read": "Read"
-  },
+  // ==========================================
+  // MALAGASY (MG) - COMPLETE
+  // ==========================================
   mg: {
-    "home_title": "Tongasoa ato amin'ny boutique!",
+    // Navigation
+    "nav_home": "Fandraisana",
+    "nav_shop": "Fivarotana",
+    "nav_params": "Fandrindrana",
+    "nav_cart": "Harona",
+    
+    // Home section
+    "home_title": "Tongasoa eto amin'ny Mijoro Boutique!",
     "home_sub": "Jereo ny eBooks, vidéos ary apps/jeux hanampy anao hiroso amin'ny aterineto.",
+    "home_welcome": "Tongasoa",
+    "home_discover": "Zahao ny vokatra tsara",
+    
+    // Shop section
+    "shop_title": "Vokatra Nomerika",
+    "shop_subtitle": "Safidio ny vokatra tianao",
+    "shop_no_products": "Tsy misy vokatra hita.",
+    "shop_loading": "Manatanteraka...",
+    "shop_error": "Nisy olana. Andramo indray.",
+    
+    // Filters
     "filter_all": "Rehetra",
     "filter_ebooks": "eBooks",
     "filter_videos": "Vidéos",
+    "filter_apps": "Apps/Jeux",
     "filter_vip": "VIP",
     "filter_promo": "Promo",
     "filter_free": "Maimaim-poana",
-    "shop_no_products": "Tsy misy vokatra hita.",
+    
+    // Search
     "search_placeholder": "Mitadiava...",
-    "cart_label": "Panier",
+    "search_no_results": "Tsy misy valiny",
+    "search_results": "valiny",
+    
+    // Product card
+    "product_details": "Fampahalalana",
+    "product_buy": "Hividy",
+    "product_read": "Vakio",
+    "product_preview": "Preview",
+    "product_free": "Maimaim-poana",
+    "product_new": "Vaovao",
+    "product_hot": "Hot",
+    "product_like": "Tiako",
+    "product_unlike": "Tsy tiako intsony",
+    
+    // Cart
+    "cart_title": "Panier",
+    "cart_empty": "Tsy misy entana ao anaty panier.",
     "cart_total": "Total",
+    "cart_checkout": "Hiditra ao amin'ny WhatsApp",
+    "cart_clear": "Hofafana",
+    "cart_item": "entana",
+    "cart_items": "entana",
+    "cart_add_success": "Tafiditra ao anaty panier",
+    "cart_remove_confirm": "Hofafana ve ity entana ity?",
+    "cart_clear_confirm": "Hofafana daholo ve ny entana ao anaty panier?",
+    
+    // Quick Order
+    "quick_order_title": "Commande Express",
+    "quick_order_view_all": "Hijery daholo",
+    
+    // Settings
+    "param_settings": "Fandrindrana",
+    "param_language": "Fiteny",
+    "param_theme": "Thème",
+    "param_mode": "Mode fampisehoana",
+    "param_mode_mobile": "Mobile",
+    "param_mode_desktop": "Desktop",
+    "param_mode_current": "Mode ankehitriny:",
+    
+    // Language options
+    "lang_mg": "Malagasy",
+    "lang_mg_sub": "Lazao amin'ny fiteny gasy",
+    "lang_fr": "Français",
+    "lang_fr_sub": "Interface en français",
+    "lang_en": "English",
+    "lang_en_sub": "English interface",
+    
+    // Theme options
+    "theme_dark": "Sombre",
+    "theme_dark_sub": "Defaut (maizina)",
+    "theme_light": "Clair",
+    "theme_light_sub": "Mazava kokoa",
+    "theme_current": "Thème ankehitriny:",
+    
+    // Buttons
+    "btn_close": "Hidio",
+    "btn_cancel": "Aoka ihany",
+    "btn_save": "Tehirizo",
+    "btn_delete": "Fafao",
+    "btn_edit": "Ovay",
+    "btn_add": "Ampiana",
+    "btn_confirm": "Ekeo",
+    "btn_back": "Miverina",
+    
+    // Notifications
+    "notif_subscribe": "Hisoratra anarana",
+    "notif_subscribed": "Voasoratra anarana",
+    "notif_unsubscribe": "Hanafoana",
+    "notif_title": "Fampandrenesana",
+    "notif_new_product": "Vokatra vaovao!",
+    "notif_permission_denied": "Avereno avela ny fampandrenesana",
+    
+    // Auth
+    "auth_login": "Midira",
+    "auth_logout": "Mivoaka",
+    "auth_owner_only": "Owner ihany",
+    "auth_email": "Email",
+    "auth_password": "Teny miafina",
+    
+    // Product management
+    "manage_add_product": "Hanampy vokatra",
+    "manage_add_digital": "Nomerika",
+    "manage_add_physical": "Fizika",
+    "manage_edit_product": "Hanova vokatra",
+    "manage_delete_confirm": "Hofafana ve ity vokatra ity?",
+    "manage_title": "Lohateny",
+    "manage_price": "Vidiny (Ar)",
+    "manage_category": "Sokajy",
+    "manage_description": "Fanambarana",
+    "manage_image": "Sary",
+    "manage_preview": "Preview",
+    
+    // Slides
+    "slide_add": "Hanampy slide",
+    "slide_delete": "Hamafa slide",
+    "slide_delete_confirm": "Hofafana ve ity slide ity?",
+    
+    // Info modals
+    "about": "Momba",
+    "contact": "Hifandray",
+    "quit": "Hiala",
+    "quit_confirm": "Te hiala ve ianao?",
+    "quit_message": "Tsy ho very ny angon-drakitra.",
+    
+    // Messages
+    "msg_success": "Vita soa aman-tsara!",
+    "msg_error": "Nisy olana",
+    "msg_loading": "Manatanteraka...",
+    "msg_no_connection": "Tsy misy connexion",
+    "msg_try_again": "Andramo indray",
+    
+    // Time
+    "time_just_now": "Vao haingana",
+    "time_minutes_ago": "minitra lasa izay",
+    "time_hours_ago": "ora lasa izay",
+    "time_days_ago": "andro lasa izay",
+    
+    // Misc
+    "currency": "Ar",
+    "free": "Maimaim-poana",
+    "new": "Vaovao",
+    "popular": "Malaza",
+    "recommended": "Soso-kevitra"
+  },
+  
+  // ==========================================
+  // FRANÇAIS (FR) - COMPLETE
+  // ==========================================
+  fr: {
+    // Navigation
+    "nav_home": "Accueil",
+    "nav_shop": "Boutique",
+    "nav_params": "Paramètres",
+    "nav_cart": "Panier",
+    
+    // Home section
+    "home_title": "Bienvenue chez Mijoro Boutique!",
+    "home_sub": "Découvre des eBooks, vidéos et apps/jeux pour t'aider à réussir en ligne.",
+    "home_welcome": "Bienvenue",
+    "home_discover": "Découvre nos meilleurs produits",
+    
+    // Shop section
+    "shop_title": "Produits Numériques",
+    "shop_subtitle": "Choisis le produit qui te convient",
+    "shop_no_products": "Aucun produit trouvé.",
+    "shop_loading": "Chargement...",
+    "shop_error": "Une erreur est survenue. Réessaye.",
+    
+    // Filters
+    "filter_all": "Tous",
+    "filter_ebooks": "Ebooks",
+    "filter_videos": "Vidéos",
+    "filter_apps": "Apps/Jeux",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Gratuit",
+    
+    // Search
+    "search_placeholder": "Rechercher...",
+    "search_no_results": "Aucun résultat",
+    "search_results": "résultats",
+    
+    // Product card
+    "product_details": "Détails",
+    "product_buy": "Acheter",
+    "product_read": "Lire",
+    "product_preview": "Aperçu",
+    "product_free": "Gratuit",
+    "product_new": "Nouveau",
+    "product_hot": "Hot",
+    "product_like": "J'aime",
+    "product_unlike": "Je n'aime plus",
+    
+    // Cart
+    "cart_title": "Panier",
+    "cart_empty": "Ton panier est vide.",
+    "cart_total": "Total",
+    "cart_checkout": "Commander via WhatsApp",
+    "cart_clear": "Vider",
+    "cart_item": "article",
+    "cart_items": "articles",
+    "cart_add_success": "Ajouté au panier",
+    "cart_remove_confirm": "Retirer cet article du panier?",
+    "cart_clear_confirm": "Vider tout le panier?",
+    
+    // Quick Order
+    "quick_order_title": "Commande Express",
+    "quick_order_view_all": "Voir tout",
+    
+    // Settings
     "param_settings": "Paramètres",
     "param_language": "Langue",
     "param_theme": "Thème",
+    "param_mode": "Mode d'affichage",
+    "param_mode_mobile": "Mobile",
+    "param_mode_desktop": "Desktop",
+    "param_mode_current": "Mode actuel:",
+    
+    // Language options
+    "lang_mg": "Malagasy",
+    "lang_mg_sub": "Lazao amin'ny fiteny gasy",
+    "lang_fr": "Français",
+    "lang_fr_sub": "Interface en français",
+    "lang_en": "English",
+    "lang_en_sub": "English interface",
+    
+    // Theme options
+    "theme_dark": "Sombre",
+    "theme_dark_sub": "Par défaut (sombre)",
+    "theme_light": "Clair",
+    "theme_light_sub": "Plus lumineux",
+    "theme_current": "Thème actuel:",
+    
+    // Buttons
+    "btn_close": "Fermer",
+    "btn_cancel": "Annuler",
+    "btn_save": "Enregistrer",
+    "btn_delete": "Supprimer",
+    "btn_edit": "Modifier",
+    "btn_add": "Ajouter",
+    "btn_confirm": "Confirmer",
+    "btn_back": "Retour",
+    
+    // Notifications
+    "notif_subscribe": "S'abonner",
+    "notif_subscribed": "Abonné",
+    "notif_unsubscribe": "Se désabonner",
+    "notif_title": "Notifications",
+    "notif_new_product": "Nouveau produit!",
+    "notif_permission_denied": "Active les notifications dans les paramètres",
+    
+    // Auth
+    "auth_login": "Connexion",
+    "auth_logout": "Déconnexion",
+    "auth_owner_only": "Propriétaire uniquement",
+    "auth_email": "Email",
+    "auth_password": "Mot de passe",
+    
+    // Product management
+    "manage_add_product": "Ajouter un produit",
+    "manage_add_digital": "Numérique",
+    "manage_add_physical": "Physique",
+    "manage_edit_product": "Modifier le produit",
+    "manage_delete_confirm": "Supprimer ce produit?",
+    "manage_title": "Titre",
+    "manage_price": "Prix (Ar)",
+    "manage_category": "Catégorie",
+    "manage_description": "Description",
+    "manage_image": "Image",
+    "manage_preview": "Aperçu",
+    
+    // Slides
+    "slide_add": "Ajouter un slide",
+    "slide_delete": "Supprimer le slide",
+    "slide_delete_confirm": "Supprimer ce slide?",
+    
+    // Info modals
     "about": "À propos",
     "contact": "Contact",
+    "quit": "Quitter",
+    "quit_confirm": "Veux-tu quitter?",
+    "quit_message": "Tes données ne seront pas perdues.",
+    
+    // Messages
+    "msg_success": "Succès!",
+    "msg_error": "Erreur",
+    "msg_loading": "Chargement...",
+    "msg_no_connection": "Pas de connexion",
+    "msg_try_again": "Réessayer",
+    
+    // Time
+    "time_just_now": "À l'instant",
+    "time_minutes_ago": "minutes",
+    "time_hours_ago": "heures",
+    "time_days_ago": "jours",
+    
+    // Misc
+    "currency": "Ar",
+    "free": "Gratuit",
+    "new": "Nouveau",
+    "popular": "Populaire",
+    "recommended": "Recommandé"
+  },
+  
+  // ==========================================
+  // ENGLISH (EN) - COMPLETE
+  // ==========================================
+  en: {
+    // Navigation
+    "nav_home": "Home",
+    "nav_shop": "Shop",
+    "nav_params": "Settings",
+    "nav_cart": "Cart",
+    
+    // Home section
+    "home_title": "Welcome to Mijoro Boutique!",
+    "home_sub": "Discover eBooks, videos and apps/games to help you succeed online.",
+    "home_welcome": "Welcome",
+    "home_discover": "Discover our best products",
+    
+    // Shop section
+    "shop_title": "Digital Products",
+    "shop_subtitle": "Choose the product that suits you",
+    "shop_no_products": "No products found.",
+    "shop_loading": "Loading...",
+    "shop_error": "An error occurred. Try again.",
+    
+    // Filters
+    "filter_all": "All",
+    "filter_ebooks": "Ebooks",
+    "filter_videos": "Videos",
+    "filter_apps": "Apps/Games",
+    "filter_vip": "VIP",
+    "filter_promo": "Promo",
+    "filter_free": "Free",
+    
+    // Search
+    "search_placeholder": "Search...",
+    "search_no_results": "No results",
+    "search_results": "results",
+    
+    // Product card
+    "product_details": "Details",
+    "product_buy": "Buy",
+    "product_read": "Read",
+    "product_preview": "Preview",
+    "product_free": "Free",
+    "product_new": "New",
+    "product_hot": "Hot",
+    "product_like": "Like",
+    "product_unlike": "Unlike",
+    
+    // Cart
+    "cart_title": "Cart",
+    "cart_empty": "Your cart is empty.",
+    "cart_total": "Total",
+    "cart_checkout": "Order via WhatsApp",
+    "cart_clear": "Clear",
+    "cart_item": "item",
+    "cart_items": "items",
+    "cart_add_success": "Added to cart",
+    "cart_remove_confirm": "Remove this item?",
+    "cart_clear_confirm": "Clear entire cart?",
+    
+    // Quick Order
+    "quick_order_title": "Quick Order",
+    "quick_order_view_all": "View All",
+    
+    // Settings
+    "param_settings": "Settings",
+    "param_language": "Language",
+    "param_theme": "Theme",
+    "param_mode": "Display Mode",
+    "param_mode_mobile": "Mobile",
+    "param_mode_desktop": "Desktop",
+    "param_mode_current": "Current mode:",
+    
+    // Language options
+    "lang_mg": "Malagasy",
+    "lang_mg_sub": "Lazao amin'ny fiteny gasy",
+    "lang_fr": "Français",
+    "lang_fr_sub": "Interface en français",
+    "lang_en": "English",
+    "lang_en_sub": "English interface",
+    
+    // Theme options
+    "theme_dark": "Dark",
+    "theme_dark_sub": "Default (dark)",
+    "theme_light": "Light",
+    "theme_light_sub": "Brighter",
+    "theme_current": "Current theme:",
+    
+    // Buttons
+    "btn_close": "Close",
+    "btn_cancel": "Cancel",
+    "btn_save": "Save",
+    "btn_delete": "Delete",
+    "btn_edit": "Edit",
+    "btn_add": "Add",
+    "btn_confirm": "Confirm",
+    "btn_back": "Back",
+    
+    // Notifications
+    "notif_subscribe": "Subscribe",
+    "notif_subscribed": "Subscribed",
+    "notif_unsubscribe": "Unsubscribe",
+    "notif_title": "Notifications",
+    "notif_new_product": "New product!",
+    "notif_permission_denied": "Enable notifications in settings",
+    
+    // Auth
+    "auth_login": "Login",
+    "auth_logout": "Logout",
+    "auth_owner_only": "Owner only",
+    "auth_email": "Email",
+    "auth_password": "Password",
+    
+    // Product management
+    "manage_add_product": "Add Product",
+    "manage_add_digital": "Digital",
+    "manage_add_physical": "Physical",
+    "manage_edit_product": "Edit Product",
+    "manage_delete_confirm": "Delete this product?",
+    "manage_title": "Title",
+    "manage_price": "Price (Ar)",
+    "manage_category": "Category",
+    "manage_description": "Description",
+    "manage_image": "Image",
+    "manage_preview": "Preview",
+    
+    // Slides
+    "slide_add": "Add Slide",
+    "slide_delete": "Delete Slide",
+    "slide_delete_confirm": "Delete this slide?",
+    
+    // Info modals
+    "about": "About",
+    "contact": "Contact",
     "quit": "Quit",
-    "read": "Vakio"
+    "quit_confirm": "Do you want to quit?",
+    "quit_message": "Your data won't be lost.",
+    
+    // Messages
+    "msg_success": "Success!",
+    "msg_error": "Error",
+    "msg_loading": "Loading...",
+    "msg_no_connection": "No connection",
+    "msg_try_again": "Try again",
+    
+    // Time
+    "time_just_now": "Just now",
+    "time_minutes_ago": "minutes ago",
+    "time_hours_ago": "hours ago",
+    "time_days_ago": "days ago",
+    
+    // Misc
+    "currency": "Ar",
+    "free": "Free",
+    "new": "New",
+    "popular": "Popular",
+    "recommended": "Recommended"
   }
-};
+};/* ==========================================
+   INTELLIGENT LANGUAGE SYSTEM - PROFESSIONAL
+   ========================================== */
 
+(function initAdvancedLanguageSystem() {
+  'use strict';
+  
+  const LANG_KEY = 'settings:lang';
+  const LANGUAGES = ['mg', 'fr', 'en'];
+  
+  let currentLang = 'fr';
+  let isTransitioning = false;
+  
+  // ========================================
+  // INITIALIZATION
+  // ========================================
+  
+  function init() {
+    console.log('[Language] 🌍 Initializing advanced language system...');
+    
+    loadSavedLanguage();
+    applyLanguage(currentLang, false);
+    wireLanguageButtons();
+    detectBrowserLanguage();
+    
+    console.log('[Language] ✓ Language system initialized:', currentLang);
+  }
+  
+  // ========================================
+  // LOAD/SAVE
+  // ========================================
+  
+  function loadSavedLanguage() {
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved && LANGUAGES.includes(saved)) {
+        currentLang = saved;
+        console.log('[Language] ✓ Loaded saved language:', currentLang);
+      }
+    } catch (e) {
+      console.warn('[Language] ⚠️ LocalStorage error:', e);
+    }
+  }
+  
+  function saveLanguage(lang) {
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+      console.log('[Language] ✓ Language saved:', lang);
+    } catch (e) {
+      console.warn('[Language] ⚠️ Save error:', e);
+    }
+  }
+  
+  // ========================================
+  // APPLY LANGUAGE
+  // ========================================
+  
+  function applyLanguage(lang, animate = true) {
+    if (isTransitioning) {
+      console.log('[Language] ⏭️ Transition in progress, skipping...');
+      return;
+    }
+    
+    if (!LANGUAGES.includes(lang)) {
+      console.warn('[Language] ⚠️ Invalid language:', lang);
+      lang = 'fr';
+    }
+    
+    currentLang = lang;
+    
+    console.log('[Language] 🌍 Applying language:', lang, 'animate:', animate);
+    
+    if (animate) {
+      isTransitioning = true;
+      document.body.classList.add('lang-switching');
+      
+      setTimeout(() => {
+        translatePage(lang);
+        
+        setTimeout(() => {
+          document.body.classList.remove('lang-switching');
+          isTransitioning = false;
+        }, 300);
+      }, 50);
+    } else {
+      translatePage(lang);
+    }
+    
+    saveLanguage(lang);
+    updateLanguageButtons(lang);
+    
+    if (animate) {
+      showLanguageToast(lang);
+    }
+  }
+  
+  // ========================================
+  // TRANSLATE PAGE
+  // ========================================
+  
+  function translatePage(lang) {
+    const dict = TRANSLATIONS[lang] || TRANSLATIONS['fr'];
+    
+    // Update document language
+    document.documentElement.lang = lang;
+    
+    // Translate all [data-i18n] elements
+    const elements = document.querySelectorAll('[data-i18n]');
+    
+    elements.forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (!key) return;
+      
+      const translation = dict[key];
+      if (!translation) {
+        console.warn('[Language] ⚠️ Missing translation:', key, 'for', lang);
+        return;
+      }
+      
+      // Handle different element types
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        if (el.hasAttribute('data-i18n-placeholder')) {
+          el.placeholder = translation;
+        } else {
+          el.value = translation;
+        }
+      } else {
+        el.textContent = translation;
+      }
+      
+      // Update aria-label if exists
+      if (el.hasAttribute('aria-label')) {
+        el.setAttribute('aria-label', translation);
+      }
+    });
+    
+    console.log('[Language] ✓ Page translated:', elements.length, 'elements');
+  }
+  
+  // ========================================
+  // UI UPDATES
+  // ========================================
+  
+  function updateLanguageButtons(lang) {
+    const buttons = document.querySelectorAll('.option-card[data-lang]');
+    
+    buttons.forEach(btn => {
+      const btnLang = btn.getAttribute('data-lang');
+      const isActive = btnLang === lang;
+      
+      if (isActive) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-checked', 'true');
+        btn.setAttribute('tabindex', '0');
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-checked', 'false');
+        btn.setAttribute('tabindex', '-1');
+      }
+    });
+    
+    console.log('[Language] ✓ Buttons updated');
+  }
+  
+  function showLanguageToast(lang) {
+    document.querySelectorAll('.lang-toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'lang-toast';
+    
+    const flags = {
+      'mg': '🇲🇬',
+      'fr': '🇫🇷',
+      'en': '🇬🇧'
+    };
+    
+    const names = {
+      'mg': 'Malagasy',
+      'fr': 'Français',
+      'en': 'English'
+    };
+    
+    toast.innerHTML = flags[lang] + ' ' + names[lang];
+    
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      animation: langToastIn 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'langToastOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
+  }
+  
+  // ========================================
+  // WIRE BUTTONS
+  // ========================================
+  
+  function wireLanguageButtons() {
+    const buttons = document.querySelectorAll('.option-card[data-lang]');
+    
+    buttons.forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      
+      newBtn.addEventListener('click', function() {
+        const lang = this.getAttribute('data-lang');
+        if (lang && lang !== currentLang) {
+          applyLanguage(lang, true);
+        }
+      });
+    });
+    
+    console.log('[Language] ✓ Buttons wired:', buttons.length);
+  }
+  
+  // ========================================
+  // BROWSER DETECTION
+  // ========================================
+  
+  function detectBrowserLanguage() {
+    const browserLang = navigator.language || navigator.userLanguage;
+    console.log('[Language] 📱 Browser language detected:', browserLang);
+    
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (!saved) {
+        let detectedLang = 'fr';
+        
+        if (browserLang.startsWith('en')) detectedLang = 'en';
+        else if (browserLang.startsWith('mg')) detectedLang = 'mg';
+        else if (browserLang.startsWith('fr')) detectedLang = 'fr';
+        
+        console.log('[Language] 🔄 Applying browser language:', detectedLang);
+        applyLanguage(detectedLang, false);
+      }
+    } catch (e) {}
+  }
+  
+  // ========================================
+  // PUBLIC API
+  // ========================================
+  
+  window.LanguageSystem = {
+    getCurrentLanguage: () => currentLang,
+    setLanguage: (lang) => applyLanguage(lang, true),
+    translate: (key) => {
+      const dict = TRANSLATIONS[currentLang] || TRANSLATIONS['fr'];
+      return dict[key] || key;
+    }
+  };
+  
+  // ========================================
+  // AUTO-INIT
+  // ========================================
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+})();
+
+/* ==========================================
+   TOAST ANIMATIONS
+   ========================================== */
+
+if (!document.getElementById('lang-toast-styles')) {
+  const styles = document.createElement('style');
+  styles.id = 'lang-toast-styles';
+  styles.textContent = `
+    @keyframes langToastIn {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    
+    @keyframes langToastOut {
+      from { transform: translateX(-50%) translateY(0); opacity: 1; }
+      to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    }
+    
+    body.lang-switching * {
+      transition-duration: 0.3s !important;
+    }
+  `;
+  document.head.appendChild(styles);
+}
 function localizePage(lang) {
   try {
     var dict = TRANSLATIONS[lang] || TRANSLATIONS['fr'];
@@ -772,85 +1488,6 @@ function renderProducts(filter, search) {
     /* ================================
    RENDER: makeLike ULTRA PRO ✅
    ================================ */
-
-
-
-   
-
-    function makeCard(p, compact) {
-  // ✅ FIX: Meilleure gestion des images avec validation
-  let imgUrl = FALLBACK_IMG;
-  
-  if (p.image && p.image.url && p.image.url.startsWith('http')) {
-    imgUrl = p.image.url;
-  } else if (p._db && p._db.thumbnail_url && p._db.thumbnail_url.startsWith('http')) {
-    imgUrl = p._db.thumbnail_url;
-  } else if (p.thumbnail_url && p.thumbnail_url.startsWith('http')) {
-    imgUrl = p.thumbnail_url;
-  }
-  
-  const imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
-  const priceStr = fmtPrice(p.price);
-  const badgeHTML = makeBadge(p);
-  const actions = makeActions(p);
-  const likeBtn = makeLike(p);
-  const titleSafe = escapeHtml(p.title || 'Produit');
-  const descShort = escapeHtml(p.description_short || '');
-  
-  // ✅ AJOUT: Gestion d'erreur de chargement d'image
-  const imgErrorHandler = `onerror="this.onerror=null;this.src='${FALLBACK_IMG}';this.style.opacity='0.6'"`;
-  
-  if (compact) {
-    return badgeHTML +
-      `<img src="${imgUrl}" alt="${imgAlt}" loading="lazy" decoding="async" ${imgErrorHandler}>` +
-      '<h3>' + titleSafe + '</h3>' +
-      '<p class="desc">' + descShort + '</p>' +
-      '<div class="meta" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">' +
-      '<div class="price">' + priceStr + '</div>' +
-      actions +
-      '</div>' +
-      '<div style="margin-top:8px; display:flex; justify-content:flex-end;">' +
-      likeBtn + '</div>';
-  }
-  
-  return badgeHTML +
-    `<img src="${imgUrl}" alt="${imgAlt}" loading="lazy" decoding="async" ${imgErrorHandler}>` +
-    '<div style="padding:8px 4px; flex:1; display:flex; flex-direction:column; justify-content:space-between">' +
-    '<div>' +
-    '<h3 style="font-size:15px; margin:0">' + titleSafe + '</h3>' +
-    '<p class="desc" style="margin-top:6px; font-size:13px; color:#e9e9e9">' + descShort + '</p>' +
-    '</div>' +
-    '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px">' +
-    '<div><div class="product-price">' + priceStr + '</div></div>' +
-    actions +
-    '</div>' +
-    '<div style="margin-top:8px; display:flex; justify-content:flex-end;">' + likeBtn + '</div>' +
-    '</div>';
-}
-    if (row) {
-      row.innerHTML = '';
-      if (filtered.length === 0) {
-  row.innerHTML = '<div style="color:#ddd;padding:40px;text-align:center">' +
-    '<i class="fa-solid fa-box-open" style="font-size:48px;margin-bottom:16px;opacity:0.5;display:block"></i>' +
-    '<p style="margin:0" data-i18n="shop_no_products">Aucun produit trouvé.</p>' +
-    '<small style="opacity:0.7;margin-top:8px;display:block">Les produits seront chargés depuis Supabase</small>' +
-    '</div>';
-}
-      else {
-        var frag = document.createDocumentFragment();
-        filtered.forEach(function(p){
-          var card = document.createElement('article');
-          card.className = 'product-card';
-          card.setAttribute('data-id', p.id);
-          card.setAttribute('data-category', normalizeCategory(p.category || ''));
-          card.setAttribute('role', 'listitem');
-          card.innerHTML = makeCard(p, false);
-          frag.appendChild(card);
-        });
-        row.appendChild(frag);
-      }
-    }
-
     if (box) {
       box.innerHTML = '';
       if (filtered.length === 0) box.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
@@ -1336,21 +1973,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 try {
-  /* Search input */
-  const search = document.getElementById('search');
-  if (search) {
-    let t = null;
-    search.addEventListener('input', function () {
-      if (t) clearTimeout(t);
-      t = setTimeout(() => {
-        const activeBtn = document.querySelector('#filters .filter-btn.active');
-        // If your environment doesn’t support optional chaining, see the note below.
-        renderProducts(
-          activeBtn?.getAttribute('data-category') || 'all',
-          search.value || ''
-        );
-      }, 200);
-    });
+const search = document.getElementById('search');
+if (search) {
+  // ✅ Helper debounce
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
+  
+  // ✅ Debounced search
+  const debouncedSearch = debounce(function() {
+    const activeBtn = document.querySelector('#filters .filter-btn.active');
+    renderProducts(
+      activeBtn?.getAttribute('data-category') || 'all',
+      search.value || ''
+    );
+  }, 300);
+  
+  search.addEventListener('input', debouncedSearch);
+
+    
   }
 } catch (err) {
   console.error('[Optimized Actions error]', err);
@@ -1698,6 +2343,10 @@ try {
   console.log('[Cart Drawer] ✓ Initialized');
 })();
 /* =============== /CART DRAWER JS =============== */
+/* ==========================================
+   CART FAB - DRAG LOGIC ✅ FIXED VERSION
+   ========================================== */
+
 
 /* ================================
    PART 3/4 — CART, SLIDESHOW, NAV, MODALS
@@ -1809,13 +2458,71 @@ function cartTotals() {
     console.error('[initCartDrawer error]', err);
   }
 })();
-document.addEventListener('DOMContentLoaded', function () {
+// ✅ NOUVEAU CODE (compatible Cart Drawer)
+document.addEventListener('DOMContentLoaded', function() {
   try {
-    var initial = loadCartFromStorage();
-    cartArrayToMap(initial);
-    updateCartUI();
+    console.log('[Cart] Initializing with Cart Drawer API...');
+    
+    // Vérifier si Cart Drawer est chargé
+    if (typeof window.CartAPI === 'undefined') {
+      console.warn('[Cart] Cart Drawer not loaded yet, waiting...');
+      
+      // Attendre le Cart Drawer
+      var checkInterval = setInterval(function() {
+        if (typeof window.CartAPI !== 'undefined') {
+          clearInterval(checkInterval);
+          initializeCart();
+        }
+      }, 100);
+      
+      // Timeout après 5 secondes
+      setTimeout(function() {
+        clearInterval(checkInterval);
+        if (typeof window.CartAPI === 'undefined') {
+          console.error('[Cart] Cart Drawer failed to load');
+        }
+      }, 5000);
+      
+    } else {
+      initializeCart();
+    }
+    
+    function initializeCart() {
+      console.log('[Cart] ✓ Cart Drawer ready');
+      
+      // Migrer ancien panier si existe
+      try {
+        var CART_KEY = 'cart:v1';
+        var raw = localStorage.getItem(CART_KEY);
+        
+        if (raw) {
+          var oldCart = JSON.parse(raw);
+          console.log('[Cart] Found old cart:', oldCart.length, 'items');
+          
+          if (Array.isArray(oldCart) && oldCart.length > 0) {
+            oldCart.forEach(function(item) {
+              window.CartAPI.add({
+                id: item.id,
+                title: item.title || 'Produit',
+                price: Number(item.price) || 0,
+                qty: Number(item.qty) || 1,
+                image: item.image || ''
+              });
+            });
+            
+            console.log('[Cart] ✓ Migrated', oldCart.length, 'items to Cart Drawer');
+            
+            // Supprimer ancien cart
+            localStorage.removeItem(CART_KEY);
+          }
+        }
+      } catch (migrationErr) {
+        console.warn('[Cart] Migration error:', migrationErr);
+      }
+    }
+    
   } catch (err) {
-    console.error('[Cart init error]', err);
+    console.error('[Cart] Init error:', err);
   }
 });
 function checkoutWhatsApp() {
@@ -2250,7 +2957,7 @@ function openPreview(p) {
   // CONFIG: soloina raha ilaina
   const SUPABASE_URL = "https://zogohkfzplcuonkkfoov.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw";
-  const OWNER_EMAIL = "joroandriamanirisoa13@gmail.com";
+  const OWNER_EMAIL = "";
 
 // ✅ AJOUTEZ CETTE LIGNE: Rendre SUPABASE_ANON_KEY accessible globalement
   window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
@@ -3231,7 +3938,7 @@ function openInfo(type) {
       title.textContent = 'À propos';
       content.innerHTML = `
         <div style="line-height:1.6">
-          <p><strong>Mijoro Boutique</strong> – Plateforme de vente de produits numériques malagasy.</p>
+          <p><strong>Mijoro Boutique</strong> – Plateforme de vente de produits numériques/physiques malagasy.</p>
           <p>Version: 1.0 Pro</p>
           <p>© 2025 Mijoro. Tous droits réservés.</p>
         </div>
@@ -4493,42 +5200,77 @@ function renderProducts(filter, search) {
          icon +
          '</div>';
 }
+/* ==========================================
+   IMAGE LAZY LOADING - Progressive blur-up
+   ========================================== */
 
+function createProgressiveImage(src, alt, className = '') {
+  const placeholder = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"%3E%3Cfilter id="b"%3E%3CfeGaussianBlur stdDeviation="1"/%3E%3C/filter%3E%3Crect width="10" height="10" fill="%23334155" filter="url(%23b)"/%3E%3C/svg%3E';
+  
+  return `
+    <img 
+      src="${placeholder}" 
+      data-src="${escapeAttr(src)}" 
+      alt="${escapeAttr(alt)}" 
+      class="${className} lazy-img blur"
+      loading="lazy"
+      decoding="async"
+      onerror="this.src='https://via.placeholder.com/600x400/1e293b/4ade80?text=Image'"
+    >
+  `;
+}
+
+window.imageObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      const realSrc = img.getAttribute('data-src');
+      
+      if (realSrc) {
+        img.src = realSrc;
+        img.onload = () => {
+          img.classList.remove('blur');
+          img.classList.add('loaded');
+        };
+        img.removeAttribute('data-src');
+      }
+      
+      imageObserver.unobserve(img);
+    }
+  });
+}, {
+  rootMargin: '50px'
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const lazyImages = document.querySelectorAll('.lazy-img');
+    lazyImages.forEach(img => imageObserver.observe(img));
+  }, 500);
+});
     function makeCard(p, compact) {
+  // ✅ Données de base
   var imgUrl = escapeAttr((p.image && p.image.url) ? p.image.url : FALLBACK_IMG);
   var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
   var priceStr = fmtPrice(p.price);
-  var badgeHTML = makeBadge(p); // ✅ Badge absolute top-left
+  var badgeHTML = makeBadge(p);
   var actions = makeActions(p);
   var likeBtn = makeLike(p);
   var titleSafe = escapeHtml(p.title || 'Produit');
   var descShort = escapeHtml(p.description_short || '');
   
-  if (compact) {
-    return badgeHTML + // ✅ Badge FIRST (absolute positioned)
-      '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
-      '<h3>' + titleSafe + '</h3>' +
-      '<p class="desc">' + descShort + '</p>' +
-      '<div class="meta" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">' +
-      '<div class="price">' + priceStr + '</div>' +
-      actions +
-      '</div>' +
-      '<div style="margin-top:8px; display:flex; justify-content:flex-end;">' +
-      likeBtn + '</div>';
-  }
-  
-  return badgeHTML + // ✅ Badge FIRST (absolute positioned)
-    '<img src="' + imgUrl + '" alt="' + imgAlt + '" loading="lazy" decoding="async">' +
-    '<div style="padding:8px 4px; flex:1; display:flex; flex-direction:column; justify-content:space-between">' +
+  // ✅ CORRECTION: Suppression de la ligne en double
+  return badgeHTML +
+    likeBtn +
+    createProgressiveImage(imgUrl, imgAlt, 'product-image') +
+    // ⚠️ LIGNE SUPPRIMÉE: 'onerror="...">' était en trop
     '<div>' +
-    '<h3 style="font-size:15px; margin:0">' + titleSafe + '</h3>' +
-    '<p class="desc" style="margin-top:6px; font-size:13px; color:#e9e9e9">' + descShort + '</p>' +
+    '<h3>' + titleSafe + '</h3>' +
+    '<p class="desc">' + descShort + '</p>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:6px">' +
+    '<div>' + priceStr + '</div>' +
     '</div>' +
-    '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:8px">' +
-    '<div><div class="product-price">' + priceStr + '</div></div>' +
     actions +
-    '</div>' +
-    '<div style="margin-top:8px; display:flex; justify-content:flex-end;">' + likeBtn + '</div>' +
     '</div>';
 }
 
@@ -5244,6 +5986,10 @@ function applyAuthUI() {
   }
 }
 
+// ✅ AJOUTEZ CES LIGNES (exposer globalement)
+window.openOwnerLoginModal = openOwnerLoginModal;
+window.signOutOwner = signOutOwner;
+window.initAuth = initAuth;
 
   async function signOutOwner() {
     try {
@@ -5787,6 +6533,36 @@ alert(`${typeLabel} ajouté avec succès! 🎉\nNotifications envoyées aux abon
     initAuth();
     fetchSupabaseProducts();
   });
+  /* ========================================
+     EXPOSE GLOBAL FUNCTIONS
+     ======================================== */
+  
+  // Auth functions
+  window.openOwnerLoginModal = openOwnerLoginModal;
+  window.signOutOwner = signOutOwner;
+  window.initAuth = initAuth;
+  
+  // Supabase functions
+  window.ensureSupabase = ensureSupabase;
+  window.fetchSupabaseProducts = fetchSupabaseProducts;
+  
+  // Product CRUD
+  window.addProductPrompt = addProductPrompt;
+  window.addPhysicalProductPrompt = addPhysicalProductPrompt;
+  window.editProductPrompt = editProductPrompt;
+  window.deleteProductConfirm = deleteProductConfirm;
+  
+  // Modal functions
+  window.peOpen = peOpen;
+  window.peClose = peClose;
+  window.peSubmitForm = peSubmitForm;
+  
+  // Auth state
+  window.isOwner = isOwner;
+  window.applyAuthUI = applyAuthUI;
+  
+  console.log('[Supabase] ✓ Global functions exposed');
+  
 })();
 
 /* ================================
@@ -5851,7 +6627,7 @@ function openInfo(type) {
       title.textContent = 'À propos';
       content.innerHTML = `
         <div style="line-height:1.6">
-          <p><strong>Mijoro Boutique</strong> – Plateforme de vente de produits numériques malagasy.</p>
+          <p><strong>Mijoro Boutique</strong> – Plateforme de vente de produits numériques/physiques malagasy.</p>
           <p>Version: 1.0 Pro</p>
           <p>© 2025 Mijoro. Tous droits réservés.</p>
         </div>
@@ -7837,3 +8613,652 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial sync
     syncDesktopBadge();
   }});
+/* ==========================================
+   MODE SWITCHER (Desktop/Mobile) ✅
+   ========================================== */
+
+(function initModeSwitcher() {
+  'use strict';
+  
+  const MODE_KEY = 'display-mode';
+  const DESKTOP_BREAKPOINT = 1024;
+  
+  // State
+  let currentMode = 'mobile'; // Par défaut: mobile
+  
+  // Load saved mode
+  function loadSavedMode() {
+    try {
+      const saved = localStorage.getItem(MODE_KEY);
+      if (saved && (saved === 'mobile' || saved === 'desktop')) {
+        currentMode = saved;
+      }
+    } catch (e) {
+      console.warn('[Mode Switcher] LocalStorage error:', e);
+    }
+  }
+  
+  // Save mode
+  function saveMode(mode) {
+    try {
+      localStorage.setItem(MODE_KEY, mode);
+    } catch (e) {
+      console.warn('[Mode Switcher] Save error:', e);
+    }
+  }
+  
+  // Apply mode
+  function applyMode(mode, animate = true) {
+    currentMode = mode;
+    
+    console.log('[Mode Switcher] Applying mode:', mode);
+    
+    // Update body class
+    document.body.classList.remove('force-mobile', 'force-desktop');
+    document.body.classList.add('force-' + mode);
+    
+    // Update viewport meta (important pour mobile/desktop)
+    updateViewport(mode);
+    
+    // Update UI buttons
+    updateButtonsUI(mode);
+    
+    // Update info label
+    updateInfoLabel(mode);
+    
+    // Save
+    saveMode(mode);
+    
+    // Show feedback
+    if (animate) {
+      showModeToast(mode);
+    }
+    
+    console.log('[Mode Switcher] ✓ Mode applied:', mode);
+  }
+  
+  // Update viewport meta
+  function updateViewport(mode) {
+    let viewport = document.querySelector('meta[name="viewport"]');
+    
+    if (!viewport) {
+      viewport = document.createElement('meta');
+      viewport.name = 'viewport';
+      document.head.appendChild(viewport);
+    }
+    
+    if (mode === 'desktop') {
+      // Desktop: width fixe 1024px minimum
+      viewport.content = 'width=1024, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    } else {
+      // Mobile: responsive normal
+      viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    }
+  }
+  
+  // Update buttons UI
+  function updateButtonsUI(mode) {
+    const buttons = document.querySelectorAll('.mode-switch-btn');
+    
+    buttons.forEach(btn => {
+      const btnMode = btn.getAttribute('data-mode');
+      const isActive = btnMode === mode;
+      
+      if (isActive) {
+        btn.classList.add('active');
+        btn.style.border = '2px solid rgba(59,130,246,.3)';
+        btn.style.background = 'linear-gradient(135deg,rgba(59,130,246,.15),rgba(37,99,235,.1))';
+        
+        const icon = btn.querySelector('i');
+        const text = btn.querySelector('span:not(small)');
+        if (icon) icon.style.color = '#3b82f6';
+        if (text) text.style.color = '#3b82f6';
+      } else {
+        btn.classList.remove('active');
+        btn.style.border = '2px solid rgba(255,255,255,.1)';
+        btn.style.background = 'rgba(255,255,255,.03)';
+        
+        const icon = btn.querySelector('i');
+        const text = btn.querySelector('span:not(small)');
+        if (icon) icon.style.color = '#94a3b8';
+        if (text) text.style.color = '#94a3b8';
+      }
+    });
+  }
+  
+  // Update info label
+  function updateInfoLabel(mode) {
+    const label = document.getElementById('mode-label');
+    if (!label) return;
+    
+    label.textContent = mode === 'mobile' ? 'Mobile' : 'Desktop';
+  }
+  
+  // Show toast notification
+  function showModeToast(mode) {
+    // Remove existing toasts
+    document.querySelectorAll('.mode-toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'mode-toast';
+    
+    const icon = mode === 'mobile' ? 
+      '<i class="fa-solid fa-mobile-screen-button"></i>' : 
+      '<i class="fa-solid fa-desktop"></i>';
+    
+    const text = mode === 'mobile' ? 
+      'Mode Mobile activé' : 
+      'Mode Desktop activé';
+    
+    toast.innerHTML = icon + ' ' + text;
+    
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      animation: modeToastIn 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'modeToastOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
+  }
+  
+  // Wire button clicks
+  function wireButtons() {
+    const buttons = document.querySelectorAll('.mode-switch-btn');
+    
+    buttons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const mode = this.getAttribute('data-mode');
+        if (mode && mode !== currentMode) {
+          applyMode(mode, true);
+        }
+      });
+    });
+  }
+  
+  // Initialize
+  function init() {
+    console.log('[Mode Switcher] Initializing...');
+    
+    // Load saved mode
+    loadSavedMode();
+    
+    // Apply mode (no animation on load)
+    applyMode(currentMode, false);
+    
+    // Wire buttons
+    wireButtons();
+    
+    console.log('[Mode Switcher] ✓ Initialized, mode:', currentMode);
+  }
+  
+  // Auto-init
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  // Expose globally
+  window.ModeSwitcher = {
+    getCurrentMode: () => currentMode,
+    setMode: (mode) => applyMode(mode, true),
+    toggleMode: () => applyMode(currentMode === 'mobile' ? 'desktop' : 'mobile', true)
+  };
+  
+})();
+/* ========================================
+   FIX: Card Actions Click Handler
+   ======================================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+  // ✅ Event delegation with proper stopPropagation
+  function delegateCardActions(e) {
+    // Ignore clicks on image
+    if (e.target.tagName === 'IMG') {
+      e.stopPropagation();
+      return;
+    }
+    
+    var card = e.target.closest('.product-card');
+    if (!card) return;
+    
+    var id = card.getAttribute('data-id');
+    var p = (window.products || []).find(x => x.id === id);
+    if (!p) return;
+    
+    // ✅ Like button (highest priority)
+    var likeBtn = e.target.closest('.icon-like');
+    if (likeBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var productId = likeBtn.getAttribute('data-product-id') || 
+                      likeBtn.closest('.like-wrapper').querySelector('.icon-like').getAttribute('data-product-id');
+      if (productId && typeof toggleLike === 'function') {
+        toggleLike(productId);
+      }
+      return;
+    }
+    
+    // ✅ Info button
+    var infoBtn = e.target.closest('.icon-info');
+    if (infoBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof showProduct === 'function') {
+        showProduct(id);
+      }
+      return;
+    }
+    
+    // ✅ Buy button
+    var buyBtn = e.target.closest('.icon-buy');
+    if (buyBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof buyOrRead === 'function') {
+        buyOrRead(p);
+      }
+      return;
+    }
+    
+    // ✅ Read/Preview button
+    var readBtn = e.target.closest('.icon-read');
+    if (readBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var previewUrl = p.preview_url || (p._db && p._db.preview_url);
+      if (previewUrl && typeof openPreview === 'function') {
+        openPreview(p);
+      } else if (typeof openWhatsAppMessage === 'function' && typeof buildWAProductMessage === 'function') {
+        openWhatsAppMessage(buildWAProductMessage(p, 'read'));
+      }
+      return;
+    }
+    
+    // ✅ Owner tools (edit/delete)
+    var toolBtn = e.target.closest('.owner-tool');
+    if (toolBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var tool = toolBtn.getAttribute('data-tool');
+      if (tool === 'edit' && typeof editProductPrompt === 'function') {
+        editProductPrompt(id);
+      } else if (tool === 'delete' && typeof deleteProductConfirm === 'function') {
+        deleteProductConfirm(id);
+      }
+      return;
+    }
+  }
+  
+  // Wire to products containers
+  var containers = [
+    document.getElementById('products-row'),
+    document.getElementById('products-box')
+  ];
+  
+  containers.forEach(function(container) {
+    if (container) {
+      // Remove old listeners
+      var newContainer = container.cloneNode(false);
+      while (container.firstChild) {
+        newContainer.appendChild(container.firstChild);
+      }
+      container.parentNode.replaceChild(newContainer, container);
+      
+      // Add new listener
+      newContainer.addEventListener('click', delegateCardActions, { capture: true });
+      
+      console.log('[Card Actions] ✓ Wired:', newContainer.id);
+    }
+  });
+});
+/* ==========================================
+   INTELLIGENT THEME SYSTEM - PROFESSIONAL
+   ========================================== */
+
+(function initAdvancedThemeSystem() {
+  'use strict';
+  
+  const THEME_KEY = 'settings:theme';
+  const THEMES = ['dark', 'light'];
+  
+  // State management
+  let currentTheme = 'dark';
+  let isTransitioning = false;
+  
+  // ========================================
+  // INITIALIZATION
+  // ========================================
+  
+  function init() {
+    console.log('[Theme] 🎨 Initializing advanced theme system...');
+    
+    // Load saved theme
+    loadSavedTheme();
+    
+    // Apply theme
+    applyTheme(currentTheme, false);
+    
+    // Wire buttons
+    wireThemeButtons();
+    
+    // Auto-detect system preference
+    detectSystemPreference();
+    
+    // Listen to system changes
+    watchSystemPreference();
+    
+    console.log('[Theme] ✓ Theme system initialized:', currentTheme);
+  }
+  
+  // ========================================
+  // LOAD/SAVE
+  // ========================================
+  
+  function loadSavedTheme() {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved && THEMES.includes(saved)) {
+        currentTheme = saved;
+        console.log('[Theme] ✓ Loaded saved theme:', currentTheme);
+      }
+    } catch (e) {
+      console.warn('[Theme] ⚠️ LocalStorage error:', e);
+    }
+  }
+  
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+      console.log('[Theme] ✓ Theme saved:', theme);
+    } catch (e) {
+      console.warn('[Theme] ⚠️ Save error:', e);
+    }
+  }
+  
+  // ========================================
+  // APPLY THEME (avec animation)
+  // ========================================
+  
+  function applyTheme(theme, animate = true) {
+    if (isTransitioning) {
+      console.log('[Theme] ⏭️ Transition in progress, skipping...');
+      return;
+    }
+    
+    if (!THEMES.includes(theme)) {
+      console.warn('[Theme] ⚠️ Invalid theme:', theme);
+      theme = 'dark';
+    }
+    
+    currentTheme = theme;
+    
+    console.log('[Theme] 🎨 Applying theme:', theme, 'animate:', animate);
+    
+    if (animate) {
+      // Animation smooth
+      isTransitioning = true;
+      document.body.classList.add('theme-switching');
+      
+      // Timeout pour animation
+      setTimeout(() => {
+        setThemeAttributes(theme);
+        
+        setTimeout(() => {
+          document.body.classList.remove('theme-switching');
+          isTransitioning = false;
+        }, 400);
+      }, 50);
+    } else {
+      setThemeAttributes(theme);
+    }
+    
+    // Save
+    saveTheme(theme);
+    
+    // Update UI
+    updateThemeButtons(theme);
+    
+    // Show feedback (raha animate)
+    if (animate) {
+      showThemeToast(theme);
+    }
+  }
+  
+  function setThemeAttributes(theme) {
+    // Set data-theme attribute
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.setAttribute('data-theme', theme);
+    
+    // Update meta theme-color
+    updateMetaThemeColor(theme);
+    
+    console.log('[Theme] ✓ Theme attributes set:', theme);
+  }
+  
+  function updateMetaThemeColor(theme) {
+    let color = theme === 'light' ? '#f8fafc' : '#0a0e17';
+    
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    
+    meta.content = color;
+  }
+  
+  // ========================================
+  // UI UPDATES
+  // ========================================
+  
+  function updateThemeButtons(theme) {
+    const buttons = document.querySelectorAll('.option-card[data-theme]');
+    
+    buttons.forEach(btn => {
+      const btnTheme = btn.getAttribute('data-theme');
+      const isActive = btnTheme === theme;
+      
+      if (isActive) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-checked', 'true');
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-checked', 'false');
+      }
+    });
+    
+    console.log('[Theme] ✓ Buttons updated');
+  }
+  
+  function showThemeToast(theme) {
+    // Remove existing toasts
+    document.querySelectorAll('.theme-toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = 'theme-toast';
+    
+    const icon = theme === 'light' ? 
+      '<i class="fa-solid fa-sun"></i>' : 
+      '<i class="fa-solid fa-moon"></i>';
+    
+    const text = theme === 'light' ? 
+      'Mode Clair activé' : 
+      'Mode Sombre activé';
+    
+    toast.innerHTML = icon + ' ' + text;
+    
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      animation: themeToastIn 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'themeToastOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
+  }
+  
+  // ========================================
+  // WIRE BUTTONS
+  // ========================================
+  
+  function wireThemeButtons() {
+    const buttons = document.querySelectorAll('.option-card[data-theme]');
+    
+    buttons.forEach(btn => {
+      // Remove old listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      
+      // Add new listener
+      newBtn.addEventListener('click', function() {
+        const theme = this.getAttribute('data-theme');
+        if (theme && theme !== currentTheme) {
+          applyTheme(theme, true);
+        }
+      });
+    });
+    
+    console.log('[Theme] ✓ Buttons wired:', buttons.length);
+  }
+  
+  // ========================================
+  // SYSTEM PREFERENCE DETECTION
+  // ========================================
+  
+  function detectSystemPreference() {
+    if (!window.matchMedia) return;
+    
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    
+    console.log('[Theme] 📱 System preference detected:', 
+      prefersDark ? 'dark' : prefersLight ? 'light' : 'none');
+    
+    // Ne change que si aucun thème sauvegardé
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (!saved) {
+        const systemTheme = prefersDark ? 'dark' : 'light';
+        console.log('[Theme] 🔄 Applying system theme:', systemTheme);
+        applyTheme(systemTheme, false);
+      }
+    } catch (e) {}
+  }
+  
+  function watchSystemPreference() {
+    if (!window.matchMedia) return;
+    
+    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    darkModeQuery.addEventListener('change', (e) => {
+      console.log('[Theme] 🔄 System preference changed:', e.matches ? 'dark' : 'light');
+      
+      // Option: Proposer à l'user de changer
+      // Pour l'instant: log seulement
+    });
+  }
+  
+  // ========================================
+  // PUBLIC API
+  // ========================================
+  
+  window.ThemeSystem = {
+    getCurrentTheme: () => currentTheme,
+    setTheme: (theme) => applyTheme(theme, true),
+    toggleTheme: () => {
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(newTheme, true);
+    }
+  };
+  
+  // ========================================
+  // AUTO-INIT
+  // ========================================
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+})();
+
+/* ==========================================
+   TOAST ANIMATIONS
+   ========================================== */
+
+if (!document.getElementById('theme-toast-styles')) {
+  const styles = document.createElement('style');
+  styles.id = 'theme-toast-styles';
+  styles.textContent = `
+    @keyframes themeToastIn {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    
+    @keyframes themeToastOut {
+      from { transform: translateX(-50%) translateY(0); opacity: 1; }
+      to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(styles);
+}/* ==========================================
+   RE-OBSERVE IMAGES AFTER RENDER
+   ========================================== */
+
+(function patchRenderForImages() {
+  const originalRender = window.renderProducts;
+  if (typeof originalRender !== 'function') return;
+  
+  window.renderProducts = function(filter, search) {
+    originalRender.call(this, filter, search);
+    
+    // Re-observe new images
+    setTimeout(() => {
+      const newImages = document.querySelectorAll('.lazy-img:not(.observed)');
+      newImages.forEach(img => {
+        img.classList.add('observed');
+        if (window.imageObserver) {
+          window.imageObserver.observe(img);
+        }
+      });
+    }, 100);
+  };
+})();
