@@ -4,12 +4,14 @@
   "description": "Boutique de produits numériques malagasy",
   "lang": "fr",
   "dir": "ltr",
-  "start_url": "/?source=pwa",
-  "scope": "./",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f1216",
   "theme_color": "#1e88e5",
   "orientation": "portrait-primary",
+  "categories": ["shopping", "business"],
   "icons": [
     {
       "src": "icons/icon-72.png",
@@ -59,36 +61,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshots/home.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "screenshots/shop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
-  "categories": ["shopping", "business"],
-  "shortcuts": [
-    {
-      "name": "Shop",
-      "short_name": "Shop",
-      "description": "Voir nos produits",
-      "url": "/?page=shop",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
-  "prefer_related_applications": false
+  ]
 }
