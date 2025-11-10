@@ -1,7 +1,7 @@
 {
   "name": "Mijoro Boutique",
   "short_name": "Mijoro",
-  "description": "Boutique de produits numériques malagasy",
+  "description": "Boutique de produits numériques malagasy - eBooks, vidéos et applications",
   "lang": "fr",
   "dir": "ltr",
   "start_url": "/?source=pwa",
@@ -11,6 +11,12 @@
   "theme_color": "#1e88e5",
   "orientation": "portrait-primary",
   "icons": [
+    {
+      "src": "icons/icon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "icons/icon-72.png",
       "sizes": "72x72",
@@ -65,22 +71,37 @@
       "src": "screenshots/home.png",
       "sizes": "540x720",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Accueil Mijoro Boutique"
     },
     {
       "src": "screenshots/shop.png",
       "sizes": "1280x720",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "Boutique de produits"
     }
   ],
   "categories": ["shopping", "business"],
   "shortcuts": [
     {
-      "name": "Shop",
+      "name": "Boutique",
       "short_name": "Shop",
-      "description": "Voir nos produits",
-      "url": "/?page=shop",
+      "description": "Voir nos produits numériques",
+      "url": "/?page=shop&source=shortcut",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Accueil",
+      "short_name": "Home",
+      "description": "Retour à l'accueil",
+      "url": "/?source=shortcut",
       "icons": [
         {
           "src": "icons/icon-192.png",
@@ -90,5 +111,6 @@
       ]
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "related_applications": []
 }
