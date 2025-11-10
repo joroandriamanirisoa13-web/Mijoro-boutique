@@ -4,7 +4,32 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
   <title>Mijoro Boutique — Version Pro</title>
-
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#1e88e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mijoro">
+  
+  <!-- Description -->
+  <meta name="description" content="Boutique de produits numériques malagasy - eBooks, vidéos et applications pour réussir en ligne">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-128.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="/icons/icon-128.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/icons/icon-96.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,17 +39,15 @@
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
   
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e88e5">
-  
-  <!-- Apple Touch Icon (iOS) -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png">
-  
-  <!-- Preconnect pour performances -->
+  <!-- Preconnect for performance -->
   <link rel="preconnect" href="https://i.ibb.co">
   <link rel="preconnect" href="https://zogohkfzplcuonkkfoov.supabase.co">
   <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+  
+  <!-- Microsoft Tiles -->
+  <meta name="msapplication-TileColor" content="#1e88e5">
+  <meta name="msapplication-TileImage" content="/icons/icon-144.png">
+  <meta name="msapplication-config" content="browserconfig.xml">
  
   <noscript>
     <style>
@@ -223,29 +246,28 @@
         </div>
       </header>
 
-     <!-- Toolbar: Search + Filters -->
-<div class="shop-toolbar" role="region" aria-label="Recherche et filtres" style="display:grid;gap:10px;margin:6px 0 10px;">
-  
-  <!-- ✅ SEARCH (FIXED VERSION) -->
-  <div class="search" style="position:relative">
-    <label for="search" class="sr-only" data-i18n="search_placeholder">Recherche produits</label>
-    
-    <!-- Search Icon -->
-    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#909aa3;font-size:16px;pointer-events:none;z-index:1"></i>
-    
-    <!-- Input -->
-    <input
-      id="search"
-      type="search"
-      placeholder="Rechercher..."
-      aria-label="Recherche produits"
-      data-i18n="search_placeholder"
-      data-i18n-placeholder
-      autocomplete="off"
-      inputmode="search"
-      style="width:100%;height:40px;padding:8px 12px 8px 38px;border:1px solid #cfd6df;background-color:#ffffff;color:#111111;border-radius:999px;outline:none;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)">
-  </div>
-
+      <!-- Toolbar: Search + Filters -->
+      <div class="shop-toolbar" role="region" aria-label="Recherche et filtres" style="display:grid;gap:10px;margin:6px 0 10px;">
+        
+        <!-- Search -->
+        <div class="search" style="position:relative">
+          <label for="search" class="sr-only" data-i18n="search_placeholder">Recherche produits</label>
+          
+          <!-- Search Icon -->
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#909aa3;font-size:16px;pointer-events:none;z-index:1"></i>
+          
+          <!-- Input -->
+          <input
+            id="search"
+            type="search"
+            placeholder="Rechercher..."
+            aria-label="Recherche produits"
+            data-i18n="search_placeholder"
+            data-i18n-placeholder
+            autocomplete="off"
+            inputmode="search"
+            style="width:100%;height:40px;padding:8px 12px 8px 38px;border:1px solid #cfd6df;background-color:#ffffff;color:#111111;border-radius:999px;outline:none;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+        </div>
 
         <!-- Filters -->
         <div class="filters" id="filters" role="toolbar" aria-label="Filtrer les produits" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;">
@@ -275,370 +297,89 @@
             Promo
           </button>
           
-          <button type="button" class="filter-btn" data-category="free" data-i18n="filter_free"
+          <button type="button" class="filter-btn" data-category="apps" data-i18n="filter_apps"
             style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            Gratuit
+            Apps
           </button>
         </div>
       </div>
     </div>
-    
   </div>
-  
-  <!-- ========== SCROLLABLE PRODUCTS WRAPPER ========== -->
-  <div id="products-wrapper">
-    <div id="products-row" class="products-row" role="list" aria-label="Liste des produits — défilement vertical">
-      <!-- Products cards rendered here by JS -->
-    </div>
-    <div id="products-box" style="display:none">
-      <!-- Alternative grid view -->
-    </div>
+
+  <!-- Products Grid -->
+  <div id="products-container" class="products-grid" role="region" aria-label="Liste des produits">
+    <!-- Products will be loaded here by JavaScript -->
   </div>
-  
 </section>
 
 <!-- ========================================
-     CART DRAWER - DRAGGABLE + COLLAPSIBLE
+     CART SECTION
      ======================================== -->
-
-<!-- Backdrop -->
-<div id="cdBackdrop" class="cd-backdrop" hidden></div>
-
-<!-- Drawer -->
-<aside id="cdCartDrawer" class="cd-cart-drawer" aria-hidden="true" role="dialog" aria-label="Panier">
+<section id="cart" class="section" aria-label="Panier d'achat" aria-hidden="true">
+  <div class="cart-header">
+    <h2 data-i18n="cart_title">Mon Panier</h2>
+  </div>
   
-  <!-- Header -->
-  <div class="cd-cart-header">
-    <h3 class="cd-cart-title" data-i18n="cart_title">Panier</h3>
-    <button class="cd-cart-close" aria-label="Fermer panier">&times;</button>
+  <div id="cart-items" class="cart-items">
+    <!-- Cart items will be loaded here -->
   </div>
-
-  <!-- Body (liste produits) -->
-  <div id="cdCartBody" class="cd-cart-body" tabindex="0" aria-live="polite" aria-relevant="all">
-    <!-- Rempli par JS -->
-  </div>
-
-  <!-- Footer (total + commander) -->
-  <div class="cd-cart-footer">
-    <div class="cd-total-line">
-      <span data-i18n="cart_total">Total</span>
-      <strong id="cdCartTotal">0 Ar</strong>
-    </div>
-    <div class="cd-footer-actions">
-      <button id="cdClearBtn" class="cd-btn-clear" title="Vider le panier" data-i18n-title="cart_clear">
-        <i class="fa-solid fa-trash-can"></i>
-        <span data-i18n="cart_clear">Vider</span>
-      </button>
-      <button id="cdCheckoutBtn" class="cd-btn-checkout" data-i18n="cart_checkout">
-        <i class="fa-brands fa-whatsapp"></i>
-        <span>Commander</span>
-      </button>
-    </div>
-  </div>
-</aside>
-
-<!-- Floating icon (minimized) -->
-<button id="cdCartFab" class="cd-cart-fab" aria-label="Ouvrir panier" data-i18n-aria-label="cart_title">
-  <i class="fa-solid fa-cart-shopping"></i>
-  <span id="cdCartBadge" class="cd-badge" style="display:none">0</span>
-</button>
-
-<!-- ==========================================
-     BOTTOM NAVIGATION - GLASSMORPHISM DESIGN
-     ========================================== -->
-<nav class="bottom-nav" role="navigation" aria-label="Navigation principale">
   
-  <button type="button" class="nav-btn active" data-section="home" aria-label="Home" data-i18n-aria-label="nav_home">
-    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-      <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="currentColor" />
-    </svg>
-    <span class="label" data-i18n="nav_home">Home</span>
+  <div class="cart-summary">
+    <div class="cart-total">
+      <span data-i18n="cart_total">Total:</span>
+      <span id="cart-total-amount">0 AR</span>
+    </div>
+    
+    <button 
+      id="btnCheckout" 
+      class="btn-checkout"
+      data-i18n="cart_checkout">
+      Passer la commande
+    </button>
+  </div>
+</section>
+
+<!-- ========================================
+     PROFILE SECTION
+     ======================================== -->
+<section id="profile" class="section" aria-label="Profil utilisateur" aria-hidden="true">
+  <div class="profile-header">
+    <h2 data-i18n="profile_title">Mon Profil</h2>
+  </div>
+  
+  <div class="profile-content">
+    <!-- Profile content will be loaded here -->
+  </div>
+</section>
+
+<!-- ========================================
+     BOTTOM NAVIGATION
+     ======================================== -->
+<nav class="bottom-menu" role="navigation" aria-label="Navigation principale">
+  <button type="button" class="menu-item active" data-page="home" aria-label="Accueil">
+    <i class="fa-solid fa-house"></i>
+    <span data-i18n="nav_home">Accueil</span>
   </button>
   
-  <button type="button" class="nav-btn" data-section="shop" aria-label="Shop" data-i18n-aria-label="nav_shop">
-    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-      <path d="M3 7h18l-1.5 11.5a1 1 0 0 1-1 .9H6.5a1 1 0 0 1-1-.9L4 7zM7 4h10v2H7z" fill="currentColor" />
-    </svg>
-    <span class="label" data-i18n="nav_shop">Shop</span>
+  <button type="button" class="menu-item" data-page="shop" aria-label="Boutique">
+    <i class="fa-solid fa-shop"></i>
+    <span data-i18n="nav_shop">Shop</span>
   </button>
   
-  <button type="button" class="nav-btn" data-section="params" aria-label="Paramètre" data-i18n-aria-label="nav_params">
-    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
-      <path d="M19.4 12.9a7.2 7.2 0 0 0 0-1.8l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.4a.5.5 0 0 0-.6-.2l-2.5 1a7.1 7.1 0 0 0-1.6-.9L14 2.4a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.1 7.1 0 0 0-1.6.9l-2.5-1a.5.5 0 0 0-.6.2l-2 3.4a.5.5 0 0 0 .1.6L4.6 11a7.2 7.2 0 0 0 0 1.8L2.5 14.4a.5.5 0 0 0-.1.6l2 3.4c.1.2.4.3.6.2l2.5-1c.5.4 1 0 1.6.9l.4 2.7c.05.2.2.4.4.4h4c.2 0 .4-.2.4-.4l.4-2.7c.6-.9 1.1-.5 1.6-.9l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 0 0-.1-.6l-2.1-1.6zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" fill="currentColor" />
-    </svg>
-    <span class="label" data-i18n="nav_params">Paramètre</span>
+  <button type="button" class="menu-item" data-page="cart" aria-label="Panier">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span data-i18n="nav_cart">Panier</span>
+    <span id="cart-badge" class="badge" style="display:none;">0</span>
+  </button>
+  
+  <button type="button" class="menu-item" data-page="profile" aria-label="Profil">
+    <i class="fa-solid fa-user"></i>
+    <span data-i18n="nav_profile">Profil</span>
   </button>
 </nav>
 
-<!-- ==========================================
-     PARAM FIXED PANEL
-     ========================================== -->
-<aside id="param-fixed" class="hidden" aria-hidden="true" role="region" aria-label="Paramètres" inert>
-  
-  <!-- Header -->
-  <div style="display:flex;align-items:center;gap:10px">
-    <img src="https://i.ibb.co/zTvNMMQd/743c16d58accff74c1c37793816bd25f.jpg" alt="param" style="width:46px;height:46px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,.06)">
-    <div>
-      <h4 style="margin-bottom:4px" data-i18n="param_settings">Paramètres</h4>
-      <small style="color:#ddd">Personnalisez votre expérience</small>
-    </div>
-  </div>
-
-  <!-- ========================================
-       LANGUE SECTION
-       ======================================== -->
-  <div class="settings-section">
-    <h4 style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <i class="fa-solid fa-globe"></i>
-      <span data-i18n="param_language">Langue</span>
-    </h4>
-
-    <div id="lang-options"
-         class="option-grid"
-         role="radiogroup"
-         aria-label="Sélection de la langue">
-         
-      <!-- Malagasy -->
-      <button type="button"
-              class="option-card"
-              role="radio"
-              aria-checked="false"
-              tabindex="-1"
-              data-lang="mg">
-        <div class="option-icon icon-mg">
-          <span aria-hidden="true">🇲🇬</span>
-        </div>
-        <div class="option-texts">
-          <div class="option-title" data-i18n="lang_mg">Malagasy</div>
-          <div class="option-sub" data-i18n="lang_mg_sub">Lazao amin'ny fiteny gasy</div>
-        </div>
-      </button>
-
-      <!-- Français -->
-      <button type="button"
-              class="option-card active"
-              role="radio"
-              aria-checked="true"
-              tabindex="0"
-              data-lang="fr">
-        <div class="option-icon icon-fr">
-          <span aria-hidden="true">🇫🇷</span>
-        </div>
-        <div class="option-texts">
-          <div class="option-title" data-i18n="lang_fr">Français</div>
-          <div class="option-sub" data-i18n="lang_fr_sub">Interface en français</div>
-        </div>
-      </button>
-
-      <!-- English -->
-      <button type="button"
-              class="option-card"
-              role="radio"
-              aria-checked="false"
-              tabindex="-1"
-              data-lang="en">
-        <div class="option-icon icon-en">
-          <span aria-hidden="true">🇬🇧</span>
-        </div>
-        <div class="option-texts">
-          <div class="option-title" data-i18n="lang_en">English</div>
-          <div class="option-sub" data-i18n="lang_en_sub">English interface</div>
-        </div>
-      </button>
-    </div>
-    
-    <!-- Current language info -->
-    <div style="margin-top:12px;padding:10px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;display:flex;align-items:center;gap:8px;font-size:13px">
-      <i class="fa-solid fa-circle-info" style="color:#10b981"></i>
-      <span style="color:var(--text-secondary)">
-        <span data-i18n="param_language">Langue</span>: 
-        <strong id="current-lang-label" style="color:#10b981">Français</strong>
-      </span>
-    </div>
-  </div>
-
-  <!-- ========================================
-       THÈME SECTION
-       ======================================== -->
-  <div class="settings-section">
-    <h4 style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <i class="fa-solid fa-palette"></i>
-      <span data-i18n="param_theme">Thème</span>
-    </h4>
-
-    <div id="theme-options"
-         class="option-grid"
-         role="radiogroup"
-         aria-label="Sélection du thème">
-
-      <!-- Dark Theme -->
-      <button type="button"
-              class="option-card active"
-              role="radio"
-              aria-checked="true"
-              tabindex="0"
-              data-theme="dark">
-        <div class="option-icon icon-dark">
-          <i class="fa-solid fa-moon" aria-hidden="true"></i>
-        </div>
-        <div class="option-texts">
-          <div class="option-title" data-i18n="theme_dark">Sombre</div>
-          <div class="option-sub" data-i18n="theme_dark_sub">Par défaut</div>
-        </div>
-      </button>
-
-      <!-- Light Theme -->
-      <button type="button"
-              class="option-card"
-              role="radio"
-              aria-checked="false"
-              tabindex="-1"
-              data-theme="light">
-        <div class="option-icon icon-light">
-          <i class="fa-solid fa-sun" aria-hidden="true"></i>
-        </div>
-        <div class="option-texts">
-          <div class="option-title" data-i18n="theme_light">Clair</div>
-          <div class="option-sub" data-i18n="theme_light_sub">Lumineux</div>
-        </div>
-      </button>
-    </div>
-    
-    <!-- Current theme info -->
-    <div style="margin-top:12px;padding:10px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;display:flex;align-items:center;gap:8px;font-size:13px">
-      <i class="fa-solid fa-circle-info" style="color:#3b82f6"></i>
-      <span style="color:var(--text-secondary)">
-        <span data-i18n="theme_current">Thème actuel:</span> 
-        <strong id="current-theme-label" style="color:#3b82f6">Sombre</strong>
-      </span>
-    </div>
-  </div>
-
-  <!-- ========================================
-       MODE D'AFFICHAGE SECTION
-       ======================================== -->
-  <div class="param-section">
-    <h4 style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <i class="fa-solid fa-display"></i>
-      <span data-i18n="param_mode">Mode d'affichage</span>
-    </h4>
-    
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <!-- Mode Mobile -->
-      <button type="button" 
-              class="mode-switch-btn active" 
-              data-mode="mobile"
-              style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;border:2px solid rgba(59,130,246,.3);background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(37,99,235,.1));border-radius:12px;cursor:pointer;transition:all 0.2s ease">
-        <i class="fa-solid fa-mobile-screen-button" style="font-size:32px;color:#3b82f6"></i>
-        <span style="font-weight:700;color:#3b82f6" data-i18n="param_mode_mobile">Mobile</span>
-        <small style="opacity:.7;font-size:11px;text-align:center;color:#94a3b8">Affichage mobile<br>(par défaut)</small>
-      </button>
-      
-      <!-- Mode Desktop -->
-      <button type="button" 
-              class="mode-switch-btn" 
-              data-mode="desktop"
-              style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);border-radius:12px;cursor:pointer;transition:all 0.2s ease">
-        <i class="fa-solid fa-desktop" style="font-size:32px;color:#94a3b8"></i>
-        <span style="font-weight:700;color:#94a3b8" data-i18n="param_mode_desktop">Desktop</span>
-        <small style="opacity:.7;font-size:11px;text-align:center;color:#64748b">Affichage large<br>(écran PC)</small>
-      </button>
-    </div>
-    
-    <!-- Info Badge -->
-    <div id="current-mode-info" style="margin-top:12px;padding:10px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;display:flex;align-items:center;gap:8px;font-size:13px">
-      <i class="fa-solid fa-circle-info" style="color:#3b82f6"></i>
-      <span style="color:#e5e7eb">
-        <span data-i18n="param_mode_current">Mode actuel:</span> 
-        <strong id="mode-label" style="color:#3b82f6">Mobile</strong>
-      </span>
-    </div>
-  </div>
-
-  <!-- ========================================
-       ACTION BUTTONS
-       ======================================== -->
-  <div class="row" style="justify-content:space-between; margin-top:8px;">
-    <button type="button" class="param-btn" onclick="openInfo('about')" data-i18n="about">À propos</button>
-    <button type="button" class="param-btn" onclick="openInfo('contact')" data-i18n="contact">Contact</button>
-    <button type="button" class="param-btn" onclick="openQuitModal()" data-i18n="quit">Quit</button>
-  </div>
-</aside>
-
-<!-- ========================================
-     QUIT MODAL
-     ======================================== -->
-<div id="quit-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="quit-title">
-  <div class="modal-card" role="document">
-    <h3 id="quit-title" data-i18n="quit_confirm">Voulez-vous quitter l'application ?</h3>
-    <p style="margin:8px 0 12px" data-i18n="quit_message">Tsy ho very ny angon-drakitrao.</p>
-    <div style="display:flex;justify-content:center;gap:10px;margin-top:8px">
-      <button type="button" class="param-btn" onclick="closeQuitModal()" data-i18n="btn_cancel">Annuler</button>
-      <button type="button" class="param-btn" style="background:#ef4444;border-color:#ef4444" onclick="quitApp()" data-i18n="quit">Quitter</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========================================
-     INFO MODAL
-     ======================================== -->
-<div id="info-modal" role="dialog" aria-modal="true" aria-hidden="true" tabindex="-1" aria-labelledby="info-title">
-  <div class="info-card" role="document">
-    <h3 id="info-title">Informations</h3>
-    <div id="info-content"></div>
-    <div class="info-actions">
-      <button type="button" class="param-btn" onclick="closeInfo()" data-i18n="btn_close">Fermer</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========================================
-     LOADER GUARD + iOS VH PATCH
-     ======================================== -->
-<script>
-  (function(){
-    var MAX_WAIT_MS = 8000, SOFT_WAIT_MS = 400;
-    function qs(s){ return document.querySelector(s); }
-    function hideLoader(){
-      var l = qs('#loader'); if(!l) return;
-      l.classList.add('fade-out');
-      l.setAttribute('aria-hidden','true');
-      l.style.pointerEvents = 'none';
-      setTimeout(function(){ l.style.display = 'none'; }, 500);
-    }
-    function revealBaseUI(){
-      try {
-        document.body.setAttribute('aria-busy','false');
-        var home = document.getElementById('home');
-        if (home){ home.classList.add('active'); home.setAttribute('aria-hidden','false'); }
-        var bm = qs('.bottom-menu');
-        if (bm){ bm.style.display = 'flex'; bm.style.pointerEvents = 'auto'; }
-      } catch(_) {}
-    }
-    function onReady(cb){
-      if (document.readyState === 'complete' || document.readyState === 'interactive') cb();
-      else document.addEventListener('DOMContentLoaded', cb, { once: true });
-    }
-    onReady(function(){
-      setTimeout(revealBaseUI, SOFT_WAIT_MS);
-      setTimeout(function(){ hideLoader(); revealBaseUI(); }, MAX_WAIT_MS);
-    });
-  })();
-</script>
-
-<script>
-  (function(){
-    function setVH(){ var vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', vh + 'px'); }
-    window.addEventListener('resize', setVH);
-    window.addEventListener('orientationchange', setVH);
-    setVH();
-  })();
-</script>
-
-<div class="touch-edge-bottom" aria-hidden="true"></div>
-
-<!-- App bundle -->
-<script src="app.js" defer></script>
+<!-- Scripts -->
+<script src="app.js"></script>
 
 </body>
 </html>
