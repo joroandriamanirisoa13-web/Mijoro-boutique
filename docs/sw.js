@@ -1,169 +1,184 @@
-/*==========================================
-   SERVICE WORKER - OFFLINE MODE (OPTIMIZED)
+/* ==========================================
+   SERVICE WORKER - MIJORO BOUTIQUE PWA
+   Optimized for PWABuilder compliance
    ========================================== */
 
-const CACHE_NAME = 'mijoro-v1.3';
+const CACHE_NAME = 'mijoro-v1.4';
 const OFFLINE_CACHE = 'mijoro-offline-v1';
+const RUNTIME_CACHE = 'mijoro-runtime-v1';
 
-// Assets critiques à mettre en cache (pre-cache)
+// Critical assets to pre-cache
 const STATIC_ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './manifest.json',
   'https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
 ];
 
-// Patterns d'URLs à mettre en cache dynamiquement
+// URL patterns to cache dynamically
 const CACHE_PATTERNS = [
-  /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/i, // Images
-  /\.(?:woff2?|ttf|eot|otf)$/i, // Fonts
-  /\.(?:css|js)$/i, // Styles & Scripts
-  /ibb\.co/i, // ImgBB (vos images hébergées)
-  /supabase\.co/i // Supabase assets
+  /\.(?:png|jpg|jpeg|svg|gif|webp|avif|ico)$/i,
+  /\.(?:woff2?|ttf|eot|otf)$/i,
+  /\.(?:css|js)$/i,
+  /ibb\.co/i,
+  /supabase\.co\/storage/i
 ];
 
-// URLs à ne JAMAIS mettre en cache
+// URLs to never cache
 const SKIP_CACHE = [
   /chrome-extension:/,
-  /localhost:.*hot-update/, // HMR dev
-  /\.map$/i // Source maps
+  /localhost:.*hot-update/,
+  /\.map$/i,
+  /\/auth\//i,
+  /\/realtime\//i
 ];
 
+// Cache size limits
+const MAX_CACHE_SIZE = 50;
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 /* ==========================================
-   INSTALL - Pre-cache des assets critiques
+   INSTALL - Pre-cache critical assets
    ========================================== */
-self.addEventListener('install', (e) => {
-  console.log('[SW] Installation...');
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Mise en cache des assets statiques');
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[SW] Erreur pre-cache:', err);
-        // Continue même si certains assets échouent
-      });
-    }).then(() => self.skipWaiting())
+self.addEventListener('install', (event) => {
+  console.log('[SW] Installing service worker...');
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .catch((error) => {
+        console.error('[SW] Pre-cache failed:', error);
+      })
+      .then(() => self.skipWaiting())
   );
 });
 
 /* ==========================================
-   ACTIVATE - Nettoyage des anciens caches
+   ACTIVATE - Clean old caches
    ========================================== */
-self.addEventListener('activate', (e) => {
-  console.log('[SW] Activation...');
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME && key !== OFFLINE_CACHE)
-          .map((key) => {
-            console.log('[SW] Suppression cache obsolète:', key);
-            return caches.delete(key);
-          })
-      );
-    }).then(() => self.clients.claim())
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating service worker...');
+  
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => {
+              return name !== CACHE_NAME && 
+                     name !== OFFLINE_CACHE && 
+                     name !== RUNTIME_CACHE;
+            })
+            .map((name) => {
+              console.log('[SW] Deleting old cache:', name);
+              return caches.delete(name);
+            })
+        );
+      })
+      .then(() => self.clients.claim())
   );
 });
 
 /* ==========================================
-   FETCH - Stratégie de cache intelligente
+   FETCH - Smart caching strategy
    ========================================== */
-self.addEventListener('fetch', (e) => {
-  const { request } = e;
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore les requêtes non-http(s)
-  if (!url.protocol.startsWith('http')) return;
+  // Skip non-HTTP requests
+  if (!url.protocol.startsWith('http')) {
+    return;
+  }
 
-  // Skip cache pour certaines URLs
+  // Skip blacklisted URLs
   if (SKIP_CACHE.some((pattern) => pattern.test(url.href))) {
     return;
   }
 
-  // Stratégie: Cache First pour assets statiques
+  // Cache strategy for static assets
   if (shouldCache(url.href)) {
-    e.respondWith(cacheFirst(request));
+    event.respondWith(cacheFirst(request));
     return;
   }
 
-  // Stratégie: Network First pour API/données dynamiques
-  e.respondWith(networkFirst(request));
+  // Network first for API calls
+  event.respondWith(networkFirst(request));
 });
 
 /* ==========================================
-   HELPERS - Stratégies de cache
+   CACHING STRATEGIES
    ========================================== */
 
-// Check si l'URL doit être mise en cache
 function shouldCache(url) {
   return CACHE_PATTERNS.some((pattern) => pattern.test(url));
 }
 
-// Cache First: Cherche en cache d'abord, sinon réseau - OPTIMIZED
 async function cacheFirst(request) {
   try {
     const cache = await caches.open(CACHE_NAME);
     const cached = await cache.match(request);
     
     if (cached) {
-      console.log('[SW] Cache hit:', request.url);
-      
-      // ✅ PERFORMANCE: Pas de background update pour images/fonts (économise RAM)
-      const url = request.url;
-      const skipUpdate = /\.(jpg|jpeg|png|gif|webp|woff2?|ttf|eot)$/i.test(url);
-      
-      if (!skipUpdate) {
-        // Mise à jour en arrière-plan (stale-while-revalidate)
-        fetch(request).then((response) => {
-          if (response && response.ok) {
-            cache.put(request, response.clone());
-          }
-        }).catch(() => {});
+      // Update cache in background for non-images
+      if (!/\.(jpg|jpeg|png|gif|webp|woff2?)$/i.test(request.url)) {
+        fetch(request)
+          .then((response) => {
+            if (response && response.ok) {
+              cache.put(request, response.clone());
+            }
+          })
+          .catch(() => {});
       }
       
       return cached;
     }
 
-    // Pas en cache -> fetch + mise en cache
+    // Not in cache - fetch and cache
     const response = await fetch(request);
+    
     if (response && response.ok && request.method === 'GET') {
-      // ✅ PERFORMANCE: Limiter taille cache pour images volumineuses
       const contentLength = response.headers.get('content-length');
       const sizeMB = contentLength ? parseInt(contentLength) / (1024 * 1024) : 0;
       
-      if (sizeMB < 5) { // Max 5MB par fichier
+      if (sizeMB < 5) {
         cache.put(request, response.clone());
       }
     }
-    return response;
-    
-  } catch (err) {
-    console.warn('[SW] Erreur cache first:', err);
-    return caches.match(request).then((r) => r || offlineFallback());
-  }
-}
-
-// Network First: Réseau d'abord, sinon cache
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    
-    // Met en cache si GET et réponse OK
-    if (response && response.ok && request.method === 'GET') {
-      const cache = await caches.open(OFFLINE_CACHE);
-      cache.put(request, response.clone());
-    }
     
     return response;
-  } catch (err) {
-    console.warn('[SW] Network failed, trying cache:', err);
+    
+  } catch (error) {
+    console.warn('[SW] Cache first failed:', error);
     const cached = await caches.match(request);
     return cached || offlineFallback();
   }
 }
 
-// Fallback offline (page simple)
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    
+    if (response && response.ok && request.method === 'GET') {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, response.clone());
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.warn('[SW] Network failed, trying cache:', error);
+    const cached = await caches.match(request);
+    return cached || offlineFallback();
+  }
+}
+
 function offlineFallback() {
   return new Response(
     `<!DOCTYPE html>
@@ -171,224 +186,184 @@ function offlineFallback() {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
-      <title>Hors ligne</title>
+      <title>Hors ligne - Mijoro Boutique</title>
       <style>
-        body{margin:0;padding:0;display:flex;align-items:center;justify-content:center;
-             min-height:100vh;background:linear-gradient(135deg,#667eea,#764ba2);
-             font-family:system-ui,sans-serif;color:#fff;text-align:center}
-        .offline-box{padding:40px;background:rgba(0,0,0,.3);border-radius:20px;
-                     backdrop-filter:blur(10px);max-width:400px}
-        h1{font-size:3em;margin:0 0 20px}
-        p{font-size:1.1em;opacity:.9;line-height:1.6}
-        button{margin-top:24px;padding:12px 32px;background:#fff;color:#667eea;
-               border:none;border-radius:999px;font-weight:700;cursor:pointer;
-               font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
-        button:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Montserrat', system-ui, sans-serif;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #fff;
+          text-align: center;
+          padding: 20px;
+        }
+        .container {
+          max-width: 400px;
+          padding: 40px;
+          background: rgba(0,0,0,0.3);
+          border-radius: 20px;
+          backdrop-filter: blur(10px);
+        }
+        .icon {
+          font-size: 64px;
+          margin-bottom: 20px;
+        }
+        h1 {
+          font-size: 28px;
+          margin-bottom: 12px;
+          font-weight: 800;
+        }
+        p {
+          font-size: 16px;
+          opacity: 0.9;
+          line-height: 1.6;
+          margin-bottom: 24px;
+        }
+        button {
+          padding: 14px 32px;
+          background: #fff;
+          color: #667eea;
+          border: none;
+          border-radius: 999px;
+          font-weight: 700;
+          font-size: 16px;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          transition: all 0.3s ease;
+        }
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
       </style>
     </head>
     <body>
-      <div class="offline-box">
-        <h1>📡</h1>
-        <h2>Hors ligne</h2>
-        <p>Tsy misy connexion internet. Mba avereno rehefa vita ny connexion.</p>
-        <button onclick="location.reload()">♻️ Reload</button>
+      <div class="container">
+        <div class="icon">📡</div>
+        <h1>Hors ligne</h1>
+        <p>Vous n'êtes pas connecté à Internet. Veuillez vérifier votre connexion et réessayer.</p>
+        <button onclick="location.reload()">♻️ Réessayer</button>
       </div>
     </body>
     </html>`,
     {
-      headers: { 'Content-Type': 'text/html' }
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store'
+      }
     }
   );
 }
 
 /* ==========================================
-   BACKGROUND SYNC (optionnel - pour POST ultérieures)
+   PUSH NOTIFICATIONS
    ========================================== */
-self.addEventListener('sync', (e) => {
-  if (e.tag === 'sync-data') {
-    e.waitUntil(syncOfflineData());
+self.addEventListener('push', (event) => {
+  console.log('[SW] Push notification received');
+  
+  let notificationData = {
+    title: '🆕 Mijoro Boutique',
+    body: 'Nouveau produit disponible!',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-96.png',
+    tag: 'mijoro-notification',
+    requireInteraction: false,
+    vibrate: [200, 100, 200],
+    data: {
+      url: '/?source=push'
+    }
+  };
+  
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      notificationData = { ...notificationData, ...payload };
+    } catch (error) {
+      console.warn('[SW] Failed to parse push data:', error);
+    }
+  }
+  
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, notificationData)
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Notification clicked');
+  event.notification.close();
+  
+  const urlToOpen = event.notification.data?.url || '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((windowClients) => {
+        // Focus existing window if available
+        for (const client of windowClients) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            return client.focus().then(() => client.navigate(urlToOpen));
+          }
+        }
+        // Open new window
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
+
+/* ==========================================
+   BACKGROUND SYNC
+   ========================================== */
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Background sync:', event.tag);
+  
+  if (event.tag === 'sync-orders') {
+    event.waitUntil(syncOfflineOrders());
   }
 });
 
-async function syncOfflineData() {
-  // Logique pour synchroniser données offline (ex: panier)
-  console.log('[SW] Background sync triggered');
+async function syncOfflineOrders() {
+  console.log('[SW] Syncing offline orders...');
+  // Add your sync logic here
 }
 
 /* ==========================================
-   MESSAGE HANDLER (communication avec app)
+   MESSAGE HANDLER
    ========================================== */
-self.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'SKIP_WAITING') {
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   
-  if (e.data && e.data.type === 'CLEAR_CACHE') {
+  if (event.data?.type === 'CLEAR_CACHE') {
     caches.keys().then((keys) => {
       return Promise.all(keys.map((key) => caches.delete(key)));
     }).then(() => {
-      e.ports[0].postMessage({ success: true });
+      event.ports[0]?.postMessage({ success: true });
     });
   }
 });
 
 /* ==========================================
-   PUSH NOTIFICATIONS HANDLER (FIXED)
+   CACHE MAINTENANCE
    ========================================== */
-
-self.addEventListener('push', function(event) {
-  console.log('[SW] Push received:', event);
-  
-  // ✅ DEFAULT fallback
-  let notificationData = {
-    title: '🆕 Nouveau produit Mijoro!',
-    body: 'Découvrez les dernières nouveautés',
-    icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
-    badge: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
-    tag: 'new-product',
-    requireInteraction: true,
-    vibrate: [200, 100, 200],
-    data: {}
-  };
-  
-  // ✅ Parse payload avy backend
-  if (event.data) {
-    try {
-      const payload = event.data.json();
-      console.log('[SW] Parsed payload:', payload);
-      
-      // ✅ MERGE amin'ny defaults
-      notificationData = {
-        title: payload.title || notificationData.title,
-        body: payload.body || notificationData.body,
-        icon: payload.icon || notificationData.icon,
-        badge: payload.badge || notificationData.badge,
-        tag: payload.tag || notificationData.tag,
-        requireInteraction: typeof payload.requireInteraction !== 'undefined' ?
-          payload.requireInteraction :
-          true,
-        vibrate: payload.vibrate || notificationData.vibrate,
-        data: payload.data || notificationData.data,
-        actions: payload.actions || []
-      };
-    } catch (err) {
-      console.warn('[SW] Failed to parse push data:', err);
-      // Use defaults
-    }
-  }
-  
-  // ✅ Show notification
-  const promiseChain = self.registration.showNotification(
-    notificationData.title,
-    notificationData
-  );
-  
-  event.waitUntil(promiseChain);
-});
-
-/* ==========================================
-   NOTIFICATION CLICK HANDLER (FIXED)
-   ========================================== */
-
-self.addEventListener('notificationclick', function(event) {
-  console.log('[SW] Notification clicked');
-  event.notification.close();
-  
-  const action = event.action;
-  const data = event.notification.data || {};
-  const productId = data.productId;
-  
-  // Handle dismiss action
-  if (action === 'dismiss' || action === 'close') {
-    console.log('[SW] User dismissed notification');
-    return;
-  }
-  
-  // Build URL to open
-  let urlToOpen = self.location.origin + '/';
-  
-  if (productId) {
-    urlToOpen = self.location.origin + '/?product=' + productId + '#shop';
-  } else if (data.url) {
-    urlToOpen = self.location.origin + data.url;
-  }
-  
-  console.log('[SW] Opening URL:', urlToOpen);
-  
-  // Open or focus existing window
-  const promiseChain = clients.matchAll({
-    type: 'window',
-    includeUncontrolled: true
-  }).then(function(windowClients) {
-    console.log('[SW] Found', windowClients.length, 'windows');
-    
-    // Check if app is already open
-    for (let i = 0; i < windowClients.length; i++) {
-      const client = windowClients[i];
-      
-      if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-        console.log('[SW] Focusing existing window');
-        return client.navigate(urlToOpen).then(() => client.focus());
-      }
-    }
-    
-    // Open new window if none found
-    if (clients.openWindow) {
-      console.log('[SW] Opening new window');
-      return clients.openWindow(urlToOpen);
-    }
-  }).catch(err => {
-    console.error('[SW] Error opening window:', err);
-  });
-  
-  event.waitUntil(promiseChain);
-});
-/* ==========================================
-   CACHE SIZE LIMITER - Fanadiovana auto
-   ========================================== */
-
-const MAX_CACHE_SIZE = 50; // Max 50 fichiers par cache
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
-
-// Fonction limiter cache
 async function limitCacheSize(cacheName, maxItems) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
   
   if (keys.length > maxItems) {
-    console.log('[SW] Nettoyage cache:', keys.length - maxItems, 'fichiers');
-    
-    // ✅ Fafao ny taloha indrindra
     const toDelete = keys.slice(0, keys.length - maxItems);
-    await Promise.all(toDelete.map(key => cache.delete(key)));
+    await Promise.all(toDelete.map((key) => cache.delete(key)));
   }
 }
 
-// ✅ Appelé après chaque fetch
-self.addEventListener('fetch', (e) => {
-  const { request } = e;
-  const url = new URL(request.url);
-
-  if (!url.protocol.startsWith('http')) return;
-  if (SKIP_CACHE.some((pattern) => pattern.test(url.href))) return;
-
-  if (shouldCache(url.href)) {
-    e.respondWith(
-      cacheFirst(request).then(response => {
-        // ✅ CLEANUP après cache
-        limitCacheSize(CACHE_NAME, MAX_CACHE_SIZE);
-        return response;
-      })
-    );
-    return;
-  }
-
-  e.respondWith(networkFirst(request));
-});
-
-// ✅ PATCH: Nettoyage cache old entries
 async function cleanOldCache() {
-  const cache = await caches.open(CACHE_NAME);
+  const cache = await caches.open(RUNTIME_CACHE);
   const keys = await cache.keys();
   const now = Date.now();
   
@@ -400,12 +375,14 @@ async function cleanOldCache() {
     if (dateHeader) {
       const age = now - new Date(dateHeader).getTime();
       if (age > MAX_AGE_MS) {
-        console.log('[SW] Suppression cache expiré:', request.url);
         await cache.delete(request);
       }
     }
   }
 }
 
-// ✅ Exécute nettoyage toutes les 6 heures
-setInterval(cleanOldCache, 6 * 60 * 60 * 1000);
+// Run cleanup periodically
+setInterval(() => {
+  limitCacheSize(RUNTIME_CACHE, MAX_CACHE_SIZE);
+  cleanOldCache();
+}, 6 * 60 * 60 * 1000); // Every 6 hours
