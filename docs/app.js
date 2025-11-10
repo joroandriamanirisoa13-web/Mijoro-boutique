@@ -1467,24 +1467,7 @@ function renderProducts(filter, search) {
       return catOk && searchOk;
     });
 
-  function makeActions(p) {
-  var isFree = Number(p.price) === 0;
   
-  return '' +
-    '<div class="card-actions">' +
-    '  <button type="button" class="icon-btn icon-info" title="Détails"><i class="fa-solid fa-info"></i></button>' +
-    (isFree ?
-      '  <button type="button" class="icon-btn icon-read" data-action="read" title="Lire (gratuit)" style="background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.38)">' +
-      '    <i class="fa-solid fa-circle-play"></i>' + // ✅ ICON VAOVAO
-      '  </button>' :
-      '') +
-    '  <button type="button" class="icon-btn icon-buy" title="' + (isFree ? 'Obtenir (WhatsApp)' : 'Acheter (WhatsApp)') + '">' +
-    '    <i class="fa-brands fa-whatsapp"></i>' +
-    '  </button>' +
-    '  <button type="button" class="icon-btn owner-tool" data-tool="edit" title="Edit"><i class="fa-solid fa-pen"></i></button>' +
-    '  <button type="button" class="icon-btn owner-tool" data-tool="delete" title="Delete"><i class="fa-solid fa-trash"></i></button>' +
-    '</div>';
-}
     /* ================================
    RENDER: makeLike ULTRA PRO ✅
    ================================ */
@@ -2694,70 +2677,73 @@ document.addEventListener('DOMContentLoaded', function() {
   const SECTION_IDS = ['home', 'shop'];
   
   function showSection(sectionId, clickedBtn) {
-    try {
-      // ✅ CRITICAL: Handle params specifically
-      if (sectionId === 'params') {
-        if (typeof toggleParamFixed === 'function') {
-          toggleParamFixed();
-        }
-        return; // ← Important: miala avy hatrany
+  try {
+    // ✅ CRITICAL: Handle params specifically
+    if (sectionId === 'params') {
+      if (typeof toggleParamFixed === 'function') {
+        toggleParamFixed();
       }
-      
-      // Validation
-      if (!sectionId) return;
-      if (SECTION_IDS.indexOf(sectionId) === -1) {
-        console.warn('[Nav] Unknown section:', sectionId);
-        return;
-      }
-      
-      // Hide all sections
-      SECTION_IDS.forEach(function(secId) {
-        const el = document.getElementById(secId);
-        if (!el) return;
-        const active = (secId === sectionId);
-        el.classList.toggle('active', active);
-        el.setAttribute('aria-hidden', String(!active));
+      return;
+    }
+    
+    // Validation
+    if (!sectionId) return;
+    if (SECTION_IDS.indexOf(sectionId) === -1) {
+      console.warn('[Nav] Unknown section:', sectionId);
+      return;
+    }
+    
+    // Hide all sections
+    SECTION_IDS.forEach(function(secId) {
+      const el = document.getElementById(secId);
+      if (!el) return;
+      const active = (secId === sectionId);
+      el.classList.toggle('active', active);
+      el.setAttribute('aria-hidden', String(!active));
+    });
+    
+    // Update active button
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) {
+      nav.querySelectorAll('.nav-btn').forEach(function(btn) {
+        btn.classList.remove('active');
       });
       
-      // Update active button
-      const nav = document.querySelector('.bottom-nav');
-      if (nav) {
-        nav.querySelectorAll('.nav-btn').forEach(function(btn) {
-          btn.classList.remove('active');
-        });
-        
-        if (clickedBtn && clickedBtn.classList) {
-          clickedBtn.classList.add('active');
-        }
+      if (clickedBtn && clickedBtn.classList) {
+        clickedBtn.classList.add('active');
       }
-      
-      // Toggle shop-active class
-      document.body.classList.toggle('shop-active', sectionId === 'shop');
-      
-      // Scroll to top
-      const activeSec = document.getElementById(sectionId);
-      if (activeSec && activeSec.scrollIntoView && sectionId !== 'home') {
-        activeSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-      
-      // Close modals
-      if (typeof closeParamFixed === 'function') {
-        closeParamFixed();
-      }
-      
-      const popup = document.getElementById('shop-popup');
-      if (popup) {
-        popup.classList.remove('show');
-        popup.setAttribute('aria-hidden', 'true');
-        popup.style.pointerEvents = 'none';
-      }
-      
-      console.log('[Nav] Switched to:', sectionId);
-      
-    } catch (err) {
-      console.error('[showSection error]', err);
     }
+    
+    // Toggle shop-active class
+    document.body.classList.toggle('shop-active', sectionId === 'shop');
+    
+    // ✅ NE PAS bloquer le overflow du body
+    // La section shop gère son propre scroll
+    
+    // Scroll to top (sauf pour home)
+    const activeSec = document.getElementById(sectionId);
+    if (activeSec && activeSec.scrollIntoView && sectionId !== 'home') {
+      activeSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    // Close modals
+    if (typeof closeParamFixed === 'function') {
+      closeParamFixed();
+    }
+    
+    const popup = document.getElementById('shop-popup');
+    if (popup) {
+      popup.classList.remove('show');
+      popup.setAttribute('aria-hidden', 'true');
+      popup.style.pointerEvents = 'none';
+    }
+    
+    console.log('[Nav] Switched to:', sectionId);
+    
+  } catch (err) {
+    console.error('[showSection error]', err);
   }
+}
   
   // Export global
   window.showSection = showSection;
@@ -5329,17 +5315,7 @@ document.addEventListener('DOMContentLoaded', function(){
       var id = card.getAttribute('data-id');
       var p = products.find(x => x.id === id);
       if (!p) return;
-// ✅ AMPIO ITY ALOHA - avant ny others
-      var likeBtn = tgt.closest('.icon-like');
-      if (likeBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        var productId = likeBtn.getAttribute('data-product-id');
-        if (productId && typeof toggleLike === 'function') {
-          toggleLike(productId);
-        }
-        return;
-      }
+
       if (tgt.closest('.icon-info')) { showProduct?.(id); return; }
       if (tgt.closest('.icon-buy')) { buyOrRead?.(p); return; }
       if (tgt.closest('[data-action="read"]')) {
@@ -5347,13 +5323,7 @@ document.addEventListener('DOMContentLoaded', function(){
         else openWhatsAppMessage(buildWAProductMessage(p, 'read'));
         return;
       }
-    var likeBtn = tgt.closest('.icon-like');
-if (likeBtn) {
-  e.preventDefault();
-  e.stopPropagation();
-  toggleLike(id);
-  return;
-} { toggleLike?.(id); return; }
+    
     }
 
     [document.getElementById('products-row'), document.getElementById('products-box')].forEach(c => {
