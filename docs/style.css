@@ -3284,4 +3284,267 @@ body.theme-light #shop .filters .filter-btn.active {
     bottom: max(18px, env(safe-area-inset-bottom));
     padding-bottom: max(10px, calc(10px + env(safe-area-inset-bottom)));
   }
+}/* ==========================================
+   ENHANCED THEME SYSTEM - PROFESSIONAL
+   ========================================== */
+
+:root {
+  /* Base colors */
+  --color-primary: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  
+  /* Theme-specific variables (default: dark) */
+  --bg-body: #0a0e17;
+  --bg-section: rgba(15, 18, 25, 0.85);
+  --bg-card: rgba(20, 24, 35, 0.90);
+  --bg-elevated: rgba(30, 35, 48, 0.95);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  
+  --border-color: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(255, 255, 255, 0.24);
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  
+  --blur-amount: 12px;
+  --transition-speed: 0.3s;
+  --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================
+   LIGHT THEME
+   ========================================== */
+
+body[data-theme="light"] {
+  --bg-body: #f8fafc;
+  --bg-section: rgba(255, 255, 255, 0.90);
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-elevated: rgba(248, 250, 252, 1);
+  
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.16);
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+}
+
+/* ==========================================
+   SMOOTH TRANSITIONS
+   ========================================== */
+
+body {
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  transition: 
+    background-color var(--transition-speed) var(--transition-timing),
+    color var(--transition-speed) var(--transition-timing);
+}
+
+section,
+.product-card,
+.icon-btn,
+.filter-btn,
+.param-btn,
+.option-card,
+#param-fixed,
+.modal-card,
+.info-card,
+.cd-cart-drawer {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-md);
+  transition: 
+    background var(--transition-speed) var(--transition-timing),
+    color var(--transition-speed) var(--transition-timing),
+    border-color var(--transition-speed) var(--transition-timing),
+    box-shadow var(--transition-speed) var(--transition-timing);
+}
+
+/* ==========================================
+   COMPONENT-SPECIFIC OVERRIDES
+   ========================================== */
+
+/* Products */
+.product-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(var(--blur-amount));
+}
+
+.product-card h3 {
+  color: var(--text-primary);
+}
+
+.product-card .desc {
+  color: var(--text-secondary);
+}
+
+/* Search input */
+.search-wrapper input[type="search"] {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.search-wrapper input[type="search"]::placeholder {
+  color: var(--text-muted);
+}
+
+/* Filters */
+.filter-btn {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.filter-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-hover);
+}
+
+.filter-btn.active {
+  background: var(--bg-elevated);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Icon buttons */
+.icon-btn {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.icon-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-hover);
+}
+
+/* Cart drawer */
+.cd-cart-drawer {
+  background: var(--bg-section);
+}
+
+.cd-cart-header {
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
+}
+
+.cd-cart-item {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+.cd-cart-footer {
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
+}
+
+/* Settings panel */
+#param-fixed {
+  background: var(--bg-section);
+  backdrop-filter: blur(var(--blur-amount));
+}
+
+.option-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.option-card.active {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Modals */
+.modal-card,
+.info-card {
+  background: var(--bg-section);
+  color: var(--text-primary);
+  backdrop-filter: blur(var(--blur-amount));
+}
+
+/* ==========================================
+   LIGHT THEME SPECIFIC ADJUSTMENTS
+   ========================================== */
+
+body[data-theme="light"] #shop {
+  background-image: 
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(248, 250, 252, 0.6)),
+    url("https://i.ibb.co/rGwjX7y5/images-22.jpg");
+}
+
+body[data-theme="light"] .product-card {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme="light"] .search-wrapper input[type="search"] {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+body[data-theme="light"] .filter-btn {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body[data-theme="light"] .filter-btn.active {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
+body[data-theme="light"] .cd-cart-drawer {
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  color: #0f172a;
+}
+
+body[data-theme="light"] .cd-cart-item {
+  background: rgba(248, 250, 252, 0.8);
+}
+
+/* ==========================================
+   THEME TRANSITION ANIMATIONS
+   ========================================== */
+
+@keyframes themeSwitch {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+body.theme-switching * {
+  transition-duration: 0.4s !important;
+}/* Lazy image loading */
+.lazy-img {
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.lazy-img.blur {
+  filter: blur(10px);
+  opacity: 0.8;
+}
+
+.lazy-img.loaded {
+  filter: blur(0);
+  opacity: 1;
 }
