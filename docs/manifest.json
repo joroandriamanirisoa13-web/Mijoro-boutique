@@ -1,16 +1,56 @@
 {
-  "name": "Mijoro Boutique - Produits Numériques Malagasy",
+  "name": "Mijoro Boutique",
   "short_name": "Mijoro",
-  "description": "Boutique de produits numériques malagasy - eBooks, vidéos, apps et jeux pour réussir en ligne",
+  "description": "Boutique de produits numériques malagasy - eBooks, vidéos, apps et jeux",
   "lang": "fr",
-  "dir": "ltr",
   "start_url": "/?source=pwa",
   "scope": "/",
-  "id": "/?source=pwa",
   "display": "standalone",
-  "background_color": "#0f1216",
-  "theme_color": "#1e88e5",
   "orientation": "portrait-primary",
+  "theme_color": "#1e88e5",
+  "background_color": "#0f1216",
+  
+  "_comment_android": "Configuration Android TWA pour PWA Builder",
+  "packageId": "com.mijoro.boutique",
+  "host": "votre-domaine.com",
+  "launcherName": "Mijoro",
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "minSdkVersion": 23,
+  "targetSdkVersion": 34,
+  
+  "_comment_features": "Permissions Android requises",
+  "features": {
+    "locationServices": false,
+    "playBilling": false
+  },
+  
+  "_comment_signing": "Signing config (généré par PWA Builder)",
+  "signing": {
+    "file": "android.keystore",
+    "alias": "mijoro-key",
+    "storePassword": "AUTO_GENERATED",
+    "keyPassword": "AUTO_GENERATED"
+  },
+  
+  "_comment_shortcuts": "Raccourcis Android (App Shortcuts)",
+  "shortcuts": [
+    {
+      "name": "Boutique",
+      "short_name": "Shop",
+      "description": "Voir les produits",
+      "url": "/?page=shop#shop",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  
+  "_comment_icons": "Icons requis pour Android",
   "icons": [
     {
       "src": "icons/icon-72.png",
@@ -73,6 +113,8 @@
       "purpose": "maskable"
     }
   ],
+  
+  "_comment_screenshots": "Screenshots pour Play Store",
   "screenshots": [
     {
       "src": "screenshots/mobile-home.png",
@@ -87,55 +129,10 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Boutique"
-    },
-    {
-      "src": "screenshots/desktop-home.png",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Vue desktop"
     }
   ],
-  "categories": ["shopping", "business", "education"],
-  "shortcuts": [
-    {
-      "name": "Boutique",
-      "short_name": "Shop",
-      "description": "Voir tous les produits",
-      "url": "/?page=shop#shop",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Panier",
-      "short_name": "Panier",
-      "description": "Voir mon panier",
-      "url": "/?cart=open",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
-  "prefer_related_applications": false,
-  "related_applications": [],
-  "iarc_rating_id": "",
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  
+  "_comment_playstore": "Infos pour Google Play Store",
+  "categories": ["shopping", "business"],
+  "iarc_rating_id": ""
 }
