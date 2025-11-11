@@ -1,17 +1,16 @@
 {
-  "name": "Mijoro Boutique",
+  "name": "Mijoro Boutique - Produits Numériques Malagasy",
   "short_name": "Mijoro",
-  "description": "Boutique de produits numériques malagasy",
+  "description": "Boutique de produits numériques malagasy - eBooks, vidéos, apps et jeux pour réussir en ligne",
   "lang": "fr",
   "dir": "ltr",
-  "id": "/",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
+  "id": "/?source=pwa",
   "display": "standalone",
   "background_color": "#0f1216",
   "theme_color": "#1e88e5",
   "orientation": "portrait-primary",
-  "categories": ["shopping", "business"],
   "icons": [
     {
       "src": "icons/icon-72.png",
@@ -47,7 +46,13 @@
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-384.png",
@@ -59,7 +64,78 @@
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/mobile-home.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Écran d'accueil"
+    },
+    {
+      "src": "screenshots/mobile-shop.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Boutique"
+    },
+    {
+      "src": "screenshots/desktop-home.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Vue desktop"
+    }
+  ],
+  "categories": ["shopping", "business", "education"],
+  "shortcuts": [
+    {
+      "name": "Boutique",
+      "short_name": "Shop",
+      "description": "Voir tous les produits",
+      "url": "/?page=shop#shop",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Panier",
+      "short_name": "Panier",
+      "description": "Voir mon panier",
+      "url": "/?cart=open",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "iarc_rating_id": "",
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }
