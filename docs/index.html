@@ -2,8 +2,31 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Mijoro Boutique — Version Pro</title>
+  
+  <!-- ✅ PWA META TAGS (CRITICAL) -->
+  <meta name="description" content="Boutique de produits numériques malagasy - eBooks, vidéos, apps et jeux pour réussir en ligne. Découvrez nos formations, guides et outils pour entrepreneurs digitaux à Madagascar.">
+  <meta name="theme-color" content="#1e88e5">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1216">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mijoro">
+  
+  <!-- ✅ MANIFEST LINK -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- ✅ APPLE ICONS (Multiple sizes for iOS) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-128.png">
+  
+  <!-- ✅ FAVICON -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,13 +37,6 @@
   <!-- Styles -->
   <link rel="stylesheet" href="style.css">
   
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e88e5">
-  
-  <!-- Apple Touch Icon (iOS) -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png">
-  
   <!-- Preconnect pour performances -->
   <link rel="preconnect" href="https://i.ibb.co">
   <link rel="preconnect" href="https://zogohkfzplcuonkkfoov.supabase.co">
@@ -29,12 +45,120 @@
   <noscript>
     <style>
       #loader{ display:none !important; }
-      .bottom-menu{ display:flex !important; }
+      .bottom-nav{ display:flex !important; }
       section{ display:block !important; }
     </style>
   </noscript>
+  
+  <!-- ✅ PWA INSTALL PROMPT STYLES -->
+  <style>
+    /* Install prompt banner */
+    #pwa-install-banner {
+      position: fixed;
+      bottom: 80px;
+      left: 12px;
+      right: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 9999;
+      animation: slideUp 0.4s ease;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    #pwa-install-banner.show {
+      display: block;
+    }
+    
+    .pwa-banner-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .pwa-banner-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    
+    .pwa-banner-text h4 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    
+    .pwa-banner-text p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .pwa-banner-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .pwa-banner-actions button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .pwa-install-btn {
+      background: #fff;
+      color: #667eea;
+    }
+    
+    .pwa-dismiss-btn {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+    }
+    
+    .pwa-banner-actions button:active {
+      transform: scale(0.95);
+    }
+    
+    /* PWA mode adjustments */
+    body.pwa-mode {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  </style>
 </head>
 <body aria-busy="true">
+
+<!-- ✅ PWA INSTALL BANNER -->
+<div id="pwa-install-banner" role="dialog" aria-labelledby="pwa-banner-title">
+  <div class="pwa-banner-content">
+    <div class="pwa-banner-icon">📱</div>
+    <div class="pwa-banner-text">
+      <h4 id="pwa-banner-title">Installer Mijoro</h4>
+      <p>Accès rapide depuis votre écran d'accueil</p>
+    </div>
+  </div>
+  <div class="pwa-banner-actions">
+    <button class="pwa-dismiss-btn" onclick="dismissPWAPrompt()">Plus tard</button>
+    <button class="pwa-install-btn" onclick="installPWA()">Installer</button>
+  </div>
+</div>
 
 <!-- ========================================
      LOADER PREMIUM
@@ -223,29 +347,28 @@
         </div>
       </header>
 
-     <!-- Toolbar: Search + Filters -->
-<div class="shop-toolbar" role="region" aria-label="Recherche et filtres" style="display:grid;gap:10px;margin:6px 0 10px;">
-  
-  <!-- ✅ SEARCH (FIXED VERSION) -->
-  <div class="search" style="position:relative">
-    <label for="search" class="sr-only" data-i18n="search_placeholder">Recherche produits</label>
-    
-    <!-- Search Icon -->
-    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#909aa3;font-size:16px;pointer-events:none;z-index:1"></i>
-    
-    <!-- Input -->
-    <input
-      id="search"
-      type="search"
-      placeholder="Rechercher..."
-      aria-label="Recherche produits"
-      data-i18n="search_placeholder"
-      data-i18n-placeholder
-      autocomplete="off"
-      inputmode="search"
-      style="width:100%;height:40px;padding:8px 12px 8px 38px;border:1px solid #cfd6df;background-color:#ffffff;color:#111111;border-radius:999px;outline:none;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)">
-  </div>
-
+      <!-- Toolbar: Search + Filters -->
+      <div class="shop-toolbar" role="region" aria-label="Recherche et filtres" style="display:grid;gap:10px;margin:6px 0 10px;">
+        
+        <!-- ✅ SEARCH (FIXED VERSION) -->
+        <div class="search" style="position:relative">
+          <label for="search" class="sr-only" data-i18n="search_placeholder">Recherche produits</label>
+          
+          <!-- Search Icon -->
+          <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#909aa3;font-size:16px;pointer-events:none;z-index:1"></i>
+          
+          <!-- Input -->
+          <input
+            id="search"
+            type="search"
+            placeholder="Rechercher..."
+            aria-label="Recherche produits"
+            data-i18n="search_placeholder"
+            data-i18n-placeholder
+            autocomplete="off"
+            inputmode="search"
+            style="width:100%;height:40px;padding:8px 12px 8px 38px;border:1px solid #cfd6df;background-color:#ffffff;color:#111111;border-radius:999px;outline:none;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)">
+        </div>
 
         <!-- Filters -->
         <div class="filters" id="filters" role="toolbar" aria-label="Filtrer les produits" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;">
@@ -592,6 +715,104 @@
   </div>
 </div>
 
+<!-- ✅ PWA REGISTRATION SCRIPT -->
+<script>
+// ========================================
+// PWA INSTALLATION & SERVICE WORKER
+// ========================================
+
+let deferredPrompt = null;
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/'
+      });
+      console.log('✅ SW registered:', registration.scope);
+      
+      // Check for updates every 30 minutes
+      setInterval(() => {
+        registration.update();
+      }, 30 * 60 * 1000);
+      
+      // Handle SW updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New SW available - prompt user
+            if (confirm('🔄 Nouvelle version disponible! Recharger?')) {
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+              window.location.reload();
+            }
+          }
+        });
+      });
+    } catch (err) {
+      console.error('❌ SW registration failed:', err);
+    }
+  });
+}
+
+// Capture PWA install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  
+  // Show custom install banner after 5 seconds
+  setTimeout(() => {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner && !localStorage.getItem('pwa-dismissed')) {
+      banner.classList.add('show');
+    }
+  }, 5000);
+});
+
+// Install PWA
+function installPWA() {
+  const banner = document.getElementById('pwa-install-banner');
+  if (!deferredPrompt) {
+    alert('Installation non disponible. Utilisez "Ajouter à l\'écran d\'accueil" dans le menu du navigateur.');
+    banner.classList.remove('show');
+    return;
+  }
+  
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then((result) => {
+    console.log('Install prompt result:', result.outcome);
+    deferredPrompt = null;
+    banner.classList.remove('show');
+  });
+}
+
+// Dismiss prompt
+function dismissPWAPrompt() {
+  const banner = document.getElementById('pwa-install-banner');
+  banner.classList.remove('show');
+  localStorage.setItem('pwa-dismissed', Date.now());
+}
+
+// Track installation
+window.addEventListener('appinstalled', () => {
+  console.log('✅ PWA installed successfully!');
+  deferredPrompt = null;
+});
+
+// Display mode detection
+window.addEventListener('DOMContentLoaded', () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       window.navigator.standalone ||
+                       document.referrer.includes('android-app://');
+  
+  if (isStandalone) {
+    console.log('🚀 Running as PWA');
+    document.body.classList.add('pwa-mode');
+  }
+});
+</script>
+
 <!-- ========================================
      LOADER GUARD + iOS VH PATCH
      ======================================== -->
@@ -611,7 +832,7 @@
         document.body.setAttribute('aria-busy','false');
         var home = document.getElementById('home');
         if (home){ home.classList.add('active'); home.setAttribute('aria-hidden','false'); }
-        var bm = qs('.bottom-menu');
+        var bm = qs('.bottom-nav');
         if (bm){ bm.style.display = 'flex'; bm.style.pointerEvents = 'auto'; }
       } catch(_) {}
     }
