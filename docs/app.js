@@ -1455,34 +1455,58 @@ function renderProducts(filter, search) {
   try {
     var row = document.getElementById('products-row');
     var box = document.getElementById('products-box');
-
+    
     var normalizedFilter = normalizeCategory(filter || 'all');
     var q = (search || '').toLowerCase();
-
-    var filtered = (products || []).filter(function (prod) {
+    
+    var filtered = (products || []).filter(function(prod) {
       var cat = normalizeCategory(prod.category);
       var catOk = (normalizedFilter === 'all') || (cat === normalizedFilter);
       var text = ((prod.title || '') + ' ' + (prod.description_short || '') + ' ' + (prod.description || '')).toLowerCase();
       var searchOk = !q || text.indexOf(q) !== -1;
       return catOk && searchOk;
     });
-
-  
-    /* ================================
-   RENDER: makeLike ULTRA PRO ✅
-   ================================ */
+    
+    if (row) {
+      row.innerHTML = '';
+      if (filtered.length === 0) {
+        row.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
+      } else {
+        var frag = document.createDocumentFragment();
+        filtered.forEach(function(p) {
+          var card = document.createElement('article');
+          card.className = 'product-card';
+          card.setAttribute('data-id', p.id);
+          
+          // ✅ CRITICAL: Set data-category attribute
+          var cat = normalizeCategory(p.category || '');
+          card.setAttribute('data-category', cat);
+          
+          card.setAttribute('role', 'listitem');
+          card.innerHTML = makeCard(p, false);
+          frag.appendChild(card);
+        });
+        row.appendChild(frag);
+      }
+    }
+    
     if (box) {
       box.innerHTML = '';
-      if (filtered.length === 0) box.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
-      else {
+      if (filtered.length === 0) {
+        box.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
+      } else {
         var grid = document.createElement('div');
         grid.className = 'products-grid';
         var frag2 = document.createDocumentFragment();
-        filtered.forEach(function(p){
+        filtered.forEach(function(p) {
           var node = document.createElement('div');
           node.className = 'product-card';
           node.setAttribute('data-id', p.id);
-          node.setAttribute('data-category', normalizeCategory(p.category || ''));
+          
+          // ✅ CRITICAL: Set data-category attribute
+          var cat = normalizeCategory(p.category || '');
+          node.setAttribute('data-category', cat);
+          
           node.innerHTML = makeCard(p, true);
           frag2.appendChild(node);
         });
@@ -1490,11 +1514,13 @@ function renderProducts(filter, search) {
         box.appendChild(grid);
       }
     }
-
+    
     if (typeof applyAuthUI === 'function') applyAuthUI();
-
-  } catch(err){ console.error('[renderProducts error]', err); }
-};
+    
+  } catch (err) {
+    console.error('[renderProducts error]', err);
+  }
+}
 /* ========================================
    RENDER SLIDESHOW (SAFE VERSION)
    ======================================== */
@@ -5235,28 +5261,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 500);
 });
     function makeCard(p, compact) {
-  // ✅ Données de base
   var imgUrl = escapeAttr((p.image && p.image.url) ? p.image.url : FALLBACK_IMG);
   var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
   var priceStr = fmtPrice(p.price);
   var badgeHTML = makeBadge(p);
   var actions = makeActions(p);
-  var likeBtn = makeLike(p);
   var titleSafe = escapeHtml(p.title || 'Produit');
   var descShort = escapeHtml(p.description_short || '');
   
-  // ✅ CORRECTION: Suppression de la ligne en double
-  return badgeHTML +
-    likeBtn +
-    createProgressiveImage(imgUrl, imgAlt, 'product-image') +
-    // ⚠️ LIGNE SUPPRIMÉE: 'onerror="...">' était en trop
-    '<div>' +
-    '<h3>' + titleSafe + '</h3>' +
-    '<p class="desc">' + descShort + '</p>' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:6px">' +
-    '<div>' + priceStr + '</div>' +
+  // ✅ VAOVAO: Like button conditional
+  var category = normalizeCategory(p.category || '');
+  var showLike = (category === 'videos' || category === 'free' || category === 'gratuit');
+  var likeBtn = showLike ? makeLike(p) : '';
+  
+  // ✅ Structure with conditional like
+  return '<div class="card-header">' +
+    badgeHTML +
+    likeBtn + // ✅ Empty string raha tsy videos/free
     '</div>' +
+    createProgressiveImage(imgUrl, imgAlt, 'product-image') +
+    '<div class="card-body">' +
+    '<h3>' + titleSafe + '</h3>' +
+    '<div class="card-footer">' +
+    '<div class="price-wrapper">' + priceStr + '</div>' +
     actions +
+    '</div>' +
     '</div>';
 }
 
