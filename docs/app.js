@@ -3728,6 +3728,8 @@ function updateCategoryOptions(productType) {
         productTitle: title,
         productPrice: price,
         productType: product_type // ✅ CRITICAL
+        ,
+        productImage: thumbnail_url || uploaded.thumbnail_url || null  // ✅ AJOUT IMAGE
       };
       
       console.log('[peSubmitForm] 📤 Notification payload:', notifPayload);
@@ -6436,9 +6438,12 @@ window.initAuth = initAuth;
           'apikey': window.SUPABASE_ANON_KEY
         },
         body: JSON.stringify({
-          productId: inserted.id,
-          productTitle: title,
-          productPrice: price
+  productId: inserted.id,
+  productTitle: title,
+  productPrice: price,
+  productType: product_type,
+  productImage: thumbnail_url || uploaded.thumbnail_url || null // ✅ AJOUT IMAGE
+
         })
       }
     );
