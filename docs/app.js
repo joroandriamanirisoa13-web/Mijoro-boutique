@@ -2969,7 +2969,7 @@ function openPreview(p) {
   // CONFIG: soloina raha ilaina
   const SUPABASE_URL = "https://zogohkfzplcuonkkfoov.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvZ29oa2Z6cGxjdW9ua2tmb292Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA4Nzk0ODAsImV4cCI6MjA3NjQ1NTQ4MH0.AeQ5pbrwjCAOsh8DA7pl33B7hLWfaiYwGa36CaeXCsw";
-  const OWNER_EMAIL = "";
+  const OWNER_EMAIL = "joroandriamanirisoa13@gmail.com";
 
 // ✅ AJOUTEZ CETTE LIGNE: Rendre SUPABASE_ANON_KEY accessible globalement
   window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
@@ -7833,8 +7833,13 @@ const QuickOrder = {
   
   // Crée une card produit
   createProductCard(product) {
-    const price = Number(product.price) || 0;
-    const priceText = price > 0 ? `${price} AR` : 'Gratuit';
+  const price = Number(product.price) || 0;
+  const priceText = price > 0 ? `${price} AR` : 'Gratuit';
+  
+  // ✅ NOUVEAU: Check if NEW (from QO storage)
+  const qoProduct = (window.QOManagement?.getProducts() || []).find(p => p.id === product.id);
+  const isNew = qoProduct?.addedAt && (Date.now() - qoProduct.addedAt < 86400000);
+  
     
     // ✅ Compatible avec votre structure d'image
     let imgSrc = 'https://via.placeholder.com/300x169/1e293b/4ade80?text=Image';
@@ -7859,11 +7864,12 @@ const QuickOrder = {
       badge = `<span class="qo-badge qo-badge-free"><i class="fa-solid fa-gift"></i></span>`;
     }
     
-    return `
-      <div class="qo-product" data-product-id="${product.id || ''}">
-        ${badge}
-        <img 
-          src="${imgSrc}" 
+return `
+    <div class="qo-product" data-product-id="${product.id || ''}">
+      ${isNew ? '<span class="qo-new-badge">NEW</span>' : ''}
+      ${badge}
+      <img 
+        src="${imgSrc}"
           alt="${name}" 
           class="qo-product-img" 
           loading="lazy"
@@ -8073,13 +8079,34 @@ if (!document.getElementById('qo-premium-styles')) {
   }
   
   function saveQOProducts() {
-    try {
-      localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
-      console.log('[QO] Saved', qoProducts.length, 'products');
-    } catch (e) {
-      console.error('[QO] Save error:', e);
-    }
+  try {
+    localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
+    updateCounter(); // ✅ NOUVEAU
+    console.log('[QO] Saved', qoProducts.length, 'products');
+  } catch (e) {
+    console.error('[QO] Save error:', e);
   }
+}
+
+// ✅ NOUVEAU: Counter update function
+function updateCounter() {
+  const counter = document.getElementById('qoCounter');
+  if (!counter) return;
+  
+  const count = qoProducts.length;
+  const max = 8;
+  
+  counter.textContent = `${count}/${max}`;
+  
+  // Update state classes
+  counter.classList.remove('warning', 'full');
+  
+  if (count >= max) {
+    counter.classList.add('full');
+  } else if (count >= max - 1) {
+    counter.classList.add('warning');
+  }
+}
   
   // ========================================
   // MODAL ADD - OPEN/CLOSE
@@ -8184,36 +8211,42 @@ if (!document.getElementById('qo-premium-styles')) {
   // ========================================
   
   function saveSelectedProducts() {
-    if (selectedProducts.size === 0) {
-      alert('Veuillez sélectionner au moins un produit');
-      return;
+  if (selectedProducts.size === 0) {
+    alert('Veuillez sélectionner au moins un produit');
+    return;
+  }
+  
+  const allProducts = window.products || [];
+  
+  selectedProducts.forEach(id => {
+    const product = allProducts.find(p => p.id === id);
+    if (product && !qoProducts.find(p => p.id === id)) {
+      qoProducts.push({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        image: product.image?.url || product.thumbnail_url,
+        category: product.category,
+        addedAt: Date.now() // ✅ NOUVEAU: Timestamp
+      });
     }
-    
-    const allProducts = window.products || [];
-    
-    selectedProducts.forEach(id => {
-      const product = allProducts.find(p => p.id === id);
-      if (product && !qoProducts.find(p => p.id === id)) {
-        qoProducts.push({
-          id: product.id,
-          title: product.title,
-          price: product.price,
-          image: product.image?.url || product.thumbnail_url,
-          category: product.category
-        });
-      }
-    });
+  });
     
     saveQOProducts();
-    closeAddModal();
-    
-    // Re-render QO
-    if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
-      QuickOrder.render();
-    }
-    
-    alert(`✅ ${selectedProducts.size} produit(s) ajouté(s)`);
-  }
+closeAddModal();
+
+// Re-render QO
+if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+  QuickOrder.render();
+}
+
+// ✅ NOUVEAU: Check if full
+const isFull = qoProducts.length >= 8;
+if (isFull) {
+  alert(`✅ ${selectedProducts.size} produit(s) ajouté(s)\n\n⚠️ Quick Order est complet (8/8)`);
+} else {
+  alert(`✅ ${selectedProducts.size} produit(s) ajouté(s)`);
+}}
   
   // ========================================
   // MODAL MANAGE - OPEN/CLOSE
@@ -8263,25 +8296,27 @@ if (!document.getElementById('qo-premium-styles')) {
     }
     
     container.innerHTML = qoProducts.map((p, index) => {
-      const price = Number(p.price) || 0;
-      
-      return `
-        <div class="qo-manage-item" draggable="true" data-index="${index}">
-          <div class="qo-manage-drag">
-            <i class="fa-solid fa-grip-vertical"></i>
-          </div>
-          <img src="${p.image || 'https://via.placeholder.com/48'}" alt="${p.title}">
-          <div class="qo-manage-item-info">
-            <div class="qo-manage-item-name">${p.title}</div>
-            <div class="qo-manage-item-price">${price > 0 ? price.toLocaleString('fr-FR') + ' AR' : 'Gratuit'}</div>
-          </div>
-          <button type="button" class="qo-manage-delete" data-index="${index}">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      `;
-    }).join('');
-    
+  const price = Number(p.price) || 0;
+  // ✅ NOUVEAU: Check if added in last 24h
+  const isNew = p.addedAt && (Date.now() - p.addedAt < 86400000);
+  
+  return `
+    <div class="qo-manage-item" draggable="true" data-index="${index}">
+      ${isNew ? '<span class="qo-new-badge">NEW</span>' : ''}
+      <div class="qo-manage-drag">
+        <i class="fa-solid fa-grip-vertical"></i>
+      </div>
+      <img src="${p.image || 'https://via.placeholder.com/48'}" alt="${p.title}">
+      <div class="qo-manage-item-info">
+        <div class="qo-manage-item-name">${p.title}</div>
+        <div class="qo-manage-item-price">${price > 0 ? price.toLocaleString('fr-FR') + ' AR' : 'Gratuit'}</div>
+      </div>
+      <button type="button" class="qo-manage-delete" data-index="${index}">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  `;
+}).join('');
     // Wire events
     wireManageEvents(container);
   }
@@ -8428,24 +8463,144 @@ if (!document.getElementById('qo-premium-styles')) {
     };
     
     console.log('[QO Management] ✓ QuickOrder patched');
+  }// ========================================
+// EXPORT/IMPORT QO ✅
+// ========================================
+
+function exportQO() {
+  if (qoProducts.length === 0) {
+    alert('Aucun produit à exporter');
+    return;
   }
+  
+  try {
+    const data = {
+      version: '1.0',
+      exported: new Date().toISOString(),
+      products: qoProducts
+    };
+    
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    
+    const filename = `quick-order-${new Date().toISOString().split('T')[0]}.json`;
+    
+    a.href = url;
+    a.download = filename;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+    
+    console.log('[QO] Exported', qoProducts.length, 'products');
+    alert(`✅ Exporté: ${filename}\n\n${qoProducts.length} produits`);
+    
+  } catch (e) {
+    console.error('[QO] Export error:', e);
+    alert('❌ Erreur lors de l\'export: ' + e.message);
+  }
+}
+
+function importQO() {
+  const fileInput = document.getElementById('qoImportFile');
+  if (!fileInput) return;
+  
+  fileInput.click();
+}
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  if (!file.name.endsWith('.json')) {
+    alert('❌ Fichier invalide. Utilisez un fichier .json');
+    return;
+  }
+  
+  const reader = new FileReader();
+  
+  reader.onload = function(event) {
+    try {
+      const data = JSON.parse(event.target.result);
+      
+      // Validate structure
+      if (!data.products || !Array.isArray(data.products)) {
+        throw new Error('Structure invalide');
+      }
+      
+      // Confirm replace
+      const confirmMsg = qoProducts.length > 0
+        ? `⚠️ Remplacer les ${qoProducts.length} produits actuels par ${data.products.length} produits importés?`
+        : `Importer ${data.products.length} produits?`;
+      
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+      
+      // Import
+      qoProducts = data.products;
+      saveQOProducts();
+      
+      // Re-render
+      if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+        QuickOrder.render();
+      }
+      
+      console.log('[QO] Imported', qoProducts.length, 'products');
+      alert(`✅ Importé avec succès!\n\n${qoProducts.length} produits`);
+      
+    } catch (e) {
+      console.error('[QO] Import error:', e);
+      alert('❌ Erreur lors de l\'import: ' + e.message);
+    }
+  };
+  
+  reader.onerror = function() {
+    alert('❌ Erreur de lecture du fichier');
+  };
+  
+  reader.readAsText(file);
+  
+  // Reset input
+  e.target.value = '';
+}
   
   // ========================================
   // WIRE BUTTONS
   // ========================================
   
   function wireButtons() {
-    // Add button
-    const addBtn = document.getElementById('qoAddBtn');
-    if (addBtn) {
-      addBtn.addEventListener('click', openAddModal);
-    }
-    
-    // Manage button
-    const manageBtn = document.getElementById('qoManageBtn');
-    if (manageBtn) {
-      manageBtn.addEventListener('click', openManageModal);
-    }
+  // Add button
+  const addBtn = document.getElementById('qoAddBtn');
+  if (addBtn) {
+    addBtn.addEventListener('click', openAddModal);
+  }
+  
+  // Manage button
+  const manageBtn = document.getElementById('qoManageBtn');
+  if (manageBtn) {
+    manageBtn.addEventListener('click', openManageModal);
+  }
+  
+  // ✅ NOUVEAU: Export button
+  const exportBtn = document.getElementById('qoExportBtn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportQO);
+  }
+  
+  // ✅ NOUVEAU: Import button
+  const importBtn = document.getElementById('qoImportBtn');
+  if (importBtn) {
+    importBtn.addEventListener('click', importQO);
+  }
+  
+  // ✅ NOUVEAU: File input handler
+  const fileInput = document.getElementById('qoImportFile');
+  if (fileInput) {
+    fileInput.addEventListener('change', handleImportFile);
+  }
+  
     
     // Modal Add - Close buttons
     const addModalClose = document.getElementById('qoModalClose');
@@ -8509,30 +8664,33 @@ if (!document.getElementById('qo-premium-styles')) {
   // ========================================
   
   window.QOManagement = {
-    openAddModal,
-    closeAddModal,
-    openManageModal,
-    closeManageModal,
-    getProducts: () => qoProducts,
-    setProducts: (products) => {
-      qoProducts = products;
-      saveQOProducts();
-    }
-  };
+  openAddModal,
+  closeAddModal,
+  openManageModal,
+  closeManageModal,
+  getProducts: () => qoProducts,
+  setProducts: (products) => {
+    qoProducts = products;
+    saveQOProducts();
+  },
+  exportQO, // ✅ NOUVEAU
+  importQO // ✅ NOUVEAU
+};
   
   // ========================================
   // INIT
   // ========================================
   
   function init() {
-    console.log('[QO Management] 🚀 Initializing...');
-    
-    loadQOProducts();
-    wireButtons();
-    patchQuickOrderRender();
-    
-    console.log('[QO Management] ✅ Initialized with', qoProducts.length, 'products');
-  }
+  console.log('[QO Management] 🚀 Initializing...');
+  
+  loadQOProducts();
+  updateCounter(); // ✅ NOUVEAU
+  wireButtons();
+  patchQuickOrderRender();
+  
+  console.log('[QO Management] ✅ Initialized with', qoProducts.length, 'products');
+}
   
   // Auto-init
   if (document.readyState === 'loading') {
