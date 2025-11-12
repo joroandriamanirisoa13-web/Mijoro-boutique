@@ -238,10 +238,12 @@
 <div class="quick-order-card" id="qoCard">
   <!-- Header with collapse button -->
   <div class="qo-header">
-    <i class="fa-solid fa-bolt"></i>
-    <h3>Commande Express</h3>
-    <button type="button" 
-            class="qo-toggle-btn" 
+  <i class="fa-solid fa-bolt"></i>
+  <h3>Commande Express</h3>
+  <!-- ✅ NOUVEAU: Counter -->
+  <span class="qo-counter" id="qoCounter">0/8</span>
+  <button type="button" 
+          class="qo-toggle-btn" 
             id="qoToggle"
             aria-expanded="true"
             aria-label="Toggle Quick Order">
@@ -250,22 +252,42 @@
   </div>
   
   <!-- ✅ NOUVEAU: Owner Tools Bar -->
-  <div class="qo-tools owner-tool" style="display:none">
+<div class="qo-tools owner-tool" style="display:none">
+  <button type="button" 
+          class="qo-tool-btn" 
+          id="qoAddBtn"
+          title="Ajouter des produits">
+    <i class="fa-solid fa-plus"></i>
+    <span>Ajouter</span>
+  </button>
+  <button type="button" 
+          class="qo-tool-btn qo-manage-btn" 
+          id="qoManageBtn"
+          title="Gérer l'ordre">
+    <i class="fa-solid fa-list"></i>
+    <span>Gérer</span>
+  </button>
+  <!-- ✅ NOUVEAU: Export/Import -->
+  <div class="qo-tools-more">
     <button type="button" 
-            class="qo-tool-btn" 
-            id="qoAddBtn"
-            title="Ajouter des produits">
-      <i class="fa-solid fa-plus"></i>
-      <span>Ajouter</span>
+            class="qo-tool-btn-small" 
+            id="qoExportBtn"
+            title="Exporter">
+      <i class="fa-solid fa-download"></i>
     </button>
     <button type="button" 
-            class="qo-tool-btn qo-manage-btn" 
-            id="qoManageBtn"
-            title="Gérer l'ordre">
-      <i class="fa-solid fa-list"></i>
-      <span>Gérer</span>
+            class="qo-tool-btn-small" 
+            id="qoImportBtn"
+            title="Importer">
+      <i class="fa-solid fa-upload"></i>
     </button>
   </div>
+  <!-- Hidden file input -->
+  <input type="file" 
+         id="qoImportFile" 
+         accept=".json"
+         style="display:none">
+</div>
   
   <!-- Content (collapsible) -->
   <div id="qoContent">
