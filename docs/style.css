@@ -522,7 +522,66 @@ p {
   font-weight: 800;
   margin: 0;
 }
+/* ==========================================
+   QO - PRODUCT COUNTER ✅
+   ========================================== */
 
+.qo-counter {
+  margin-left: auto;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #60a5fa;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+}
+
+.qo-counter::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: #60a5fa;
+  border-radius: 50%;
+  animation: counterPulse 2s ease-in-out infinite;
+}
+
+@keyframes counterPulse {
+  0%, 100% { 
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Warning state (7-8 products) */
+.qo-counter.warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.qo-counter.warning::before {
+  background: #fbbf24;
+}
+
+/* Full state (8 products) */
+.qo-counter.full {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.qo-counter.full::before {
+  background: #f87171;
+}
 .qo-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1009,6 +1068,50 @@ body.owner-mode .qo-tools {
 .qo-manage-item-price {
   font-size: 12px;
   color: #4ade80;
+}/* ==========================================
+   QO - NEW BADGE ✅
+   ========================================== */
+
+.qo-new-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+  animation: badgePulse 2s ease-in-out infinite;
+  z-index: 10;
+  letter-spacing: 0.5px;
+}
+
+@keyframes badgePulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+  }
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.7);
+  }
+}
+
+/* Badge in product card (QO grid) */
+.qo-product {
+  position: relative !important;
+}
+
+.qo-product .qo-new-badge {
+  top: 8px;
+  right: 8px;
+}
+
+/* Badge in manage list */
+.qo-manage-item {
+  position: relative;
 }
 
 .qo-manage-delete {
@@ -4048,4 +4151,140 @@ body.theme-switching * {
 .lazy-img.blur {
   filter: blur(10px);
   opacity: 0.8;
+}
+/* ==========================================
+   OWNER LOGIN ANIMATIONS ✅
+   ========================================== */
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Login modal input styles */
+#owner-login-modal input:focus {
+  border-color: rgba(16,185,129,.5) !important;
+  box-shadow: 0 0 0 3px rgba(16,185,129,.15) !important;
+}
+
+#owner-login-modal input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+/* Disable autofill background */
+#owner-login-modal input:-webkit-autofill,
+#owner-login-modal input:-webkit-autofill:hover,
+#owner-login-modal input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(255,255,255,.05) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Submit button active state */
+#owner-login-modal #ol-submit:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(16,185,129,.3) !important;
+}
+
+#owner-login-modal #ol-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}/* ==========================================
+   QO - EXPORT/IMPORT BUTTONS ✅
+   ========================================== */
+
+.qo-tools {
+  display: none;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  align-items: center; /* ✅ NOUVEAU */
+}
+
+.qo-tools-more {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto; /* ✅ Push to right */
+}
+
+.qo-tool-btn-small {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.qo-tool-btn-small:hover {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+#qoExportBtn {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: #4ade80;
+}
+
+#qoExportBtn:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+#qoImportBtn {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+#qoImportBtn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}@media (max-width: 480px) {
+  .qo-header {
+    flex-wrap: wrap;
+  }
+  
+  .qo-counter {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+    justify-content: center;
+  }
+  
+  .qo-tools {
+    flex-wrap: wrap;
+  }
+  
+  .qo-tools-more {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+    justify-content: center;
+  }
+  
+  .qo-new-badge {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
 }
