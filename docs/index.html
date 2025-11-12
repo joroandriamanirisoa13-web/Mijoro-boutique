@@ -233,33 +233,143 @@
   <p id="home-sub" data-i18n="home_sub">Découvre des eBooks, vidéos et apps/jeux pour t'aider à réussir en ligne.</p>
 
 
-<!-- ========================================
-     QUICK ORDER MODULE (COLLAPSIBLE)
-     ======================================== -->
-<div id="quick-order-section" style="margin-top:20px; padding:0 12px">
-  <div class="quick-order-card">
-    <!-- Header avec bouton toggle -->
-    <div class="qo-header" style="display:flex;justify-content:space-between;align-items:center;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <i class="fa-solid fa-bolt"></i>
-        <h3 style="margin:0;" data-i18n="quick_order_title">Commande Express</h3>
+<!-- Quick Order Section -->
+
+<div class="quick-order-card" id="qoCard">
+  <!-- Header with collapse button -->
+  <div class="qo-header">
+    <i class="fa-solid fa-bolt"></i>
+    <h3>Commande Express</h3>
+    <button type="button" 
+            class="qo-toggle-btn" 
+            id="qoToggle"
+            aria-expanded="true"
+            aria-label="Toggle Quick Order">
+      <i class="fa-solid fa-chevron-up"></i>
+    </button>
+  </div>
+  
+  <!-- ✅ NOUVEAU: Owner Tools Bar -->
+  <div class="qo-tools owner-tool" style="display:none">
+    <button type="button" 
+            class="qo-tool-btn" 
+            id="qoAddBtn"
+            title="Ajouter des produits">
+      <i class="fa-solid fa-plus"></i>
+      <span>Ajouter</span>
+    </button>
+    <button type="button" 
+            class="qo-tool-btn qo-manage-btn" 
+            id="qoManageBtn"
+            title="Gérer l'ordre">
+      <i class="fa-solid fa-list"></i>
+      <span>Gérer</span>
+    </button>
+  </div>
+  
+  <!-- Content (collapsible) -->
+  <div id="qoContent">
+    <!-- Grid with scrollbar -->
+    <div class="qo-scroll-wrapper">
+      <div class="qo-grid" id="featured-products">
+        <!-- Products will be rendered here -->
       </div>
-      <button 
-        id="qoToggle" 
-        type="button" 
-        class="qo-toggle-btn"
-        aria-label="Réduire/Agrandir commande express"
-        aria-expanded="true"
-        style="width:32px;height:32px;border:none;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s ease;">
-        <i class="fa-solid fa-chevron-up"></i>
+    </div>
+    
+    <!-- View all button -->
+    <button type="button" 
+            class="qo-view-all" 
+            onclick="showSection('shop')">
+      <span>Voir tout</span>
+      <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ✅ NOUVEAU: Modal Add Products to QO -->
+<div id="qo-add-modal" 
+     class="modal-overlay" 
+     aria-hidden="true"
+     style="display:none">
+  <div class="modal-card qo-modal">
+    <div class="modal-header">
+      <h3>Ajouter à Quick Order</h3>
+      <button type="button" 
+              class="modal-close" 
+              id="qoModalClose"
+              aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
     
-    <!-- Contenu collapsible -->
-    <div id="qoContent" style="overflow:hidden;transition:max-height 0.3s ease,opacity 0.2s ease;">
-      <div class="qo-grid" id="featured-products">
-        <!-- Produits vedettes seront chargés ici par JS -->
-      </div>
+    <!-- Search products -->
+    <div class="modal-search">
+      <input type="search" 
+             id="qoSearchProducts" 
+             placeholder="Rechercher un produit..."
+             class="search-input">
+    </div>
+    
+    <!-- Products list (scrollable) -->
+    <div class="qo-modal-products" id="qoModalProductsList">
+      <!-- Products rendered here -->
+    </div>
+    
+    <!-- Actions -->
+    <div class="modal-actions">
+      <button type="button" 
+              class="btn btn-secondary" 
+              id="qoCancelBtn">
+        Annuler
+      </button>
+      <button type="button" 
+              class="btn btn-primary" 
+              id="qoSaveBtn">
+        <i class="fa-solid fa-check"></i>
+        Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ NOUVEAU: Modal Manage QO -->
+<div id="qo-manage-modal" 
+     class="modal-overlay" 
+     aria-hidden="true"
+     style="display:none">
+  <div class="modal-card qo-modal">
+    <div class="modal-header">
+      <h3>Gérer Quick Order</h3>
+      <button type="button" 
+              class="modal-close" 
+              id="qoManageModalClose"
+              aria-label="Fermer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    
+    <p style="margin-bottom:16px; color:#94a3b8; font-size:14px;">
+      Glissez pour réorganiser, cliquez sur <i class="fa-solid fa-trash"></i> pour supprimer
+    </p>
+    
+    <!-- Current QO products (sortable) -->
+    <div class="qo-manage-list" id="qoManageList">
+      <!-- Products rendered here -->
+    </div>
+    
+    <!-- Actions -->
+    <div class="modal-actions">
+      <button type="button" 
+              class="btn btn-secondary" 
+              id="qoManageCancelBtn">
+        Fermer
+      </button>
+      <button type="button" 
+              class="btn btn-danger" 
+              id="qoClearAllBtn">
+        <i class="fa-solid fa-trash"></i>
+        Tout supprimer
+      </button>
     </div>
   </div>
 </div>
@@ -268,7 +378,8 @@
      SHOP SECTION
      ======================================== -->
 <section id="shop" class="section" aria-label="Boutique - Produits numériques" aria-hidden="true">
-  
+
+
   <!-- ========== HEADER FIXE (Tools + Filters + Search) ========== -->
   <div id="shop-header">
     
@@ -373,35 +484,40 @@
         <!-- Filters -->
         <div class="filters" id="filters" role="toolbar" aria-label="Filtrer les produits" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;">
           
-          <button type="button" class="filter-btn active" data-category="all" data-i18n="filter_all"
-            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            Tous
-          </button>
+         <button type="button" class="filter-btn active" data-category="all">
+  <i class="fa-solid fa-grip"></i>
+  <span data-i18n="filter_all">Tous</span>
+</button>
           
-          <button type="button" class="filter-btn" data-category="ebooks" data-i18n="filter_ebooks"
-            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            Ebooks
-          </button>
+         <button type="button" class="filter-btn" data-category="ebooks">
+  <i class="fa-solid fa-book-open"></i>
+  <span data-i18n="filter_ebooks">eBooks</span>
+</button>
           
-          <button type="button" class="filter-btn" data-category="videos" data-i18n="filter_videos"
-            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            Vidéos
-          </button>
+          <button type="button" class="filter-btn" data-category="videos">
+    <i class="fa-solid fa-circle-play"></i>
+    <span data-i18n="filter_videos">Vidéos</span>
+  </button>
+  <button type="button" class="filter-btn" data-category="apps">
+    <i class="fa-solid fa-mobile-screen-button"></i>
+    <span>Apps/Jeux</span>
+  </button>
+  
           
-          <button type="button" class="filter-btn" data-category="vip" data-i18n="filter_vip"
-            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            VIP
-          </button>
-          
-          <button type="button" class="filter-btn" data-category="promo" data-i18n="filter_promo"
-            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            Promo
-          </button>
-          
-          <button type="button" class="filter-btn" data-category="free" data-i18n="filter_free"
-            style="flex:0 0 auto;height:34px;padding:0 12px;border:1px solid rgba(0,0,0,0.08);background:#f7f9fc;color:#111;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s ease;">
-            Gratuit
-          </button>
+        <button type="button" class="filter-btn" data-category="vip">
+    <i class="fa-solid fa-crown"></i>
+    <span data-i18n="filter_vip">VIP</span>
+  </button>
+  
+        <button type="button" class="filter-btn" data-category="promo">
+  <i class="fa-solid fa-bolt"></i>
+  <span data-i18n="filter_promo">Promo</span>
+</button>
+          <button type="button" class="filter-btn" data-category="free">
+   <i class="fa-solid fa-gift"></i>
+   <span data-i18n="filter_free">Gratuit</span>
+ </button>
+
         </div>
       </div>
     </div>
