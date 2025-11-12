@@ -1832,16 +1832,25 @@ body.owner-mode .qo-tools {
   animation: playPulse 1s ease-in-out infinite;
 }
 
-/* ========================================
-   LIKE SYSTEM
-   ======================================== */
+/* ==========================================
+   LIKE SYSTEM - CONDITIONAL DISPLAY ✅
+   Show only for video/free badges
+   ========================================== */
 
-.like-wrapper {
-  position: absolute !important;
+/* ✅ DEFAULT: Hide all likes on cards */
+.product-card .like-wrapper {
+  display: none !important;
+}
+
+/* ✅ SHOW: Only for video/free products */
+.product-card[data-category="videos"] .like-wrapper,
+.product-card[data-category="free"] .like-wrapper,
+.product-card[data-category="gratuit"] .like-wrapper {
+  display: flex !important;
+  position: absolute;
   top: 8px;
   right: 8px;
   z-index: 10;
-  display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
@@ -1851,20 +1860,15 @@ body.owner-mode .qo-tools {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.like-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(251, 113, 133, 0.05));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+/* Like wrapper hover */
+.product-card[data-category="videos"] .like-wrapper:hover,
+.product-card[data-category="free"] .like-wrapper:hover,
+.product-card[data-category="gratuit"] .like-wrapper:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: translateY(-2px);
 }
 
-.like-wrapper:hover::before {
-  opacity: 1;
-}
-
+/* Like button styling */
 .icon-like {
   width: 36px;
   height: 36px;
@@ -1932,6 +1936,7 @@ body.owner-mode .qo-tools {
   70% { transform: scale(1); }
 }
 
+/* Burst animation */
 .icon-like.burst::after {
   content: "";
   position: absolute;
@@ -1974,6 +1979,7 @@ body.owner-mode .qo-tools {
   }
 }
 
+/* Like count */
 .like-count {
   font-size: 13px;
   font-weight: 700;
@@ -2005,6 +2011,87 @@ body.owner-mode .qo-tools {
 .icon-like:focus-visible {
   outline: 3px solid rgba(239, 68, 68, 0.5);
   outline-offset: 4px;
+}
+
+/* ✅ IMPORTANT: Badge position adjustment */
+/* When like is visible, badge moves to left */
+.product-card[data-category="videos"] .badge-corner,
+.product-card[data-category="free"] .badge-corner,
+.product-card[data-category="gratuit"] .badge-corner {
+  top: 8px;
+  left: 8px; /* Badge stays left */
+  right: auto;
+}
+
+/* Other badges (VIP/Promo) stay right (no like) */
+.product-card:not([data-category="videos"]):not([data-category="free"]):not([data-category="gratuit"]) .badge-corner {
+  top: 8px;
+  right: 8px;
+  left: auto;
+}
+
+/* ==========================================
+   MOBILE RESPONSIVE
+   ========================================== */
+
+@media (max-width: 768px) {
+  .product-card[data-category="videos"] .like-wrapper,
+  .product-card[data-category="free"] .like-wrapper,
+  .product-card[data-category="gratuit"] .like-wrapper {
+    top: 6px;
+    right: 6px;
+    gap: 4px;
+    padding: 3px 6px;
+  }
+  
+  .icon-like {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .icon-like i {
+    font-size: 14px;
+  }
+  
+  .like-count {
+    font-size: 12px;
+    min-width: 18px;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-card[data-category="videos"] .like-wrapper,
+  .product-card[data-category="free"] .like-wrapper,
+  .product-card[data-category="gratuit"] .like-wrapper {
+    top: 6px;
+    right: 6px;
+    gap: 3px;
+    padding: 2px 5px;
+  }
+  
+  .icon-like {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .icon-like i {
+    font-size: 13px;
+  }
+  
+  .like-count {
+    font-size: 11px;
+    min-width: 16px;
+  }
+  
+  .product-card[data-category="videos"] .badge-corner,
+  .product-card[data-category="free"] .badge-corner,
+  .product-card[data-category="gratuit"] .badge-corner {
+    width: 34px;
+    height: 34px;
+    top: 6px;
+    left: 6px;
+  }
 }
 
 /* ========================================
