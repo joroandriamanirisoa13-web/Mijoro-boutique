@@ -409,3 +409,73 @@ async function cleanOldCache() {
 
 // ✅ Exécute nettoyage toutes les 6 heures
 setInterval(cleanOldCache, 6 * 60 * 60 * 1000);
+/* ==========================================
+   SERVICE WORKER - IMAGE CACHE STRATEGY ✅
+   Add to sw.js
+   ========================================== */
+
+// Cache name
+const IMAGE_CACHE = 'mijoro-images-v1';
+
+// Image cache strategy
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Only handle image requests
+  if (!event.request.url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+    return;
+  }
+  
+  event.respondWith(
+    caches.open(IMAGE_CACHE).then((cache) => {
+      return cache.match(event.request).then((response) => {
+        // Return cached response if available
+        if (response) {
+          console.log('[SW] Image from cache:', url.pathname);
+          
+          // Update cache in background
+          fetch(event.request).then((fetchResponse) => {
+            cache.put(event.request, fetchResponse.clone());
+          }).catch(() => {
+            // Fetch failed, cache is still good
+          });
+          
+          return response;
+        }
+        
+        // Fetch and cache new image
+        return fetch(event.request).then((fetchResponse) => {
+          if (fetchResponse && fetchResponse.status === 200) {
+            console.log('[SW] Image fetched and cached:', url.pathname);
+            cache.put(event.request, fetchResponse.clone());
+          }
+          return fetchResponse;
+        }).catch((error) => {
+          console.error('[SW] Image fetch failed:', url.pathname, error);
+          
+          // Return fallback image
+          return new Response(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="#1e293b"/><text x="300" y="200" text-anchor="middle" fill="#64748b" font-size="20">Image non disponible</text></svg>',
+            { headers: { 'Content-Type': 'image/svg+xml' } }
+          );
+        });
+      });
+    })
+  );
+});
+
+// Clear old image caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name.startsWith('mijoro-images-') && name !== IMAGE_CACHE)
+          .map((name) => {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
+          })
+      );
+    })
+  );
+});
