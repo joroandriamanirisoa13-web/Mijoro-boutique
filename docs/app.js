@@ -8016,6 +8016,504 @@ if (!document.getElementById('qo-premium-styles')) {
   document.head.appendChild(styles);
 }
 /* ==========================================
+   QUICK ORDER - OWNER MANAGEMENT ✅
+   ========================================== */
+
+(function initQOManagement() {
+  'use strict';
+  
+  const QO_STORAGE_KEY = 'quick-order:products';
+  let selectedProducts = new Set();
+  let qoProducts = [];
+  
+  // ========================================
+  // STORAGE
+  // ========================================
+  
+  function loadQOProducts() {
+    try {
+      const raw = localStorage.getItem(QO_STORAGE_KEY);
+      if (raw) {
+        qoProducts = JSON.parse(raw);
+        console.log('[QO] Loaded', qoProducts.length, 'products');
+      }
+    } catch (e) {
+      console.error('[QO] Load error:', e);
+      qoProducts = [];
+    }
+  }
+  
+  function saveQOProducts() {
+    try {
+      localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
+      console.log('[QO] Saved', qoProducts.length, 'products');
+    } catch (e) {
+      console.error('[QO] Save error:', e);
+    }
+  }
+  
+  // ========================================
+  // MODAL ADD - OPEN/CLOSE
+  // ========================================
+  
+  function openAddModal() {
+    if (!isOwner()) {
+      alert('Owner uniquement');
+      return;
+    }
+    
+    const modal = document.getElementById('qo-add-modal');
+    if (!modal) return;
+    
+    selectedProducts.clear();
+    renderModalProducts();
+    
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    modal.style.display = 'flex';
+    
+    console.log('[QO] Add modal opened');
+  }
+  
+  function closeAddModal() {
+    const modal = document.getElementById('qo-add-modal');
+    if (!modal) return;
+    
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
+  }
+  
+  // ========================================
+  // MODAL ADD - RENDER PRODUCTS
+  // ========================================
+  
+  function renderModalProducts(searchTerm = '') {
+    const container = document.getElementById('qoModalProductsList');
+    if (!container) return;
+    
+    const allProducts = window.products || [];
+    const qoProductIds = new Set(qoProducts.map(p => p.id));
+    
+    // Filter
+    const filtered = allProducts.filter(p => {
+      const inQO = qoProductIds.has(p.id);
+      const matchesSearch = !searchTerm || 
+        p.title.toLowerCase().includes(searchTerm.toLowerCase());
+      return !inQO && matchesSearch;
+    });
+    
+    if (filtered.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Aucun produit disponible</div>';
+      return;
+    }
+    
+    container.innerHTML = filtered.map(p => {
+      const price = Number(p.price) || 0;
+      const imgUrl = p.image?.url || p.thumbnail_url || 'https://via.placeholder.com/48';
+      const selected = selectedProducts.has(p.id);
+      
+      return `
+        <div class="qo-modal-product ${selected ? 'selected' : ''}" data-product-id="${p.id}">
+          <img src="${imgUrl}" alt="${p.title}">
+          <div class="qo-modal-product-info">
+            <div class="qo-modal-product-name">${p.title}</div>
+            <div class="qo-modal-product-price">${price > 0 ? price.toLocaleString('fr-FR') + ' AR' : 'Gratuit'}</div>
+          </div>
+          <div class="qo-modal-product-check">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Event delegation
+    container.addEventListener('click', handleProductClick);
+  }
+  
+  function handleProductClick(e) {
+    const item = e.target.closest('.qo-modal-product');
+    if (!item) return;
+    
+    const productId = item.dataset.productId;
+    if (!productId) return;
+    
+    if (selectedProducts.has(productId)) {
+      selectedProducts.delete(productId);
+      item.classList.remove('selected');
+    } else {
+      selectedProducts.add(productId);
+      item.classList.add('selected');
+    }
+  }
+  
+  // ========================================
+  // MODAL ADD - SAVE
+  // ========================================
+  
+  function saveSelectedProducts() {
+    if (selectedProducts.size === 0) {
+      alert('Veuillez sélectionner au moins un produit');
+      return;
+    }
+    
+    const allProducts = window.products || [];
+    
+    selectedProducts.forEach(id => {
+      const product = allProducts.find(p => p.id === id);
+      if (product && !qoProducts.find(p => p.id === id)) {
+        qoProducts.push({
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          image: product.image?.url || product.thumbnail_url,
+          category: product.category
+        });
+      }
+    });
+    
+    saveQOProducts();
+    closeAddModal();
+    
+    // Re-render QO
+    if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+      QuickOrder.render();
+    }
+    
+    alert(`✅ ${selectedProducts.size} produit(s) ajouté(s)`);
+  }
+  
+  // ========================================
+  // MODAL MANAGE - OPEN/CLOSE
+  // ========================================
+  
+  function openManageModal() {
+    if (!isOwner()) {
+      alert('Owner uniquement');
+      return;
+    }
+    
+    const modal = document.getElementById('qo-manage-modal');
+    if (!modal) return;
+    
+    renderManageList();
+    
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    modal.style.display = 'flex';
+    
+    console.log('[QO] Manage modal opened');
+  }
+  
+  function closeManageModal() {
+    const modal = document.getElementById('qo-manage-modal');
+    if (!modal) return;
+    
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+    
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 300);
+  
+}
+  // ========================================
+  // MODAL MANAGE - RENDER LIST
+  // ========================================
+  
+  function renderManageList() {
+    const container = document.getElementById('qoManageList');
+    
+
+    if (qoProducts.length === 0) {
+      container.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Aucun produit dans Quick Order</div>';
+      return;
+    }
+    
+    container.innerHTML = qoProducts.map((p, index) => {
+      const price = Number(p.price) || 0;
+      
+      return `
+        <div class="qo-manage-item" draggable="true" data-index="${index}">
+          <div class="qo-manage-drag">
+            <i class="fa-solid fa-grip-vertical"></i>
+          </div>
+          <img src="${p.image || 'https://via.placeholder.com/48'}" alt="${p.title}">
+          <div class="qo-manage-item-info">
+            <div class="qo-manage-item-name">${p.title}</div>
+            <div class="qo-manage-item-price">${price > 0 ? price.toLocaleString('fr-FR') + ' AR' : 'Gratuit'}</div>
+          </div>
+          <button type="button" class="qo-manage-delete" data-index="${index}">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      `;
+    }).join('');
+    
+    // Wire events
+    wireManageEvents(container);
+  }
+  
+  function wireManageEvents(container) {
+    // Delete buttons
+    container.querySelectorAll('.qo-manage-delete').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const index = parseInt(this.dataset.index);
+        deleteQOProduct(index);
+      });
+    });
+    
+    // Drag & drop
+    const items = container.querySelectorAll('.qo-manage-item');
+    items.forEach(item => {
+      item.addEventListener('dragstart', handleDragStart);
+      item.addEventListener('dragover', handleDragOver);
+      item.addEventListener('drop', handleDrop);
+      item.addEventListener('dragend', handleDragEnd);
+    });
+  }
+  
+  let draggedIndex = null;
+  
+  function handleDragStart(e) {
+    draggedIndex = parseInt(this.dataset.index);
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+  
+  function handleDrop(e) {
+    e.preventDefault();
+    const dropIndex = parseInt(this.dataset.index);
+    
+    if (draggedIndex !== null && draggedIndex !== dropIndex) {
+      // Reorder
+      const [removed] = qoProducts.splice(draggedIndex, 1);
+      qoProducts.splice(dropIndex, 0, removed);
+      
+      saveQOProducts();
+      renderManageList();
+      
+      // Re-render QO
+      if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+        QuickOrder.render();
+      }
+    }
+  }
+  
+  function handleDragEnd() {
+    this.classList.remove('dragging');
+    draggedIndex = null;
+  }
+  
+  // ========================================
+  // DELETE PRODUCT
+  // ========================================
+  
+  function deleteQOProduct(index) {
+    if (!confirm('Supprimer ce produit du Quick Order?')) return;
+    
+    qoProducts.splice(index, 1);
+    saveQOProducts();
+    renderManageList();
+    
+    // Re-render QO
+    if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+      QuickOrder.render();
+    }
+    
+    console.log('[QO] Product deleted, remaining:', qoProducts.length);
+  }
+  
+  // ========================================
+  // CLEAR ALL
+  // ========================================
+  
+  function clearAllQO() {
+    if (!confirm('⚠️ Supprimer TOUS les produits du Quick Order?\n\nCette action est irréversible.')) {
+      return;
+    }
+    
+    qoProducts = [];
+    saveQOProducts();
+    renderManageList();
+    
+    // Re-render QO
+    if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+      QuickOrder.render();
+    }
+    
+    alert('✅ Quick Order vidé');
+  }
+  
+  // ========================================
+  // PATCH QUICKORDER MODULE
+  // ========================================
+  
+  function patchQuickOrderRender() {
+    if (typeof QuickOrder === 'undefined') {
+      console.warn('[QO] QuickOrder module not found, retrying...');
+      setTimeout(patchQuickOrderRender, 500);
+      return;
+    }
+    
+    const originalRender = QuickOrder.render;
+    
+    QuickOrder.render = function() {
+      const container = document.getElementById('featured-products');
+      if (!container) return;
+      
+      loadQOProducts();
+      
+      if (qoProducts.length === 0) {
+        // Use original render (featured products)
+        originalRender.call(this);
+        return;
+      }
+      
+      // Render QO products
+      const allProducts = window.products || [];
+      const featuredProducts = [];
+      
+      qoProducts.forEach(qoProduct => {
+        const fullProduct = allProducts.find(p => p.id === qoProduct.id);
+        if (fullProduct) {
+          featuredProducts.push(fullProduct);
+        }
+      });
+      
+      if (featuredProducts.length === 0) {
+        QuickOrder.showEmpty(container);
+        return;
+      }
+      
+      container.innerHTML = featuredProducts.map(p => QuickOrder.createProductCard(p)).join('');
+      console.log('[QO] ✓ Rendered', featuredProducts.length, 'managed products');
+    };
+    
+    console.log('[QO Management] ✓ QuickOrder patched');
+  }
+  
+  // ========================================
+  // WIRE BUTTONS
+  // ========================================
+  
+  function wireButtons() {
+    // Add button
+    const addBtn = document.getElementById('qoAddBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', openAddModal);
+    }
+    
+    // Manage button
+    const manageBtn = document.getElementById('qoManageBtn');
+    if (manageBtn) {
+      manageBtn.addEventListener('click', openManageModal);
+    }
+    
+    // Modal Add - Close buttons
+    const addModalClose = document.getElementById('qoModalClose');
+    const addCancelBtn = document.getElementById('qoCancelBtn');
+    const addSaveBtn = document.getElementById('qoSaveBtn');
+    
+    if (addModalClose) addModalClose.addEventListener('click', closeAddModal);
+    if (addCancelBtn) addCancelBtn.addEventListener('click', closeAddModal);
+    if (addSaveBtn) addSaveBtn.addEventListener('click', saveSelectedProducts);
+    
+    // Modal Manage - Close buttons
+    const manageModalClose = document.getElementById('qoManageModalClose');
+    const manageCancelBtn = document.getElementById('qoManageCancelBtn');
+    const clearAllBtn = document.getElementById('qoClearAllBtn');
+    
+    if (manageModalClose) manageModalClose.addEventListener('click', closeManageModal);
+    if (manageCancelBtn) manageCancelBtn.addEventListener('click', closeManageModal);
+    if (clearAllBtn) clearAllBtn.addEventListener('click', clearAllQO);
+    
+    // Search in add modal
+    const searchInput = document.getElementById('qoSearchProducts');
+    if (searchInput) {
+      let searchTimeout;
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          renderModalProducts(this.value);
+        }, 300);
+      });
+    }
+    
+    // Close modals on backdrop click
+    const addModal = document.getElementById('qo-add-modal');
+    const manageModal = document.getElementById('qo-manage-modal');
+    
+    if (addModal) {
+      addModal.addEventListener('click', function(e) {
+        if (e.target === this) closeAddModal();
+      });
+    }
+    
+    if (manageModal) {
+      manageModal.addEventListener('click', function(e) {
+        if (e.target === this) closeManageModal();
+      });
+    }
+    
+    // Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeAddModal();
+        closeManageModal();
+      }
+    });
+    
+    console.log('[QO Management] ✓ Buttons wired');
+  }
+  
+  // ========================================
+  // EXPOSE GLOBAL API
+  // ========================================
+  
+  window.QOManagement = {
+    openAddModal,
+    closeAddModal,
+    openManageModal,
+    closeManageModal,
+    getProducts: () => qoProducts,
+    setProducts: (products) => {
+      qoProducts = products;
+      saveQOProducts();
+    }
+  };
+  
+  // ========================================
+  // INIT
+  // ========================================
+  
+  function init() {
+    console.log('[QO Management] 🚀 Initializing...');
+    
+    loadQOProducts();
+    wireButtons();
+    patchQuickOrderRender();
+    
+    console.log('[QO Management] ✅ Initialized with', qoProducts.length, 'products');
+  }
+  
+  // Auto-init
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+})();
+/* ==========================================
    QUICK ORDER - COLLAPSE/EXPAND LOGIC
    ========================================== */
 
@@ -8093,6 +8591,7 @@ if (!document.getElementById('qo-premium-styles')) {
     console.log('[QO Toggle] ✓ Initialized');
   });
 })();
+
 /* ==========================================
    CART DRAWER - DRAG + COLLAPSE LOGIC ✅
    ========================================== */
