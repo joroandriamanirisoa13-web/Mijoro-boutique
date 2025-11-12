@@ -20,14 +20,21 @@ serve(async (req) => {
   try {
     console.log('[Send Push] 📨 Request received');
     
-    // ✅ Parse request body
-    const { productId, productTitle, productPrice, productType } = await req.json();
+    // ✅ Parse request body avec image
+    const { 
+      productId, 
+      productTitle, 
+      productPrice, 
+      productType,
+      productImage  // ✅ NOUVEAU: URL de l'image
+    } = await req.json();
     
     console.log('[Send Push] Product:', {
       id: productId,
       title: productTitle,
       price: productPrice,
-      type: productType || 'numeric (default)'
+      type: productType || 'numeric',
+      image: productImage || 'no image'
     });
     
     if (!productTitle) {
@@ -76,34 +83,52 @@ serve(async (req) => {
       );
     }
     
-    // ✅ Build notification with dynamic type
+    // ✅ Build notification avec IMAGE
     const type = productType || 'numeric';
     const emoji = type === 'physical' ? '📦' : '💻';
     const typeLabel = type === 'physical' ? 'produit physique' : 'produit numérique';
-    const priceText = productPrice > 0 ? `${productPrice} AR` : 'Gratuit';
+    const priceText = productPrice > 0 ? `${productPrice.toLocaleString('fr-FR')} AR` : 'Gratuit';
+    
+    // ✅ Image: Utilise l'image du produit ou fallback
+    const imageUrl = productImage || 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg';
     
     const notificationPayload = {
-      title: `${emoji} Nouveau ${typeLabel}!`,
+      title: `${emoji} Nouveau produit disponible!`,
       body: `${productTitle}\n💰 ${priceText}`,
+      
+      // ✅ IMAGE DU PRODUIT (grande image)
+      image: imageUrl,
+      
+      // ✅ ICON (petite icône logo)
       icon: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
+      
+      // ✅ BADGE (très petite icône)
       badge: 'https://i.ibb.co/kVQxwznY/IMG-20251104-074641.jpg',
+      
       tag: 'new-product-' + productId,
       requireInteraction: true,
       vibrate: [200, 100, 200],
+      renotify: true,
+      
       data: {
         productId: productId,
         productType: type,
+        productTitle: productTitle,
+        productPrice: productPrice,
+        productImage: imageUrl,
         url: '/?product=' + productId + '#shop'
       },
+      
       actions: [
-        { action: 'view', title: '👀 Voir le produit' },
+        { action: 'view', title: '👀 Voir le produit', icon: imageUrl },
         { action: 'dismiss', title: '✖ Fermer' }
       ]
     };
     
-    console.log('[Send Push] 📢 Notification payload:', {
+    console.log('[Send Push] 📢 Notification with image:', {
       title: notificationPayload.title,
       body: notificationPayload.body,
+      image: imageUrl,
       type: type
     });
     
@@ -127,7 +152,12 @@ serve(async (req) => {
           // ✅ Send notification
           await webpush.sendNotification(
             pushSubscription,
-            JSON.stringify(notificationPayload)
+            JSON.stringify(notificationPayload),
+            {
+              // ✅ Options pour supporter les images
+              TTL: 86400, // 24 heures
+              urgency: 'high'
+            }
           );
           
           sent++;
@@ -169,6 +199,7 @@ serve(async (req) => {
     console.log('  ❌ Failed:', failed);
     console.log('  🗑️ Deactivated:', deactivated);
     console.log('  📊 Total:', subscriptions.length);
+    console.log('  🖼️ Image:', imageUrl);
     
     // ✅ Return response
     return new Response(
@@ -179,7 +210,8 @@ serve(async (req) => {
         deactivated: deactivated,
         total: subscriptions.length,
         productType: type,
-        message: `Notification ${emoji} ${typeLabel} envoyée à ${sent} abonné(s)`,
+        productImage: imageUrl,
+        message: `Notification ${emoji} ${typeLabel} avec image envoyée à ${sent} abonné(s)`,
         details: results.map(r => ({
           status: r.status,
           value: r.status === 'fulfilled' ? r.value : r.reason
