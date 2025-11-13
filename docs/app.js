@@ -1,4 +1,32 @@
 /* ==========================================
+   EARLY INITIALIZATION - PRODUCT MODAL STUBS
+   ========================================== */
+
+// Stub functions to prevent "not defined" errors
+window.peOpen = window.peOpen || function() {
+  console.warn('[peOpen] Not initialized yet, retrying in 500ms...');
+  setTimeout(() => {
+    if (typeof window.peOpen === 'function') {
+      window.peOpen.apply(this, arguments);
+    } else {
+      alert('❌ Erreur: Product Modal not loaded');
+    }
+  }, 500);
+};
+
+window.peClose = window.peClose || function() {};
+window.peSubmitForm = window.peSubmitForm || function() {};
+window.addProductPrompt = window.addProductPrompt || function() {
+  if (typeof window.peOpen === 'function') {
+    window.peOpen({ mode: 'add', product: null, productType: 'numeric' });
+  }
+};
+window.addPhysicalProductPrompt = window.addPhysicalProductPrompt || function() {
+  if (typeof window.peOpen === 'function') {
+    window.peOpen({ mode: 'add', product: null, productType: 'physical' });
+  }
+};
+/* ==========================================
    GLOBAL SUPABASE HELPER (SHARED)
    ========================================== */
 
@@ -1436,19 +1464,96 @@ document.addEventListener('DOMContentLoaded', function () {
    PART 2/4 — PRODUCTS + OPTIMIZED ACTIONS/FILTERS
    ========================================= */
 
-var products = (window.products && Array.isArray(window.products)) ? window.products : [];
+// ========================================
+// INITIALIZATION - FIXED VERSION
+// ========================================
+
+var products = window.products || [];
+var productsLoadedPromise = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('[Init] Waiting for Supabase products...');
+  console.log('[Init] 🚀 Starting product initialization...');
+  
+  // Show loading state
+  showProductsLoader();
+  
+  // Tenter de charger depuis Supabase
   if (typeof fetchSupabaseProducts === 'function') {
-    setTimeout(function() {
-      fetchSupabaseProducts().catch(function(err) {
-        console.error('[Init] Failed to load products:', err);
-        renderProducts('all', '');
+    productsLoadedPromise = fetchSupabaseProducts()
+      .then(function() {
+        console.log('[Init] ✅ Products loaded:', (window.products || []).length);
+        hideProductsLoader();
+        
+        // Render avec les produits chargés
+        if ((window.products || []).length > 0) {
+          renderProducts('all', '');
+        } else {
+          console.warn('[Init] ⚠️ No products in database');
+          renderProducts('all', ''); // Affiche "aucun produit"
+        }
+      })
+      .catch(function(err) {
+        console.error('[Init] ❌ Failed to load products:', err);
+        hideProductsLoader();
+        showProductsError(err);
       });
-    }, 500);
+  } else {
+    console.error('[Init] ❌ fetchSupabaseProducts not available');
+    hideProductsLoader();
+    renderProducts('all', '');
   }
 });
-var FALLBACK_IMG = 'https://via.placeholder.com/600x400?text=Produit';
+
+// ========================================
+// LOADING UI HELPERS
+// ========================================
+
+function showProductsLoader() {
+  var containers = [
+    document.getElementById('products-row'),
+    document.getElementById('products-box')
+  ];
+  
+  var loaderHTML =
+    '<div class="products-loader" style="grid-column:1/-1;text-align:center;padding:60px 20px">' +
+    '<div style="display:inline-block;width:48px;height:48px;border:4px solid rgba(74,222,128,.2);border-top-color:#4ade80;border-radius:50%;animation:spin 1s linear infinite"></div>' +
+    '<p style="margin-top:16px;color:#94a3b8;font-size:15px">Chargement des produits...</p>' +
+    '</div>';
+  
+  containers.forEach(function(container) {
+    if (container) {
+      container.innerHTML = loaderHTML;
+    }
+  });
+}
+
+function hideProductsLoader() {
+  document.querySelectorAll('.products-loader').forEach(function(el) {
+    el.remove();
+  });
+}
+
+function showProductsError(error) {
+  var containers = [
+    document.getElementById('products-row'),
+    document.getElementById('products-box')
+  ];
+  
+  var errorHTML =
+    '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#ef4444">' +
+    '<i class="fa-solid fa-triangle-exclamation" style="font-size:48px;margin-bottom:16px;opacity:0.8"></i>' +
+    '<p style="font-size:16px;font-weight:700;margin-bottom:8px">Erreur de chargement</p>' +
+    '<p style="font-size:14px;color:#94a3b8;margin-bottom:16px">' + (error.message || 'Une erreur est survenue') + '</p>' +
+    '<button onclick="location.reload()" class="param-btn" style="background:#3b82f6;border:none">' +
+    '<i class="fa-solid fa-rotate-right"></i> Réessayer</button>' +
+    '</div>';
+  
+  containers.forEach(function(container) {
+    if (container) {
+      container.innerHTML = errorHTML;
+    }
+  });
+}
 
 /* Renderer principal (vertical cards) */
 function renderProducts(filter, search) {
@@ -2556,7 +2661,390 @@ function checkoutWhatsApp() {
     console.error('[checkoutWhatsApp error]', err);
   }
 }
+/* ==========================================
+   RECEIPT SYSTEM - VERSION CORRIGÉE MANUEL ✅
+   
+   PROBLÈMES IDENTIFIÉS:
+   1. checkoutWhatsApp() original était écrasé
+   2. window.CartAPI non compatible avec ancien code
+   3. Format du reçu avait des caractères spéciaux problématiques
+   4. Pas de feedback visuel avant ouverture WhatsApp
+   
+   ========================================== */
 
+(function initReceiptSystem() {
+  'use strict';
+  
+  console.log('[Receipt] 🧾 Initializing receipt system...');
+  
+  // ========================================
+  // ÉTAPE 1: GÉNÉRER NUMÉRO DE COMMANDE
+  // ========================================
+  
+  function generateOrderNumber() {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    
+    // Format: MJR25011312345 (MJR + Year + Month + Day + Random)
+    return `MJR${year}${month}${day}${random}`;
+  }
+  
+  // ========================================
+  // ÉTAPE 2: FORMATER LE REÇU (VERSION SIMPLE)
+  // ========================================
+  
+  function formatWhatsAppReceipt(orderNumber, items, total) {
+    const now = new Date();
+    
+    // ✅ FIX: Format date simple (évite les problèmes de locale)
+    const dateStr = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+    const timeStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    // ✅ STRUCTURE SIMPLIFIÉE (évite les symboles Unicode qui posent problème)
+    let receipt = '==========================================\n';
+    receipt += '       MIJORO BOUTIQUE\n';
+    receipt += '       RECU DE COMMANDE\n';
+    receipt += '==========================================\n\n';
+    
+    receipt += `N° Commande: ${orderNumber}\n`;
+    receipt += `Date: ${dateStr}\n`;
+    receipt += `Heure: ${timeStr}\n`;
+    receipt += '------------------------------------------\n\n';
+    
+    receipt += 'DETAILS DE LA COMMANDE:\n\n';
+    
+    // ✅ FIX: Listage simple sans symboles complexes
+    items.forEach((item, index) => {
+      const itemTotal = item.price * item.qty;
+      const priceText = itemTotal > 0 ? 
+        itemTotal.toLocaleString('fr-FR') + ' AR' : 
+        'Gratuit';
+      
+      receipt += `${index + 1}. ${item.title}\n`;
+      receipt += `   Quantite: ${item.qty}\n`;
+      receipt += `   Prix unit: ${item.price > 0 ? item.price.toLocaleString('fr-FR') + ' AR' : 'Gratuit'}\n`;
+      receipt += `   Sous-total: ${priceText}\n\n`;
+    });
+    
+    receipt += '------------------------------------------\n';
+    receipt += `TOTAL A PAYER: ${total.toLocaleString('fr-FR')} AR\n`;
+    receipt += '------------------------------------------\n\n';
+    
+    receipt += 'Contact: +261 33 31 06 055\n';
+    receipt += 'Email: joroandriamanirisoa13@gmail.com\n\n';
+    
+    receipt += 'Merci pour votre confiance!\n';
+    receipt += 'Conservez ce recu pour votre commande\n\n';
+    
+    receipt += 'Mijoro Boutique - Votre partenaire digital';
+    
+    return receipt;
+  }
+  
+  // ========================================
+  // ÉTAPE 3: SAUVEGARDER DANS L'HISTORIQUE
+  // ========================================
+  
+  function saveOrderToHistory(orderNumber, items, total) {
+    try {
+      const HISTORY_KEY = 'order-history:v1';
+      
+      const order = {
+        orderNumber: orderNumber,
+        date: new Date().toISOString(),
+        items: items,
+        total: total,
+        status: 'pending'
+      };
+      
+      // Charger l'historique existant
+      let history = [];
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) {
+        history = JSON.parse(raw);
+      }
+      
+      // Ajouter en début (plus récent en premier)
+      history.unshift(order);
+      
+      // Garder seulement les 50 dernières commandes
+      if (history.length > 50) {
+        history = history.slice(0, 50);
+      }
+      
+      // Sauvegarder
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      
+      console.log('[Receipt] ✅ Order saved to history:', orderNumber);
+      
+    } catch (e) {
+      console.warn('[Receipt] ⚠️ Could not save to history:', e);
+      // Ne bloque pas le processus si erreur
+    }
+  }
+  
+  // ========================================
+  // ÉTAPE 4: AFFICHER LE MODAL DE CONFIRMATION
+  // ========================================
+  
+  function showReceiptModal(orderNumber, receipt, items, total) {
+    console.log('[Receipt] 📋 Showing receipt modal...');
+    
+    // Supprimer ancien modal si existe
+    const existingModal = document.getElementById('receipt-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    // Créer le modal
+    const modal = document.createElement('div');
+    modal.id = 'receipt-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px';
+    
+    modal.innerHTML = `
+      <div style="background:#0e0f13;color:#fff;border-radius:14px;width:min(500px,100%);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        
+        <!-- Header -->
+        <div style="padding:16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0;font-size:18px;display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-receipt"></i>
+            Reçu de Commande
+          </h3>
+          <button type="button" 
+                  class="receipt-close-btn"
+                  style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:24px;padding:4px;line-height:1;transition:color 0.2s"
+                  onmouseover="this.style.color='#fff'"
+                  onmouseout="this.style.color='#94a3b8'">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding:20px;overflow-y:auto;flex:1">
+          
+          <!-- Receipt Preview -->
+          <div style="background:#14161c;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;font-family:monospace;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:20px">
+${receipt}
+          </div>
+          
+          <!-- Info Box -->
+          <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:12px;margin-bottom:16px">
+            <p style="margin:0;font-size:14px;color:#93c5fd">
+              <i class="fa-solid fa-info-circle"></i>
+              <strong>Conservez ce reçu</strong> comme preuve de votre commande. Le N° de commande vous sera demandé pour le suivi.
+            </p>
+          </div>
+          
+        </div>
+        
+        <!-- Actions -->
+        <div style="padding:16px;border-top:1px solid rgba(255,255,255,.1);display:flex;gap:8px;flex-wrap:wrap">
+          
+          <button type="button"
+                  class="receipt-btn receipt-copy-btn"
+                  style="flex:1;min-width:140px;padding:12px;border:1px solid rgba(59,130,246,.3);background:rgba(59,130,246,.1);color:#3b82f6;border-radius:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s"
+                  onmouseover="this.style.background='rgba(59,130,246,.2)'"
+                  onmouseout="this.style.background='rgba(59,130,246,.1)'">
+            <i class="fa-solid fa-copy"></i>
+            Copier le texte
+          </button>
+          
+          <button type="button"
+                  class="receipt-btn receipt-whatsapp-btn"
+                  style="flex:1;min-width:140px;padding:12px;border:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s"
+                  onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 16px rgba(16,185,129,.3)'"
+                  onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <i class="fa-brands fa-whatsapp"></i>
+            Envoyer sur WhatsApp
+          </button>
+          
+        </div>
+        
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // ========================================
+    // WIRE LES BOUTONS DU MODAL
+    // ========================================
+    
+    const closeBtn = modal.querySelector('.receipt-close-btn');
+    const copyBtn = modal.querySelector('.receipt-copy-btn');
+    const whatsappBtn = modal.querySelector('.receipt-whatsapp-btn');
+    
+    // Bouton Fermer
+    closeBtn.addEventListener('click', () => {
+      modal.remove();
+    });
+    
+    // Bouton Copier
+    copyBtn.addEventListener('click', () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(receipt)
+          .then(() => {
+            // Feedback visuel
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copié!';
+            copyBtn.style.background = 'rgba(16,185,129,.2)';
+            copyBtn.style.color = '#10b981';
+            
+            setTimeout(() => {
+              copyBtn.innerHTML = originalHTML;
+              copyBtn.style.background = '';
+              copyBtn.style.color = '';
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('[Receipt] Copy error:', err);
+            alert('❌ Erreur lors de la copie');
+          });
+      } else {
+        // Fallback pour anciens navigateurs
+        alert('⚠️ Copie non supportée sur cet appareil');
+      }
+    });
+    
+    // Bouton WhatsApp
+    whatsappBtn.addEventListener('click', () => {
+      sendReceiptViaWhatsApp(receipt);
+      modal.remove();
+    });
+    
+    // Fermer sur backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+    
+    // Fermer sur Escape
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        modal.remove();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    console.log('[Receipt] ✅ Modal displayed');
+  }
+  
+  // ========================================
+  // ÉTAPE 5: ENVOYER VIA WHATSAPP
+  // ========================================
+  
+  function sendReceiptViaWhatsApp(receipt) {
+    try {
+      console.log('[Receipt] 📤 Sending to WhatsApp...');
+      
+      const message = encodeURIComponent(receipt);
+      const phone = '261333106055'; // ← Votre numéro WhatsApp
+      const url = `https://wa.me/${phone}?text=${message}`;
+      
+      // Ouvrir WhatsApp
+      window.open(url, '_blank', 'noopener');
+      
+      console.log('[Receipt] ✅ WhatsApp opened');
+      
+    } catch (e) {
+      console.error('[Receipt] ❌ WhatsApp error:', e);
+      alert('❌ Erreur lors de l\'ouverture de WhatsApp');
+    }
+  }
+  
+  // ========================================
+  // ÉTAPE 6: PATCH checkoutWhatsApp() - LE PLUS IMPORTANT
+  // ========================================
+  
+  // ✅ SAUVEGARDER L'ANCIENNE FONCTION (si existe)
+  const originalCheckoutWhatsApp = window.checkoutWhatsApp;
+  
+  // ✅ CRÉER LA NOUVELLE VERSION
+  window.checkoutWhatsApp = function() {
+    try {
+      console.log('[Receipt] 🛒 Checkout triggered');
+      
+      // ========================================
+      // RÉCUPÉRER LES ITEMS DU PANIER
+      // ========================================
+      
+      let items = [];
+      let total = 0;
+      
+      // ✅ MÉTHODE 1: Via CartAPI (moderne)
+      if (typeof window.CartAPI !== 'undefined' && window.CartAPI.state) {
+        console.log('[Receipt] Using CartAPI');
+        
+        const cartItems = window.CartAPI.state.items;
+        
+        if (cartItems.size === 0) {
+          alert('⚠️ Votre panier est vide');
+          return;
+        }
+        
+        // Convertir Map en Array
+        cartItems.forEach((item) => {
+          const itemTotal = item.price * item.qty;
+          total += itemTotal;
+          items.push({
+            title: item.name || item.title || 'Produit',
+            price: Number(item.price) || 0,
+            qty: Number(item.qty) || 1
+          });
+        });
+        
+      }
+      // ✅ MÉTHODE 2: Via ancien cartItems (fallback)
+      else if (typeof window.cartItems !== 'undefined' && window.cartItems.size > 0) {
+        console.log('[Receipt] Using legacy cartItems');
+        
+        window.cartItems.forEach((item) => {
+          const itemTotal = item.price * item.qty;
+          total += itemTotal;
+          items.push({
+            title: item.title || 'Produit',
+            price: Number(item.price) || 0,
+            qty: Number(item.qty) || 1
+          });
+        });
+        
+      }
+      // ✅ MÉTHODE 3: Panier vide
+      else {
+        alert('⚠️ Votre panier est vide');
+        return;
+      }
+      
+      // ========================================
+      // GÉNÉRER LE REÇU
+      // ========================================
+      
+      console.log('[Receipt] 📋 Generating receipt for', items.length, 'items');
+      
+      const orderNumber = generateOrderNumber();
+      const receipt = formatWhatsAppReceipt(orderNumber, items, total);
+      
+      // Sauvegarder dans l'historique
+      saveOrderToHistory(orderNumber, items, total);
+      
+      // Afficher le modal
+      showReceiptModal(orderNumber, receipt, items, total);
+      
+      console.log('[Receipt] ✅ Checkout complete');
+      
+    } catch (err) {
+      console.error('[Receipt] ❌ Checkout error:', err);
+      alert('❌ Erreur lors de la génération du reçu: ' + err.message);
+    }
+  };
+  
+  console.log('[Receipt] ✅ System initialized and checkoutWhatsApp patched');
+  
+})();
 /* Helpers (z-index/menu safety) */
 function __ensureBottomMenuClickable() {
   var bm = document.querySelector('.bottom-menu');
@@ -3179,41 +3667,73 @@ function applyAuthUI() {
 
 async function fetchSupabaseProducts() {
   try {
-    console.log('[fetchSupabaseProducts] 📡 Connecting to Supabase...');
+    console.log('[fetchSupabaseProducts] 📡 Starting fetch...');
+    
     const sb = await ensureSupabase();
     
-    console.log('[fetchSupabaseProducts] 📥 Fetching data...');
-    const { data, error } = await sb
+    if (!sb) {
+      throw new Error('Supabase client not initialized');
+    }
+    
+    console.log('[fetchSupabaseProducts] ✓ Supabase client ready');
+    
+    // ✅ ÉTAPE 1: Charger les produits
+    const { data: productsData, error: productsError } = await sb
       .from('products')
       .select('*')
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('[fetchSupabaseProducts] ❌ Error:', error);
-      throw error;
-    }
+    if (productsError) throw productsError;
     
-    console.log('[fetchSupabaseProducts] ✅ Received', data?.length || 0, 'products');
-    
-    const converted = (data || []).map(mapRowToUI);
-    
-    if (converted.length > 0) {
-      window.products = converted;
-      console.log('[fetchSupabaseProducts] ✅ Products updated globally');
-    } else {
+    if (!productsData || productsData.length === 0) {
       console.warn('[fetchSupabaseProducts] ⚠️ No products in database');
       window.products = [];
+      return;
     }
     
-    const activeFilter = document.querySelector('.filters .filter-btn.active');
-    const filter = activeFilter ?
-      (activeFilter.getAttribute('data-filter') || activeFilter.getAttribute('data-category') || 'all') :
-      'all';
-    const searchInput = document.getElementById('search');
-    const searchValue = searchInput ? searchInput.value : '';
+    console.log('[fetchSupabaseProducts] ✅ Products loaded:', productsData.length);
     
-    if (typeof renderProducts === 'function') {
-      renderProducts(filter, searchValue);
+    // ✅ ÉTAPE 2: Charger TOUS les compteurs galerie d'un coup
+    const { data: galleryCounts, error: galleryError } = await sb
+      .from('product_images')
+      .select('product_id, id')
+      .eq('image_type', 'gallery');
+    
+    if (galleryError) {
+      console.warn('[fetchSupabaseProducts] Gallery count error:', galleryError);
+    }
+    
+    // ✅ ÉTAPE 3: Créer un Map pour compter rapidement
+    const galleryMap = {};
+    if (galleryCounts) {
+      galleryCounts.forEach(img => {
+        galleryMap[img.product_id] = (galleryMap[img.product_id] || 0) + 1;
+      });
+      console.log('[fetchSupabaseProducts] 📸 Gallery counts loaded:', Object.keys(galleryMap).length, 'products');
+    }
+    
+    // ✅ ÉTAPE 4: Mapper avec galleryCount
+    const converted = productsData.map(row => {
+      const uiProduct = mapRowToUI(row);
+      uiProduct.galleryCount = galleryMap[row.id] || 0; // ← ICI: Ajout du compteur
+      
+      // ✅ DEBUG
+      if (uiProduct.galleryCount > 0) {
+        console.log('[fetchSupabaseProducts] 📸', uiProduct.title, '→', uiProduct.galleryCount, 'images');
+      }
+      
+      return uiProduct;
+    });
+    
+    window.products = converted;
+    
+    console.log('[fetchSupabaseProducts] ✅ Products loaded:', converted.length);
+    
+    // ✅ Debug: Afficher les produits avec galerie
+    const withGallery = converted.filter(p => p.galleryCount > 0);
+    if (withGallery.length > 0) {
+      console.log('[fetchSupabaseProducts] 📸 Products with gallery:',
+        withGallery.map(p => `${p.title} (${p.galleryCount} images)`));
     }
     
     if (typeof applyAuthUI === 'function') {
@@ -3221,423 +3741,114 @@ async function fetchSupabaseProducts() {
     }
     
   } catch (e) {
-    console.error('[fetchSupabaseProducts] 💥 FATAL ERROR:', e);
+    console.error('[fetchSupabaseProducts] 💥 Fatal error:', e);
+    console.error('Stack:', e.stack);
     window.products = [];
-    if (typeof renderProducts === 'function') {
-      renderProducts('all', '');
-    }
+    throw e;
   }
 }
+
 
   /* ---------- Upload helpers (image / video / pdf) ---------- */
-  function detectAssetKind(file) {
-    const type = (file && file.type) ? file.type.toLowerCase() : '';
-    if (type.startsWith('image/')) return { kind: 'image', folder: 'images' };
-    if (type.startsWith('video/')) return { kind: 'video', folder: 'videos' };
-    if (type === 'application/pdf' || /\.pdf$/i.test(file?.name || '')) return { kind: 'pdf', folder: 'pdfs' };
-    return { kind: 'file', folder: 'files' };
-  }
-
-  async function uploadAssets(files) {
-    const sb = await ensureSupabase();
-    const out = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      const { kind, folder } = detectAssetKind(f);
-      const safeName = (f.name || 'file').replace(/[^\w.\-]+/g, '_');
-      const path = `${folder}/${crypto.randomUUID()}_${safeName}`;
-      const { data, error } = await sb.storage.from('products').upload(path, f, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: f.type || undefined
-      });
-      if (error) throw error;
-      const { data: pub } = sb.storage.from('products').getPublicUrl(data.path);
-      out.push({ kind, name: f.name, path: data.path, url: pub.publicUrl });
-    }
-    return out;
-  }
-
-  function pickFiles({ multiple = true } = {}) {
-    return new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.multiple = multiple;
-      input.accept = 'image/*,video/*,application/pdf';
-      input.style.display = 'none';
-      document.body.appendChild(input);
-      input.onchange = () => {
-        const files = Array.from(input.files || []);
-        input.remove();
-        resolve(files);
-      };
-      input.click();
-    });
-  }
+  
 
   /* ---------- Modal UI Add/Edit + File picker ---------- */
- function ensureProductModal() {
-  let modal = document.getElementById('product-edit-modal');
-  if (modal) return modal;
+ 
 
-  modal = document.createElement('div');
-  modal.id = 'product-edit-modal';
-  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:6000;';
-  modal.innerHTML = `
-    <div class="pe-card" role="dialog" aria-modal="true" aria-labelledby="pe-title" style="
-      width:min(720px,94%);background:#0e0f13;color:#fff;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 35px rgba(0,0,0,.4)">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
-        <h3 id="pe-title" style="margin:0">Product</h3>
-        <button type="button" class="param-btn" id="pe-close" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
 
-      <form id="pe-form" style="display:grid;gap:10px">
-        <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
-          
-          <!-- ✅ TYPE DE PRODUIT - EN PREMIER -->
-          <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">
-            <span style="font-weight:700;font-size:15px">Type de produit</span>
-            <select id="pe-product-type" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;font-size:14px">
-              <option value="numeric">💻 Numérique (eBooks, vidéos, apps)</option>
-              <option value="physical">📦 Physique (vêtements, électronique, etc.)</option>
-            </select>
-          </label>
-          
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Titre</span>
-            <input id="pe-title-input" required placeholder="Titre du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
 
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Prix (AR)</span>
-            <input id="pe-price-input" type="number" min="0" step="1" placeholder="0" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
+/* ==========================================
+   GALLERY IMAGES MANAGEMENT ✅ VAOVAO
+   ========================================== */
 
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Catégorie</span>
-            <select id="pe-category" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-              <!-- Sera rempli dynamiquement -->
-            </select>
-          </label>
-
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Badge (optionnel)</span>
-            <input id="pe-badge" placeholder="ex: Hot, New..." style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
-
-          <label style="grid-column:1 / -1;display:flex;flex-direction:column;gap:6px">
-            <span>Tags (séparés par des virgules)</span>
-            <input id="pe-tags" placeholder="business, mobile, formation" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
-
-          <label style="grid-column:1 / -1;display:flex;flex-direction:column;gap:6px">
-            <span>Description</span>
-            <textarea id="pe-description" rows="3" placeholder="Description du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;resize:vertical"></textarea>
-          </label>
-        </div>
-
-        <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr">
-          <div class="pe-uploader" data-kind="image" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px;min-height:160px;display:flex;gap:10px">
-            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>Image (thumbnail)</strong>
-                <button class="param-btn" type="button" id="pe-pick-image"><i class="fa-solid fa-image"></i> Choisir</button>
-              </div>
-              <small style="opacity:.8">Formats: JPG/PNG/WebP.</small>
-              <div id="pe-image-preview" style="border:1px solid #2a2d38;border-radius:10px;min-height:110px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#11151f">
-                <span style="opacity:.6">Tsy misy sary</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="pe-uploader" data-kind="preview" id="pe-preview-uploader" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px;min-height:160px;display:flex;gap:10px">
-            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>Preview (Vidéo/PDF)</strong>
-                <button class="param-btn" type="button" id="pe-pick-preview"><i class="fa-solid fa-upload"></i> Choisir</button>
-              </div>
-              <small style="opacity:.8">Vidéo (mp4/webm) na PDF.</small>
-              <div id="pe-preview-preview" style="border:1px solid #2a2d38;border-radius:10px;min-height:110px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#11151f">
-                <span style="opacity:.6">Tsy misy vidéo/PDF</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="pe-preview-url-container" style="display:flex;gap:8px;align-items:center">
-          <input id="pe-preview-url" placeholder="na URL preview: https://..." style="flex:1;padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          <button class="param-btn" type="button" id="pe-test-preview"><i class="fa-solid fa-eye"></i> Test</button>
-        </div>
-
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
-          <button class="param-btn" type="button" id="pe-cancel">Annuler</button>
-          <button class="param-btn" type="submit" id="pe-submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
-        </div>
-      </form>
-    </div>
-  `;
+function peSetGalleryFiles(files) {
+  console.log('[Gallery] 📸 Adding', files.length, 'files');
   
-  document.body.appendChild(modal);
-
-  // ✅ WIRE EVENTS
-  modal.querySelector('#pe-close').addEventListener('click', () => peClose());
-  modal.querySelector('#pe-cancel').addEventListener('click', () => peClose());
-
-  // ✅ PRODUCT TYPE CHANGE -> Update categories
-  const productTypeSelect = modal.querySelector('#pe-product-type');
-  const categorySelect = modal.querySelector('#pe-category');
-  const previewUploader = modal.querySelector('#pe-preview-uploader');
-  const previewUrlContainer = modal.querySelector('#pe-preview-url-container');
-
-  const categoryOptions = {
-    numeric: [
-      { value: 'ebooks', label: 'eBooks' },
-      { value: 'videos', label: 'Vidéos' },
-      { value: 'apps', label: 'Apps/Jeux' },
-      { value: 'vip', label: 'VIP' },
-      { value: 'promo', label: 'Promo' },
-      { value: 'free', label: 'Gratuit' }
-    ],
-    physical: [
-      { value: 'clothing', label: '👕 Vêtements' },
-      { value: 'electronics', label: '📱 Électronique' },
-      { value: 'accessories', label: '💍 Accessoires' },
-      { value: 'books', label: '📚 Livres physiques' },
-      { value: 'home', label: '🏠 Maison & Déco' },
-      { value: 'sports', label: '⚽ Sports & Loisirs' },
-      { value: 'beauty', label: '💄 Beauté & Santé' },
-      { value: 'other', label: '📦 Autre' }
-    ]
-  };
-
-  function updateCategories(productType) {
-    const options = categoryOptions[productType] || categoryOptions.numeric;
-    const currentValue = categorySelect.value;
-    
-    categorySelect.innerHTML = '';
-    options.forEach(opt => {
-      const option = document.createElement('option');
-      option.value = opt.value;
-      option.textContent = opt.label;
-      categorySelect.appendChild(option);
-    });
-
-    // Restore value if exists
-    const optionExists = options.find(opt => opt.value === currentValue);
-    if (optionExists) {
-      categorySelect.value = currentValue;
-    } else {
-      categorySelect.value = options[0].value;
-    }
-
-    // Show/hide preview fields
-    if (productType === 'physical') {
-      previewUploader.style.display = 'none';
-      previewUrlContainer.style.display = 'none';
-    } else {
-      previewUploader.style.display = '';
-      previewUrlContainer.style.display = '';
-    }
-    
-    console.log('[Modal] Categories updated for:', productType);
-  }
-
-  productTypeSelect.addEventListener('change', function() {
-    updateCategories(this.value);
-  });
-
-  // Initial load
-  updateCategories('numeric');
-
-  // Drag & drop
-  modal.querySelectorAll('.pe-uploader').forEach(box => {
-    box.addEventListener('dragover', e => { e.preventDefault(); box.style.borderColor = '#5b78ff'; });
-    box.addEventListener('dragleave', () => { box.style.borderColor = '#2a2d38'; });
-    box.addEventListener('drop', e => {
-      e.preventDefault();
-      box.style.borderColor = '#2a2d38';
-      const files = Array.from(e.dataTransfer.files || []);
-      if (!files.length) return;
-      if (box.getAttribute('data-kind') === 'image') peSetLocalFile('image', files[0]);
-      else peSetLocalFile('preview', files[0]);
-    });
-  });
-
-  return modal;
-}
-
-  const peLocal = { imageFile: null, previewFile: null, mode: 'add', recordId: null };
-
-  function peOpen({ mode = 'add', product = null, productType = 'numeric' } = {}) {
-  if (!isOwner()) {
-    alert('Owner ihany no afaka manao izao.');
+  const modal = ensureProductModal();
+  const preview = modal.querySelector('#pe-gallery-preview');
+  
+  if (!modal || !preview) {
+    console.error('[Gallery] Modal elements not found');
     return;
   }
   
-  const modal = ensureProductModal();
-  peLocal.mode = mode;
-  peLocal.recordId = product?.id || null;
-  peLocal.imageFile = null;
-  peLocal.previewFile = null;
+  // ✅ Limiter à 5 images total
+  const remainingSlots = 5 - peLocal.galleryFiles.length;
+  const filesToAdd = Array.from(files).slice(0, remainingSlots);
   
-  // ✅ SET PRODUCT TYPE (priorité: product existant, sinon paramètre, sinon 'numeric')
-  const productTypeSelect = modal.querySelector('#pe-product-type');
-  const finalProductType = product?.product_type || product?._db?.product_type || productType;
+  if (filesToAdd.length < files.length) {
+    alert(`⚠️ Maximum 5 images. ${files.length - filesToAdd.length} image(s) ignorée(s).`);
+  }
   
-  if (productTypeSelect) {
-    productTypeSelect.value = finalProductType;
-    console.log('[peOpen] Product type set to:', finalProductType);
+  // ✅ Validate et ajouter
+  filesToAdd.forEach(file => {
+    if (!file.type.startsWith('image/')) {
+      console.warn('[Gallery] Invalid file type:', file.type);
+      return;
+    }
     
-    // ✅ Trigger change pour update categories
-    productTypeSelect.dispatchEvent(new Event('change'));
-  }
-  
-  // Title
-  const typeLabel = finalProductType === 'physical' ? '📦 Produit Physique' : '💻 Produit Numérique';
-  modal.querySelector('#pe-title').textContent = (mode === 'add') ? `Ajouter ${typeLabel}` : `Éditer ${typeLabel}`;
-  
-  // Fill fields
-  modal.querySelector('#pe-title-input').value = product?.title || '';
-  modal.querySelector('#pe-price-input').value = Number(product?.price || 0);
-  modal.querySelector('#pe-category').value = normalizeCategory(product?.category || (finalProductType === 'physical' ? 'other' : 'ebooks'));
-  modal.querySelector('#pe-badge').value = product?._db?.badge || '';
-  modal.querySelector('#pe-tags').value = Array.isArray(product?._db?.tags) ? product._db.tags.join(', ') : '';
-  modal.querySelector('#pe-description').value = product?.description || product?.description_short || '';
-  modal.querySelector('#pe-preview-url').value = product?.preview_url || product?._db?.preview_url || '';
-  
-  // Image preview
-  const imgPrev = modal.querySelector('#pe-image-preview');
-  imgPrev.innerHTML = product?.image?.url ?
-    `<img src="${escapeAttr(product.image.url)}" alt="thumbnail" style="width:100%;height:110px;object-fit:cover">` :
-    `<span style="opacity:.6">Tsy misy sary</span>`;
-  
-  // Preview preview
-  const pvPrev = modal.querySelector('#pe-preview-preview');
-  const existingPreview = product?.preview_url || product?._db?.preview_url || '';
-  if (existingPreview) {
-    if (/\.pdf(\?|#|$)/i.test(existingPreview)) {
-      pvPrev.innerHTML = `<div style="opacity:.85"><i class="fa-solid fa-file-pdf"></i> PDF</div>`;
-    } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(existingPreview)) {
-      pvPrev.innerHTML = `<video src="${escapeAttr(existingPreview)}" style="max-width:100%;max-height:110px" muted></video>`;
-    } else {
-      pvPrev.innerHTML = `<div style="opacity:.8">${escapeHtml(existingPreview)}</div>`;
+    if (file.size > 5 * 1024 * 1024) { // 5MB max
+      alert(`⚠️ ${file.name} lehibe loatra (max 5MB)`);
+      return;
     }
-  } else {
-    pvPrev.innerHTML = `<span style="opacity:.6">Tsy misy vidéo/PDF</span>`;
-  }
-  
-  // Wire file pickers
-  modal.querySelector('#pe-pick-image').onclick = async () => {
-    const files = await pickFiles({ multiple: false });
-    if (files && files[0]) peSetLocalFile('image', files[0]);
-  };
-  
-  modal.querySelector('#pe-pick-preview').onclick = async () => {
-    const files = await pickFiles({ multiple: false });
-    if (files && files[0]) peSetLocalFile('preview', files[0]);
-  };
-  
-  modal.querySelector('#pe-test-preview').onclick = () => {
-    const url = modal.querySelector('#pe-preview-url').value.trim();
-    if (!url) return alert('Ampidiro URL preview aloha na misafidiana vidéo/PDF.');
-    if (typeof openPreview === 'function') {
-      openPreview({ title: modal.querySelector('#pe-title-input').value.trim() || 'Preview', preview_url: url });
-    }
-  };
-  
-  // Submit form
-  modal.querySelector('#pe-form').onsubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await peSubmitForm();
-      peClose();
-      await fetchSupabaseProducts();
-    } catch (err) {
-      console.error('[peSubmitForm]', err);
-      alert('Erreur: ' + err.message);
-    }
-  };
-  
-  // Show modal
-  modal.style.display = 'flex';
-  modal.setAttribute('aria-hidden', 'false');
-  modal.querySelector('#pe-title-input').focus();
-}
-// ✅ Helper function pour remplir les catégories
-function updateCategoryOptions(productType) {
-  const categorySelect = document.getElementById('pe-category');
-  if (!categorySelect) return;
-  
-  const categoryOptions = {
-    numeric: [
-      { value: 'ebooks', label: 'eBooks' },
-      { value: 'videos', label: 'Vidéos' },
-      { value: 'apps', label: 'Apps/Jeux' },
-      { value: 'vip', label: 'VIP' },
-      { value: 'promo', label: 'Promo' },
-      { value: 'free', label: 'Gratuit' }
-    ],
-    physical: [
-      { value: 'clothing', label: '👕 Vêtements' },
-      { value: 'electronics', label: '📱 Électronique' },
-      { value: 'accessories', label: '💍 Accessoires' },
-      { value: 'books', label: '📚 Livres physiques' },
-      { value: 'home', label: '🏠 Maison & Déco' },
-      { value: 'sports', label: '⚽ Sports & Loisirs' },
-      { value: 'beauty', label: '💄 Beauté & Santé' },
-      { value: 'other', label: '📦 Autre' }
-    ]
-  };
-  
-  const options = categoryOptions[productType] || categoryOptions.numeric;
-  const currentValue = categorySelect.value;
-  
-  categorySelect.innerHTML = '';
-  
-  options.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt.value;
-    option.textContent = opt.label;
-    categorySelect.appendChild(option);
+    
+    const id = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    peLocal.galleryFiles.push({ id, file });
   });
   
-  const optionExists = options.find(opt => opt.value === currentValue);
-  if (optionExists) {
-    categorySelect.value = currentValue;
-  } else {
-    categorySelect.value = options[0].value;
-  }
+  console.log('[Gallery] ✅ Total images:', peLocal.galleryFiles.length);
+  renderGalleryPreview();
 }
 
-  function peClose() {
-    const modal = document.getElementById('product-edit-modal');
-    if (!modal) return;
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
+function renderGalleryPreview() {
+  const modal = document.getElementById('product-edit-modal');
+  if (!modal) return;
+  
+  const preview = modal.querySelector('#pe-gallery-preview');
+  if (!preview) return;
+  
+  if (peLocal.galleryFiles.length === 0) {
+    preview.innerHTML = '<span style="opacity:.6;grid-column:1/-1;text-align:center;padding:20px">Aucune image</span>';
+    return;
   }
+  
+  preview.innerHTML = peLocal.galleryFiles.map(item => {
+    const url = URL.createObjectURL(item.file);
+    return `
+      <div class="gallery-item" data-id="${item.id}" style="position:relative;border-radius:8px;overflow:hidden">
+        <img src="${url}" 
+             style="width:100%;height:100px;object-fit:cover;display:block"
+             alt="Gallery image">
+        <button type="button" 
+                class="gallery-remove" 
+                data-id="${item.id}" 
+                style="position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+  
+  // ✅ Wire remove buttons
+  preview.querySelectorAll('.gallery-remove').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const id = this.getAttribute('data-id');
+      console.log('[Gallery] Removing image:', id);
+      
+      peLocal.galleryFiles = peLocal.galleryFiles.filter(item => item.id !== id);
+      renderGalleryPreview();
+    });
+  });
+}
 
-  function peSetLocalFile(kind, file) {
-    const modal = ensureProductModal();
-    const { kind: detectKind } = detectAssetKind(file);
-    if (kind === 'image' && detectKind !== 'image') { return alert('Safidio sary ho an\'ny thumbnail.'); }
-    if (kind === 'preview' && !(detectKind === 'video' || detectKind === 'pdf')) { return alert('Safidio vidéo na PDF ho an\'ny preview.'); }
+// ✅ Expose globalement
+window.peSetGalleryFiles = peSetGalleryFiles;
+window.renderGalleryPreview = renderGalleryPreview;
 
-    if (kind === 'image') {
-      peLocal.imageFile = file;
-      const url = URL.createObjectURL(file);
-      modal.querySelector('#pe-image-preview').innerHTML = `<img src="${url}" alt="thumbnail" style="width:100%;height:110px;object-fit:cover">`;
-    } else {
-      peLocal.previewFile = file;
-      const pvBox = modal.querySelector('#pe-preview-preview');
-      if (detectKind === 'pdf') {
-        pvBox.innerHTML = `<div style="opacity:.85"><i class="fa-solid fa-file-pdf"></i> ${(typeof escapeHtml === 'function') ? escapeHtml(file.name) : file.name}</div>`;
-      } else {
-        const url = URL.createObjectURL(file);
-        pvBox.innerHTML = `<video src="${url}" style="max-width:100%;max-height:110px" muted></video>`;
-      }
-    }
-  }
-
+console.log('[Gallery] ✅ Functions registered');
   async function peUploadSelectedFiles() {
     const files = [];
     if (peLocal.imageFile) files.push(peLocal.imageFile);
@@ -3653,170 +3864,8 @@ function updateCategoryOptions(productType) {
     };
   }
 
-  async function peSubmitForm() {
-  if (!isOwner()) throw new Error('Owner ihany no afaka manova.');
-  const sb = await ensureSupabase();
-  
-  // ✅ GET FORM VALUES
-  const title = document.getElementById('pe-title-input').value.trim();
-  const price = Number(document.getElementById('pe-price-input').value || 0);
-  const category = normalizeCategory(document.getElementById('pe-category').value || 'ebooks');
-  const badge = document.getElementById('pe-badge').value.trim() || null;
-  const tagsRaw = document.getElementById('pe-tags').value.trim();
-  const description = document.getElementById('pe-description').value.trim() || null;
-  let preview_url = document.getElementById('pe-preview-url').value.trim() || null;
-  
-  // ✅ CRITICAL: Get product_type
-  const productTypeSelect = document.getElementById('pe-product-type');
-  if (!productTypeSelect) {
-    console.error('[peSubmitForm] ❌ product_type select not found!');
-    throw new Error('Product type field missing');
-  }
-  
-  const product_type = productTypeSelect.value || 'numeric';
-  console.log('[peSubmitForm] 📋 Product type:', product_type);
-  console.log('[peSubmitForm] 📋 Title:', title);
-  console.log('[peSubmitForm] 📋 Price:', price);
-  
-  // Upload files
-  const uploaded = await peUploadSelectedFiles();
-  let thumbnail_url = uploaded.thumbnail_url || null;
-  if (!preview_url) preview_url = uploaded.preview_url || null;
-  
-  // ✅ BUILD PAYLOAD
-  const payload = {
-    title,
-    category,
-    price,
-    is_free: price === 0,
-    preview_url,
-    thumbnail_url,
-    badge,
-    tags: tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
-    description,
-    product_type // ✅ CRITICAL
-  };
-  
-  console.log('[peSubmitForm] 📦 Payload:', payload);
-  
-  if (peLocal.mode === 'add') {
-    // ========================================
-    // INSERT NEW PRODUCT
-    // ========================================
-    const { data: inserted, error } = await sb
-      .from('products')
-      .insert(payload)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('[peSubmitForm] ❌ Insert error:', error);
-      throw error;
-    }
-    
-    console.log('[peSubmitForm] ✅ Product inserted:', inserted);
-    
-    // ========================================
-    // 🔥 SEND PUSH NOTIFICATIONS
-    // ========================================
-    try {
-      console.log('[peSubmitForm] 📤 Sending push notifications...');
-      console.log('[peSubmitForm] 📤 Product type for notification:', product_type);
-      
-      const notifPayload = {
-        productId: inserted.id,
-        productTitle: title,
-        productPrice: price,
-        productType: product_type // ✅ CRITICAL
-        ,
-        productImage: thumbnail_url || uploaded.thumbnail_url || null  // ✅ AJOUT IMAGE
-      };
-      
-      console.log('[peSubmitForm] 📤 Notification payload:', notifPayload);
-      
-      const notifResponse = await fetch(
-        window.SUPABASE_URL + '/functions/v1/send-push',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY,
-            'apikey': window.SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify(notifPayload)
-        }
-      );
-      
-      console.log('[peSubmitForm] 📤 Response status:', notifResponse.status);
-      
-      if (notifResponse.ok) {
-        const result = await notifResponse.json();
-        console.log('[peSubmitForm] ✅ Notifications sent:', result);
-        console.log('[peSubmitForm] ✅ Sent to', result.sent || 0, '/', result.total || 0, 'subscribers');
-      } else {
-        const errorText = await notifResponse.text();
-        console.error('[peSubmitForm] ❌ Push notification failed:', errorText);
-      }
-    } catch (notifErr) {
-      console.error('[peSubmitForm] ❌ Notification error:', notifErr);
-      // Don't block success for notification failure
-    }
-    
-    // ========================================
-    // 🔥 LOCAL NOTIFICATION
-    // ========================================
-    if (typeof window.notifyNewProduct === 'function') {
-      console.log('[peSubmitForm] 🔔 Showing local notification');
-      window.notifyNewProduct({
-        id: inserted.id,
-        title: title,
-        price: price,
-        product_type: product_type
-      });
-    }
-    
-    // ========================================
-    // SUCCESS MESSAGE
-    // ========================================
-    const typeLabel = product_type === 'physical' ? '📦 Produit physique' : '💻 Produit numérique';
-    const message = `${typeLabel} ajouté avec succès! 🎉\n\nNotifications envoyées aux abonnés.`;
-    
-    alert(message);
-    console.log('[peSubmitForm] ✅ Complete');
-    
-  } else {
-    // ========================================
-    // UPDATE EXISTING PRODUCT
-    // ========================================
-    const { error } = await sb.from('products').update(payload).eq('id', peLocal.recordId);
-    if (error) throw error;
-    alert('Produit modifié.');
-  }
-}
 
-// ✅ Make it global
-window.peSubmitForm = peSubmitForm;
 
-  /* ---------- CRUD API exposed ---------- */
-  async function addProductPrompt() { peOpen({ mode: 'add', product: null }); }
-
-  async function editProductPrompt(id) {
-    if (!isOwner()) return alert('Owner ihany no afaka manova.');
-    const sb = await ensureSupabase();
-    const { data, error } = await sb.from('products').select('*').eq('id', id).maybeSingle();
-    if (error) { alert(error.message); return; }
-    if (!data) { alert('Produit introuvable'); return; }
-    peOpen({ mode: 'edit', product: mapRowToUI(data) });
-  }
-// ✅✅✅ AMPIO ITY FARANY ✅✅✅
-  // Expose functions globally
-  window.peOpen = peOpen;
-  window.peClose = peClose;
-  window.updateCategoryOptions = updateCategoryOptions;
-  window.addProductPrompt = addProductPrompt;
-  window.addPhysicalProductPrompt = addPhysicalProductPrompt;
-  window.editProductPrompt = editProductPrompt;
-  window.deleteProductConfirm = deleteProductConfirm;
  // ========================================
  // WIRE BUTTONS + INIT
  // ========================================
@@ -3852,43 +3901,7 @@ window.peSubmitForm = peSubmitForm;
       await fetchSupabaseProducts();
     } catch (e) { console.error('[deleteProductConfirm]', e); alert('Erreur suppression: ' + e.message); }
   }
-
-  window.editProductPrompt = editProductPrompt;
-  window.deleteProductConfirm = deleteProductConfirm;
-
-  /* ---------- Delegation tools amin'ny cards ---------- */
-  document.addEventListener('DOMContentLoaded', function () {
-    function delegate(root) {
-      if (!root) return;
-      root.addEventListener('click', function (e) {
-        const btn = e.target.closest && e.target.closest('button[data-tool]');
-        if (!btn) return;
-        const card = e.target.closest('.product-card');
-        if (!card) return;
-        const id = card.getAttribute('data-id');
-        const tool = btn.getAttribute('data-tool');
-        if (tool === 'edit') editProductPrompt(id);
-        else if (tool === 'delete') deleteProductConfirm(id);
-      });
-    }
-    delegate(document.getElementById('products-row'));
-    delegate(document.getElementById('products-box'));
   });
-
-  /* ---------- Wire buttons + init ---------- */
-  document.addEventListener('DOMContentLoaded', function () {
-    const login = document.getElementById('btnLogin');
-    const logout = document.getElementById('btnLogout');
-    const addBtn = document.getElementById('btnAddProduct');
-
-    if (login) login.addEventListener('click', openOwnerLoginModal);
-    if (logout) logout.addEventListener('click', signOutOwner);
-    if (addBtn) addBtn.addEventListener('click', addProductPrompt);
-
-    initAuth();
-    fetchSupabaseProducts();
-  });
-})();
 
 /* ================================
    UTILITIES + MISSING FUNCTIONS
@@ -5263,34 +5276,70 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 500);
 });
     function makeCard(p, compact) {
-  var imgUrl = escapeAttr((p.image && p.image.url) ? p.image.url : FALLBACK_IMG);
+  // Mitady image URL amin'ny priorité order:
+  // 1. p.image.url (UI structure)
+  // 2. p.thumbnail_url (direct DB field)
+  // 3. p._db.thumbnail_url (nested DB structure)
+  // 4. FALLBACK_IMG
+  
+  var imgUrl = FALLBACK_IMG;
+  
+  if (p.image && p.image.url) {
+    imgUrl = p.image.url;
+  } else if (p.thumbnail_url) {
+    imgUrl = p.thumbnail_url;
+  } else if (p._db && p._db.thumbnail_url) {
+    imgUrl = p._db.thumbnail_url;
+  }
+  
+  imgUrl = escapeAttr(imgUrl);
+
   var imgAlt = escapeAttr((p.image && p.image.alt) ? p.image.alt : (p.title || 'Produit'));
   var priceStr = fmtPrice(p.price);
   var badgeHTML = makeBadge(p);
   var actions = makeActions(p);
   var titleSafe = escapeHtml(p.title || 'Produit');
-  var descShort = escapeHtml(p.description_short || '');
   
-  // ✅ VAOVAO: Like button conditional
   var category = normalizeCategory(p.category || '');
   var showLike = (category === 'videos' || category === 'free' || category === 'gratuit');
   var likeBtn = showLike ? makeLike(p) : '';
   
-  // ✅ Structure with conditional like
-  return '<div class="card-header">' +
-    badgeHTML +
-    likeBtn + // ✅ Empty string raha tsy videos/free
-    '</div>' +
-    createProgressiveImage(imgUrl, imgAlt, 'product-image') +
-    '<div class="card-body">' +
-    '<h3>' + titleSafe + '</h3>' +
-    '<div class="card-footer">' +
-    '<div class="price-wrapper">' + priceStr + '</div>' +
-    actions +
-    '</div>' +
+// ✅ VAOVAO: Gallery indicator
+var galleryIndicator = '';
+if (p.galleryCount && p.galleryCount > 0) {
+  galleryIndicator =
+    '<div class="gallery-indicator" ' +
+    'title="' + p.galleryCount + ' image(s) dans la galerie" ' +
+    'style="position:absolute;bottom:8px;right:8px;' +
+    'background:rgba(59,130,246,.95);color:#fff;' +
+    'padding:6px 10px;border-radius:20px;font-size:11px;' +
+    'font-weight:700;backdrop-filter:blur(8px);' +
+    'border:2px solid rgba(255,255,255,.3);' +
+    'box-shadow:0 4px 12px rgba(0,0,0,.3);' +
+    'display:flex;align-items:center;gap:4px;z-index:10;' +
+    'animation:galleryPulse 2s ease-in-out infinite">' +
+    '<i class="fa-solid fa-images" style="font-size:12px"></i>' +
+    '<span>' + p.galleryCount + '</span>' +
     '</div>';
 }
 
+// ✅ Return ny HTML - TOERANA MARINA
+return '<div class="card-header">' +
+  badgeHTML +
+  likeBtn +
+  '</div>' +
+  '<div style="position:relative">' +
+  createProgressiveImage(imgUrl, imgAlt, 'product-image') +
+  galleryIndicator + // ← ITO NO TOERANA MARINA
+  '</div>' +
+  '<div class="card-body">' +
+  '<h3>' + titleSafe + '</h3>' +
+  '<div class="card-footer">' +
+  '<div class="price-wrapper">' + priceStr + '</div>' +
+  actions +
+  '</div>' +
+  '</div>';
+}
     if (row) {
       row.innerHTML = '';
       if (filtered.length === 0) row.innerHTML = '<div style="color:#ddd;padding:12px" data-i18n="shop_no_products">Aucun produit trouvé.</div>';
@@ -6002,481 +6051,117 @@ window.initAuth = initAuth;
 
   /* ---------- Mapping DB -> UI ---------- */
   function mapRowToUI(r) {
-    return {
-      id: r.id,
-      category: r.category || 'ebooks',
-      title: r.title || 'Sans titre',
-      description: r.subtitle || r.description || '',
-      image: { 
-        url: r.thumbnail_url || r.preview_url || (typeof FALLBACK_IMG !== 'undefined' ? FALLBACK_IMG : 'https://via.placeholder.com/600x400?text=Produit'), 
-        alt: r.title || 'Produit' 
-      },
-      price: r.is_free ? 0 : (Number(r.price) || 0),
-      currency: "AR",
-      stock: "available",
-      description_short: r.badge ? (r.badge + (Array.isArray(r.tags) && r.tags.length ? ' – ' + r.tags.join(', ') : '')) : '',
-      preview_url: r.preview_url || null,
-      _db: r
-    };
-  }
+  // ✅ Debug: Afficher ny thumbnail URL
+  console.log('[mapRowToUI] Product:', r.title, 'Thumbnail:', r.thumbnail_url);
+  
+  return {
+    id: r.id,
+    category: r.category || 'ebooks',
+    title: r.title || 'Sans titre',
+    image: {
+      url: r.thumbnail_url || r.preview_url || FALLBACK_IMG,
+      alt: r.title || 'Produit'
+    },
+    thumbnail_url: r.thumbnail_url, // ✅ Keep direct reference
+    price: r.is_free ? 0 : (Number(r.price) || 0),
+    currency: "AR",
+    stock: "available",
+    description_short: r.badge ? r.badge : '',
+    preview_url: r.preview_url || null,
+    _db: r // ✅ Keep full DB object
+  };
+}
 
   /* ---------- Fetch DB ---------- */
   async function fetchSupabaseProducts() {
     try {
+      console.log('[fetchSupabaseProducts] 📡 Starting...');
+      
       const sb = await ensureSupabase();
-      const { data, error } = await sb.from('products')
+      
+      if (!sb) {
+        console.warn('[fetchSupabaseProducts] ⚠️ Supabase not ready, using fallback');
+        return; // ← Tsy throw error, avelao ny fallback data
+      }
+      
+      const { data: productsData, error: productsError } = await sb
+        .from('products')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-
-      const converted = (data || []).map(mapRowToUI);
-      if (converted.length) {
-        window.products = converted;
+      
+      if (productsError) {
+        console.error('[fetchSupabaseProducts] ❌ Error:', productsError);
+        return; // ← Avelao ny fallback data
       }
-      const toolbarBtn = document.querySelector('.filters .filter-btn.active');
-      const f = toolbarBtn ? (toolbarBtn.getAttribute('data-filter') || toolbarBtn.getAttribute('data-category') || 'all') : 'all';
-      const sEl = document.getElementById('search');
-      const sVal = sEl ? (sEl.value || '') : '';
-      if (typeof renderProducts === 'function') {
-        renderProducts(f, sVal);
+      
+      if (!productsData || productsData.length === 0) {
+        console.warn('[fetchSupabaseProducts] ⚠️ No products in database');
+        return;
       }
-      applyAuthUI();
-    } catch (e) {
-      console.error('[fetchSupabaseProducts]', e);
+    
+    // ✅ ÉTAPE 2: Charger TOUS les compteurs galerie d'un coup
+    const { data: galleryCounts, error: galleryError } = await sb
+      .from('product_images')
+      .select('product_id, id')
+      .eq('image_type', 'gallery');
+    
+    if (galleryError) {
+      console.warn('[fetchSupabaseProducts] Gallery count error:', galleryError);
     }
-  }
-
-  /* ---------- Upload helpers (image / video / pdf) ---------- */
-  function detectAssetKind(file) {
-    const type = (file && file.type) ? file.type.toLowerCase() : '';
-    if (type.startsWith('image/')) return { kind: 'image', folder: 'images' };
-    if (type.startsWith('video/')) return { kind: 'video', folder: 'videos' };
-    if (type === 'application/pdf' || /\.pdf$/i.test(file?.name || '')) return { kind: 'pdf', folder: 'pdfs' };
-    return { kind: 'file', folder: 'files' };
-  }
-
-  async function uploadAssets(files) {
-    const sb = await ensureSupabase();
-    const out = [];
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      const { kind, folder } = detectAssetKind(f);
-      const safeName = (f.name || 'file').replace(/[^\w.\-]+/g, '_');
-      const path = `${folder}/${crypto.randomUUID()}_${safeName}`;
-      const { data, error } = await sb.storage.from('products').upload(path, f, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: f.type || undefined
+    
+    // ✅ ÉTAPE 3: Créer un Map pour compter rapidement
+    const galleryMap = {};
+    if (galleryCounts) {
+      galleryCounts.forEach(img => {
+        galleryMap[img.product_id] = (galleryMap[img.product_id] || 0) + 1;
       });
-      if (error) throw error;
-      const { data: pub } = sb.storage.from('products').getPublicUrl(data.path);
-      out.push({ kind, name: f.name, path: data.path, url: pub.publicUrl });
+      console.log('[fetchSupabaseProducts] 📸 Gallery counts loaded:', Object.keys(galleryMap).length, 'products');
     }
-    return out;
-  }
-
-  function pickFiles({ multiple = true } = {}) {
-    return new Promise((resolve) => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.multiple = multiple;
-      input.accept = 'image/*,video/*,application/pdf';
-      input.style.display = 'none';
-      document.body.appendChild(input);
-      input.onchange = () => {
-        const files = Array.from(input.files || []);
-        input.remove();
-        resolve(files);
-      };
-      input.click();
+    
+    // ✅ ÉTAPE 4: Mapper avec galleryCount
+    const converted = productsData.map(row => {
+      const uiProduct = mapRowToUI(row);
+      uiProduct.galleryCount = galleryMap[row.id] || 0; // ← ICI: Ajout du compteur
+      return uiProduct;
     });
+    
+    window.products = converted;
+    
+    console.log('[fetchSupabaseProducts] ✅ Products loaded:', converted.length);
+    
+    // ✅ Debug: Afficher les produits avec galerie
+    const withGallery = converted.filter(p => p.galleryCount > 0);
+    if (withGallery.length > 0) {
+      console.log('[fetchSupabaseProducts] 📸 Products with gallery:',
+        withGallery.map(p => `${p.title} (${p.galleryCount} images)`));
+    }
+    
+    if (typeof applyAuthUI === 'function') {
+      applyAuthUI();
+    }
+    
+  } catch (e) {
+    console.error('[fetchSupabaseProducts] 💥 Fatal error:', e);
+    window.products = [];
+    throw e;
   }
+}
+
+
+  
+
+  
+
+  
 
   /* ---------- Modal UI Add/Edit + File picker ---------- */
-  function ensureProductModal() {
-  let modal = document.getElementById('product-edit-modal');
-  if (modal) return modal;
-
-  modal = document.createElement('div');
-  modal.id = 'product-edit-modal';
-  modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:6000;';
-  modal.innerHTML = `
-    <div class="pe-card" role="dialog" aria-modal="true" aria-labelledby="pe-title" style="
-      width:min(720px,94%);background:#0e0f13;color:#fff;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 35px rgba(0,0,0,.4)">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
-        <h3 id="pe-title" style="margin:0">Product</h3>
-        <button type="button" class="param-btn" id="pe-close" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <form id="pe-form" style="display:grid;gap:10px">
-        <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Titre</span>
-            <input id="pe-title-input" required placeholder="Titre du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
-
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Prix (AR)</span>
-            <input id="pe-price-input" type="number" min="0" step="1" placeholder="0" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
-
-          <!-- ✅ NOUVEAU: Type de produit -->
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Type de produit</span>
-            <select id="pe-product-type" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-              <option value="numeric">💻 Numérique</option>
-              <option value="physical">📦 Physique</option>
-            </select>
-          </label>
-
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Catégorie</span>
-            <select id="pe-category" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-              <option value="ebooks">eBooks</option>
-              <option value="videos">Vidéos</option>
-              <option value="apps">Apps/Jeux</option>
-              <option value="vip">VIP</option>
-              <option value="promo">Promo</option>
-              <option value="free">Gratuit</option>
-            </select>
-          </label>
-
-          <label style="display:flex;flex-direction:column;gap:6px">
-            <span>Badge (optionnel)</span>
-            <input id="pe-badge" placeholder="ex: Hot, New..." style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
-
-          <label style="grid-column:1 / -1;display:flex;flex-direction:column;gap:6px">
-            <span>Tags (séparés par des virgules)</span>
-            <input id="pe-tags" placeholder="business, mobile, formation" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          </label>
-
-          <label style="grid-column:1 / -1;display:flex;flex-direction:column;gap:6px">
-            <span>Description</span>
-            <textarea id="pe-description" rows="3" placeholder="Description du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;resize:vertical"></textarea>
-          </label>
-        </div>
-
-        <div style="display:grid;gap:10px;grid-template-columns:1fr 1fr">
-          <div class="pe-uploader" data-kind="image" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px;min-height:160px;display:flex;gap:10px">
-            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>Image (thumbnail)</strong>
-                <button class="param-btn" type="button" id="pe-pick-image"><i class="fa-solid fa-image"></i> Choisir</button>
-              </div>
-              <small style="opacity:.8">Formats: JPG/PNG/WebP.</small>
-              <div id="pe-image-preview" style="border:1px solid #2a2d38;border-radius:10px;min-height:110px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#11151f">
-                <span style="opacity:.6">Tsy misy sary</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="pe-uploader" data-kind="preview" id="pe-preview-uploader" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px;min-height:160px;display:flex;gap:10px">
-            <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>Preview (Vidéo/PDF)</strong>
-                <button class="param-btn" type="button" id="pe-pick-preview"><i class="fa-solid fa-upload"></i> Choisir</button>
-              </div>
-              <small style="opacity:.8">Vidéo (mp4/webm) na PDF.</small>
-              <div id="pe-preview-preview" style="border:1px solid #2a2d38;border-radius:10px;min-height:110px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#11151f">
-                <span style="opacity:.6">Tsy misy vidéo/PDF</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="pe-preview-url-container" style="display:flex;gap:8px;align-items:center">
-          <input id="pe-preview-url" placeholder="na URL preview: https://..." style="flex:1;padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          <button class="param-btn" type="button" id="pe-test-preview"><i class="fa-solid fa-eye"></i> Test</button>
-        </div>
-
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
-          <button class="param-btn" type="button" id="pe-cancel">Annuler</button>
-          <button class="param-btn" type="submit" id="pe-submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
-        </div>
-      </form>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  modal.querySelector('#pe-close').addEventListener('click', () => peClose());
-  modal.querySelector('#pe-cancel').addEventListener('click', () => peClose());
-
-  // ✅ NOUVEAU: Category switcher logic
-  const productTypeSelect = modal.querySelector('#pe-product-type');
-  const categorySelect = modal.querySelector('#pe-category');
-  const previewUploader = modal.querySelector('#pe-preview-uploader');
-  const previewUrlContainer = modal.querySelector('#pe-preview-url-container');
-
-  const categoryOptions = {
-    numeric: [
-      { value: 'ebooks', label: 'eBooks' },
-      { value: 'videos', label: 'Vidéos' },
-      { value: 'apps', label: 'Apps/Jeux' },
-      { value: 'vip', label: 'VIP' },
-      { value: 'promo', label: 'Promo' },
-      { value: 'free', label: 'Gratuit' }
-    ],
-    physical: [
-      { value: 'clothing', label: '👕 Vêtements' },
-      { value: 'electronics', label: '📱 Électronique' },
-      { value: 'accessories', label: '💍 Accessoires' },
-      { value: 'books', label: '📚 Livres physiques' },
-      { value: 'home', label: '🏠 Maison & Déco' },
-      { value: 'sports', label: '⚽ Sports & Loisirs' },
-      { value: 'beauty', label: '💄 Beauté & Santé' },
-      { value: 'other', label: '📦 Autre' }
-    ]
-  };
-
-  function updateCategories(productType) {
-    const options = categoryOptions[productType] || categoryOptions.numeric;
-    categorySelect.innerHTML = '';
-    options.forEach(opt => {
-      const option = document.createElement('option');
-      option.value = opt.value;
-      option.textContent = opt.label;
-      categorySelect.appendChild(option);
-    });
-
-    // Show/hide preview fields
-    if (productType === 'physical') {
-      previewUploader.style.display = 'none';
-      previewUrlContainer.style.display = 'none';
-    } else {
-      previewUploader.style.display = '';
-      previewUrlContainer.style.display = '';
-    }
-  }
-
-  productTypeSelect.addEventListener('change', function() {
-    updateCategories(this.value);
-  });
-
-  // Drag & drop handlers (keep existing code)
-  modal.querySelectorAll('.pe-uploader').forEach(box => {
-    box.addEventListener('dragover', e => { e.preventDefault(); box.style.borderColor = '#5b78ff'; });
-    box.addEventListener('dragleave', () => { box.style.borderColor = '#2a2d38'; });
-    box.addEventListener('drop', e => {
-      e.preventDefault();
-      box.style.borderColor = '#2a2d38';
-      const files = Array.from(e.dataTransfer.files || []);
-      if (!files.length) return;
-      if (box.getAttribute('data-kind') === 'image') peSetLocalFile('image', files[0]);
-      else peSetLocalFile('preview', files[0]);
-    });
-  });
-
-  return modal;
-}
+  
 
   const peLocal = { imageFile: null, previewFile: null, mode: 'add', recordId: null };
 
-  function peOpen({ mode = 'add', product = null } = {}) {
-    if (!isOwner()) { alert('Owner ihany no afaka manao izao.'); return; }
-    const modal = ensureProductModal();
-    peLocal.mode = mode;
-    peLocal.recordId = product?.id || null;
-    peLocal.imageFile = null;
-    peLocal.previewFile = null;
-
-    modal.querySelector('#pe-title').textContent = (mode === 'add') ? 'Ajouter un produit' : 'Éditer le produit';
-    modal.querySelector('#pe-title-input').value = product?.title || '';
-    modal.querySelector('#pe-price-input').value = Number(product?.price || 0);
-    modal.querySelector('#pe-category').value = (typeof normalizeCategory === 'function') ? normalizeCategory(product?.category || 'ebooks') : (product?.category || 'ebooks');
-    modal.querySelector('#pe-badge').value = product?._db?.badge || '';
-    modal.querySelector('#pe-tags').value = Array.isArray(product?._db?.tags) ? product._db.tags.join(', ') : '';
-    modal.querySelector('#pe-description').value = product?.description || product?.description_short || '';
-    modal.querySelector('#pe-preview-url').value = product?.preview_url || product?._db?.preview_url || '';
-
-    const imgPrev = modal.querySelector('#pe-image-preview');
-    imgPrev.innerHTML = product?.image?.url
-      ? `<img src="${(typeof escapeAttr === 'function') ? escapeAttr(product.image.url) : product.image.url}" alt="thumbnail" style="width:100%;height:110px;object-fit:cover">`
-      : `<span style="opacity:.6">Tsy misy sary</span>`;
-
-    const pvPrev = modal.querySelector('#pe-preview-preview');
-    const existingPreview = product?.preview_url || product?._db?.preview_url || '';
-    if (existingPreview) {
-      if (/\.pdf(\?|#|$)/i.test(existingPreview)) {
-        pvPrev.innerHTML = `<div style="opacity:.85"><i class="fa-solid fa-file-pdf"></i> PDF</div>`;
-      } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(existingPreview)) {
-        pvPrev.innerHTML = `<video src="${(typeof escapeAttr === 'function') ? escapeAttr(existingPreview) : existingPreview}" style="max-width:100%;max-height:110px" muted></video>`;
-      } else {
-        pvPrev.innerHTML = `<div style="opacity:.8">${(typeof escapeHtml === 'function') ? escapeHtml(existingPreview) : existingPreview}</div>`;
-      }
-    } else {
-      pvPrev.innerHTML = `<span style="opacity:.6">Tsy misy vidéo/PDF</span>`;
-    }
-
-    modal.querySelector('#pe-pick-image').onclick = async () => {
-      const files = await pickFiles({ multiple: false });
-      if (files && files[0]) peSetLocalFile('image', files[0]);
-    };
-    modal.querySelector('#pe-pick-preview').onclick = async () => {
-      const files = await pickFiles({ multiple: false });
-      if (files && files[0]) peSetLocalFile('preview', files[0]);
-    };
-
-    modal.querySelector('#pe-test-preview').onclick = () => {
-      const url = modal.querySelector('#pe-preview-url').value.trim();
-      if (!url) return alert('Ampidiro URL preview aloha na misafidiana vidéo/PDF.');
-      if (typeof openPreview === 'function') {
-        openPreview({ title: modal.querySelector('#pe-title-input').value.trim() || 'Preview', preview_url: url });
-      }
-    };
-
-    modal.querySelector('#pe-form').onsubmit = async (e) => {
-      e.preventDefault();
-      try {
-        await peSubmitForm();
-        peClose();
-        await fetchSupabaseProducts();
-      } catch (err) {
-        console.error('[peSubmitForm]', err);
-        alert('Erreur: ' + err.message);
-      }
-    };
-
-    modal.style.display = 'flex';
-    modal.setAttribute('aria-hidden', 'false');
-    modal.querySelector('#pe-title-input').focus();
-  }
-
-  function peClose() {
-    const modal = document.getElementById('product-edit-modal');
-    if (!modal) return;
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-
-  function peSetLocalFile(kind, file) {
-    const modal = ensureProductModal();
-    const { kind: detectKind } = detectAssetKind(file);
-    if (kind === 'image' && detectKind !== 'image') { return alert('Safidio sary ho an\'ny thumbnail.'); }
-    if (kind === 'preview' && !(detectKind === 'video' || detectKind === 'pdf')) { return alert('Safidio vidéo na PDF ho an\'ny preview.'); }
-
-    if (kind === 'image') {
-      peLocal.imageFile = file;
-      const url = URL.createObjectURL(file);
-      modal.querySelector('#pe-image-preview').innerHTML = `<img src="${url}" alt="thumbnail" style="width:100%;height:110px;object-fit:cover">`;
-    } else {
-      peLocal.previewFile = file;
-      const pvBox = modal.querySelector('#pe-preview-preview');
-      if (detectKind === 'pdf') {
-        pvBox.innerHTML = `<div style="opacity:.85"><i class="fa-solid fa-file-pdf"></i> ${(typeof escapeHtml === 'function') ? escapeHtml(file.name) : file.name}</div>`;
-      } else {
-        const url = URL.createObjectURL(file);
-        pvBox.innerHTML = `<video src="${url}" style="max-width:100%;max-height:110px" muted></video>`;
-      }
-    }
-  }
-
-  async function peUploadSelectedFiles() {
-    const files = [];
-    if (peLocal.imageFile) files.push(peLocal.imageFile);
-    if (peLocal.previewFile) files.push(peLocal.previewFile);
-    if (!files.length) return {};
-    const uploaded = await uploadAssets(files);
-    const img = uploaded.find(x => x.kind === 'image');
-    const vid = uploaded.find(x => x.kind === 'video');
-    const pdf = uploaded.find(x => x.kind === 'pdf');
-    return {
-      thumbnail_url: img?.url || null,
-      preview_url: vid?.url || pdf?.url || null
-    };
-  }
+  
  
-  async function peSubmitForm() {
-    if (!isOwner()) throw new Error('Owner ihany no afaka manova.');
-    const sb = await ensureSupabase();
-
-    const title = document.getElementById('pe-title-input').value.trim();
-    const price = Number(document.getElementById('pe-price-input').value || 0);
-    const category = (typeof normalizeCategory === 'function') 
-      ? normalizeCategory(document.getElementById('pe-category').value || 'ebooks')
-      : (document.getElementById('pe-category').value || 'ebooks');
-    const badge = document.getElementById('pe-badge').value.trim() || null;
-    const tagsRaw = document.getElementById('pe-tags').value.trim();
-    const description = document.getElementById('pe-description').value.trim() || null;
-    let preview_url = document.getElementById('pe-preview-url').value.trim() || null;
-
-    const uploaded = await peUploadSelectedFiles();
-    let thumbnail_url = uploaded.thumbnail_url || null;
-    if (!preview_url) preview_url = uploaded.preview_url || null;
-
-    const payload = {
-      title, category,
-      price, is_free: price === 0,
-      preview_url, thumbnail_url,
-      badge,
-      tags: tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
-      description
-    };
-
-    if (peLocal.mode === 'add') {
-  const { data: inserted, error } = await sb
-    .from('products')
-    .insert(payload)
-    .select()
-    .single();
   
-  if (error) throw error;
-  
-  console.log('[peSubmitForm] ✓ Product inserted:', inserted);
-  
-  // 🔥 TRIGGER SERVER PUSH NOTIFICATION
-  try {
-    console.log('[peSubmitForm] Sending push notification...');
-    
-    const notifResponse = await fetch(
-      window.SUPABASE_URL + '/functions/v1/send-push',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY,
-          'apikey': window.SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-  productId: inserted.id,
-  productTitle: title,
-  productPrice: price,
-  productType: product_type,
-  productImage: thumbnail_url || uploaded.thumbnail_url || null // ✅ AJOUT IMAGE
-
-        })
-      }
-    );
-    
-    if (notifResponse.ok) {
-      const result = await notifResponse.json();
-      console.log('[peSubmitForm] ✓ Push notification sent to', result.sent || 0, 'subscribers');
-    } else {
-      const errorText = await notifResponse.text();
-      console.error('[peSubmitForm] ❌ Push notification failed:', errorText);
-    }
-  } catch (notifErr) {
-    console.error('[peSubmitForm] ❌ Notification error:', notifErr);
-  }
-  
-  // 🔥 SHOW LOCAL NOTIFICATION (bonus)
-  if (typeof window.notifyNewProduct === 'function') {
-    window.notifyNewProduct({
-      id: inserted.id,
-      title: title,
-      price: price
-    });
-  }
-  
-  const typeLabel = product_type === 'physical' ? '📦 Produit physique' : '💻 Produit numérique';
-alert(`${typeLabel} ajouté avec succès! 🎉\nNotifications envoyées aux abonnés.`);
-
-    } else {
-      const { error } = await sb.from('products').update(payload).eq('id', peLocal.recordId);
-      if (error) throw error;
-      alert('Produit modifié.');
-    }
-  }
 
   /* ---------- CRUD API exposed ---------- */
   async function addProductPrompt() { peOpen({ mode: 'add', product: null }); }
@@ -8055,63 +7740,137 @@ if (!document.getElementById('qo-premium-styles')) {
   `;
   document.head.appendChild(styles);
 }
+
 /* ==========================================
    QUICK ORDER - OWNER MANAGEMENT ✅
    ========================================== */
 
 (function initQOManagement() {
-  'use strict';
-  
-  const QO_STORAGE_KEY = 'quick-order:products';
-  let selectedProducts = new Set();
-  let qoProducts = [];
-  
-  // ========================================
-  // STORAGE
-  // ========================================
-  
-  function loadQOProducts() {
-    try {
-      const raw = localStorage.getItem(QO_STORAGE_KEY);
-      if (raw) {
-        qoProducts = JSON.parse(raw);
-        console.log('[QO] Loaded', qoProducts.length, 'products');
+    'use strict';
+    
+    const QO_STORAGE_KEY = 'quick-order:products';
+    let selectedProducts = new Set();
+    let qoProducts = [];
+    
+    // ========================================
+    // STORAGE - AJOUT DE LA FONCTION MANQUANTE
+    // ========================================
+    
+    async function saveQOProducts() {
+      try {
+        console.log('[QO] Saving', qoProducts.length, 'products...');
+        
+        // ✅ 1. Save to Supabase (source of truth)
+        const sb = await ensureSupabase();
+        
+        // Delete all existing
+        await sb.from('quick_order_products').delete().neq('id', 0);
+        
+        // Insert new products
+        if (qoProducts.length > 0) {
+          const rows = qoProducts.map((p, index) => ({
+            product_id: p.id,
+            position: index,
+            added_at: p.addedAt ? new Date(p.addedAt).toISOString() : new Date().toISOString()
+          }));
+          
+          const { error } = await sb
+            .from('quick_order_products')
+            .insert(rows);
+          
+          if (error) throw error;
+          
+          console.log('[QO] ✓ Saved to Supabase:', qoProducts.length, 'products');
+        }
+        
+        // ✅ 2. Fallback: Save to localStorage
+        try {
+          localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
+          console.log('[QO] ✓ Saved to localStorage (backup)');
+        } catch (localErr) {
+          console.warn('[QO] LocalStorage save failed:', localErr);
+        }
+        
+        // ✅ 3. Update counter
+        updateCounter();
+        
+      } catch (e) {
+        console.error('[QO] Save error:', e);
+        
+        // Fallback: localStorage only
+        try {
+          localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
+          console.log('[QO] ⚠️ Saved to localStorage only (Supabase failed)');
+          updateCounter();
+        } catch (fallbackErr) {
+          console.error('[QO] All save methods failed:', fallbackErr);
+          alert('❌ Erreur: Impossible de sauvegarder les produits');
+        }
       }
-    } catch (e) {
-      console.error('[QO] Load error:', e);
-      qoProducts = [];
     }
-  }
-  
-  function saveQOProducts() {
-  try {
-    localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
-    updateCounter(); // ✅ NOUVEAU
-    console.log('[QO] Saved', qoProducts.length, 'products');
-  } catch (e) {
-    console.error('[QO] Save error:', e);
-  }
-}
-
-// ✅ NOUVEAU: Counter update function
-function updateCounter() {
-  const counter = document.getElementById('qoCounter');
-  if (!counter) return;
-  
-  const count = qoProducts.length;
-  const max = 8;
-  
-  counter.textContent = `${count}/${max}`;
-  
-  // Update state classes
-  counter.classList.remove('warning', 'full');
-  
-  if (count >= max) {
-    counter.classList.add('full');
-  } else if (count >= max - 1) {
-    counter.classList.add('warning');
-  }
-}
+    
+    async function loadQOProducts() {
+      try {
+        const sb = await ensureSupabase();
+        
+        const { data, error } = await sb
+          .from('quick_order_products')
+          .select('*')
+          .order('position');
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          const allProducts = window.products || [];
+          qoProducts = data.map(qo => {
+            const product = allProducts.find(p => p.id === qo.product_id);
+            return product ? {
+              id: product.id,
+              title: product.title,
+              price: product.price,
+              image: product.image?.url || product.thumbnail_url,
+              category: product.category,
+              addedAt: new Date(qo.added_at).getTime()
+            } : null;
+          }).filter(Boolean);
+          
+          console.log('[QO] ✓ Loaded', qoProducts.length, 'products from Supabase');
+        }
+      } catch (e) {
+        console.error('[QO] Load error:', e);
+        
+        // Fallback: localStorage
+        try {
+          const raw = localStorage.getItem(QO_STORAGE_KEY);
+          if (raw) {
+            qoProducts = JSON.parse(raw);
+            console.log('[QO] ⚠️ Loaded from localStorage (Supabase failed)');
+          }
+        } catch (fallbackErr) {
+          console.error('[QO] All load methods failed:', fallbackErr);
+        }
+      }
+      
+      updateCounter();
+    }
+    
+    function updateCounter() {
+      const counter = document.getElementById('qoCounter');
+      if (!counter) return;
+      
+      const count = qoProducts.length;
+      const max = 8;
+      
+      counter.textContent = `${count}/${max}`;
+      
+      counter.classList.remove('warning', 'full');
+      
+      if (count >= max) {
+        counter.classList.add('full');
+      } else if (count >= max - 1) {
+        counter.classList.add('warning');
+      }
+    }
   
   // ========================================
   // MODAL ADD - OPEN/CLOSE
@@ -8663,12 +8422,41 @@ function handleImportFile(e) {
     
     console.log('[QO Management] ✓ Buttons wired');
   }
-  
+  // Dans initQOManagement, après wireButtons():
+async function subscribeToQOChanges() {
+  try {
+    const sb = await ensureSupabase();
+    
+    sb.channel('qo-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'quick_order_products' },
+        async (payload) => {
+          console.log('[QO Realtime] Change detected:', payload);
+          
+          // Recharger les produits
+          await loadQOProducts();
+          
+          // Re-render
+          if (typeof QuickOrder !== 'undefined' && QuickOrder.render) {
+            QuickOrder.render();
+          }
+        }
+      )
+      .subscribe();
+    
+    console.log('[QO] Realtime subscription active');
+  } catch (e) {
+    console.error('[QO] Realtime error:', e);
+  }
+}
+
+// Appeler dans init()
+subscribeToQOChanges();
   // ========================================
-  // EXPOSE GLOBAL API
-  // ========================================
-  
-  window.QOManagement = {
+// EXPOSE GLOBAL API
+// ========================================
+
+window.QOManagement = {
   openAddModal,
   closeAddModal,
   openManageModal,
@@ -8678,8 +8466,10 @@ function handleImportFile(e) {
     qoProducts = products;
     saveQOProducts();
   },
-  exportQO, // ✅ NOUVEAU
-  importQO // ✅ NOUVEAU
+  saveProducts: saveQOProducts, // ✅ EXPOSE saveQOProducts
+  loadProducts: loadQOProducts, // ✅ EXPOSE loadQOProducts
+  exportQO,
+  importQO
 };
   
   // ========================================
@@ -9923,3 +9713,1445 @@ if (!document.getElementById('theme-toast-styles')) {
     }, 100);
   };
 })();
+
+// ========================================
+// LOADER ANIMATION STYLES
+// ========================================
+
+if (!document.getElementById('loader-styles')) {
+  var styles = document.createElement('style');
+  styles.id = 'loader-styles';
+  styles.textContent = 
+    '@keyframes spin {' +
+    '  from { transform: rotate(0deg); }' +
+    '  to { transform: rotate(360deg); }' +
+    '}';
+  document.head.appendChild(styles);
+}/* ==========================================
+   PRODUCT MODAL - VERSION COMPLÈTE CORRIGÉE ✅
+   ========================================== */
+
+(function initProductModalSystem() {
+  'use strict';
+  
+  // ========================================
+  // GLOBAL STATE
+  // ========================================
+  
+  window.peLocal = {
+  imageFile: null,
+  previewFile: null,
+  galleryFiles: [],
+  existingGalleryIds: [], // ← NOUVELLE LIGNE
+  mode: 'add',
+  recordId: null
+};
+  
+  // ========================================
+  // HELPER FUNCTIONS
+  // ========================================
+  
+  function detectAssetKind(file) {
+    const type = (file && file.type) ? file.type.toLowerCase() : '';
+    if (type.startsWith('image/')) return { kind: 'image', folder: 'images' };
+    if (type.startsWith('video/')) return { kind: 'video', folder: 'videos' };
+    if (type === 'application/pdf' || /\.pdf$/i.test(file?.name || '')) return { kind: 'pdf', folder: 'pdfs' };
+    return { kind: 'file', folder: 'files' };
+  }
+  
+  async function uploadAssets(files) {
+    const sb = await ensureSupabase();
+    const out = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const { kind, folder } = detectAssetKind(f);
+      const safeName = (f.name || 'file').replace(/[^\w.\-]+/g, '_');
+      const path = `${folder}/${crypto.randomUUID()}_${safeName}`;
+      const { data, error } = await sb.storage.from('products').upload(path, f, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: f.type || undefined
+      });
+      if (error) throw error;
+      const { data: pub } = sb.storage.from('products').getPublicUrl(data.path);
+      out.push({ kind, name: f.name, path: data.path, url: pub.publicUrl });
+    }
+    return out;
+  }
+  
+  function pickFiles({ multiple = true } = {}) {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = multiple;
+      input.accept = 'image/*,video/*,application/pdf';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      input.onchange = () => {
+        const files = Array.from(input.files || []);
+        input.remove();
+        resolve(files);
+      };
+      input.click();
+    });
+  }
+  
+  // ========================================
+  // MODAL CREATION
+  // ========================================
+  
+  function ensureProductModal() {
+    let modal = document.getElementById('product-edit-modal');
+    if (modal) return modal;
+
+    modal = document.createElement('div');
+    modal.id = 'product-edit-modal';
+    modal.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:6000;';
+    modal.innerHTML = `
+      <div class="pe-card" role="dialog" aria-modal="true" aria-labelledby="pe-title" style="
+        width:min(720px,94%);background:#0e0f13;color:#fff;border-radius:14px;padding:14px 14px 12px;box-shadow:0 10px 35px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+          <h3 id="pe-title" style="margin:0">Product</h3>
+          <button type="button" class="param-btn" id="pe-close" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form id="pe-form" style="display:grid;gap:10px">
+          <div style="display:grid;gap:8px;grid-template-columns:1fr 1fr">
+            
+            <!-- TYPE DE PRODUIT -->
+            <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px">
+              <span style="font-weight:700;font-size:15px">Type de produit</span>
+              <select id="pe-product-type" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;font-size:14px">
+                <option value="numeric">💻 Numérique (eBooks, vidéos, apps)</option>
+                <option value="physical">📦 Physique (vêtements, électronique, etc.)</option>
+              </select>
+            </label>
+            
+            <!-- TITRE -->
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span>Titre</span>
+              <input id="pe-title-input" required placeholder="Titre du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
+            </label>
+
+            <!-- PRIX -->
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span>Prix (AR)</span>
+              <input id="pe-price-input" type="number" min="0" step="1" placeholder="0" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
+            </label>
+
+            <!-- CATÉGORIE -->
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span>Catégorie</span>
+              <select id="pe-category" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
+                <!-- Rempli dynamiquement -->
+              </select>
+            </label>
+
+            <!-- BADGE -->
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span>Badge (optionnel)</span>
+              <input id="pe-badge" placeholder="ex: Hot, New..." style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
+            </label>
+
+            <!-- TAGS -->
+            <label style="grid-column:1 / -1;display:flex;flex-direction:column;gap:6px">
+              <span>Tags (séparés par des virgules)</span>
+              <input id="pe-tags" placeholder="business, mobile, formation" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
+            </label>
+
+            <!-- DESCRIPTION -->
+            <label style="grid-column:1 / -1;display:flex;flex-direction:column;gap:6px">
+              <span>Description</span>
+              <textarea id="pe-description" rows="3" placeholder="Description du produit" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;resize:vertical"></textarea>
+            </label>
+          </div>
+
+          <!-- UPLOAD SECTIONS -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+            
+            <!-- IMAGE PRINCIPALE -->
+            <div class="pe-uploader" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong>🖼️ Image principale (thumbnail)</strong>
+                <button class="param-btn" type="button" id="pe-pick-thumbnail">
+                  <i class="fa-solid fa-image"></i> Choisir
+                </button>
+              </div>
+              <div id="pe-thumbnail-preview" style="border:1px solid #2a2d38;border-radius:10px;min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#11151f">
+                <span style="opacity:.6">Aucune image</span>
+              </div>
+              <input type="file" id="pe-thumbnail-input" accept="image/*" style="display:none">
+            </div>
+
+            <!-- GALERIE -->
+            <div class="pe-uploader" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong>📸 Galerie (max 5 images)</strong>
+                <button class="param-btn" type="button" id="pe-pick-gallery">
+                  <i class="fa-solid fa-images"></i> Ajouter
+                </button>
+              </div>
+              <div id="pe-gallery-preview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;min-height:80px">
+                <span style="opacity:.6;grid-column:1/-1;text-align:center;padding:20px">Aucune image</span>
+              </div>
+              <input type="file" id="pe-gallery-input" accept="image/*" multiple style="display:none">
+            </div>
+
+            <!-- PREVIEW (Vidéo/PDF) -->
+            <div class="pe-uploader" data-kind="preview" id="pe-preview-uploader" style="border:1px dashed #2a2d38;border-radius:12px;padding:10px;min-height:160px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <strong>🎬 Preview (Vidéo/PDF)</strong>
+                <button class="param-btn" type="button" id="pe-pick-preview">
+                  <i class="fa-solid fa-upload"></i> Choisir
+                </button>
+              </div>
+              <small style="opacity:.8;display:block;margin-bottom:8px">Vidéo (mp4/webm) na PDF.</small>
+              <div id="pe-preview-preview" style="border:1px solid #2a2d38;border-radius:10px;min-height:110px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#11151f">
+                <span style="opacity:.6">Tsy misy vidéo/PDF</span>
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- PREVIEW URL -->
+          <div id="pe-preview-url-container" style="display:flex;gap:8px;align-items:center">
+            <input id="pe-preview-url" placeholder="na URL preview: https://..." style="flex:1;padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
+            <button class="param-btn" type="button" id="pe-test-preview"><i class="fa-solid fa-eye"></i> Test</button>
+          </div>
+
+          <!-- BUTTONS -->
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+            <button class="param-btn" type="button" id="pe-cancel">Annuler</button>
+            <button class="param-btn" type="submit" id="pe-submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
+          </div>
+        </form>
+      </div>
+    `;
+    
+    // ✅ ÉTAPE 1: Ajouter au DOM
+    document.body.appendChild(modal);
+    
+    // ✅ ÉTAPE 2: Wire events APRÈS un tick
+    setTimeout(() => {
+      wireModalEvents(modal);
+    }, 0);
+    
+    return modal;
+  }
+  
+  // ========================================
+  // WIRE EVENTS (appelé APRÈS appendChild)
+  // ========================================
+  
+  function wireModalEvents(modal) {
+    console.log('[Modal] 🔌 Wiring events...');
+    
+    // Close buttons
+    const closeBtn = modal.querySelector('#pe-close');
+    const cancelBtn = modal.querySelector('#pe-cancel');
+    
+    if (closeBtn) closeBtn.addEventListener('click', peClose);
+    if (cancelBtn) cancelBtn.addEventListener('click', peClose);
+    
+    // Product type change
+    const productTypeSelect = modal.querySelector('#pe-product-type');
+    const categorySelect = modal.querySelector('#pe-category');
+    const previewUploader = modal.querySelector('#pe-preview-uploader');
+    const previewUrlContainer = modal.querySelector('#pe-preview-url-container');
+
+    const categoryOptions = {
+      numeric: [
+        { value: 'ebooks', label: 'eBooks' },
+        { value: 'videos', label: 'Vidéos' },
+        { value: 'apps', label: 'Apps/Jeux' },
+        { value: 'vip', label: 'VIP' },
+        { value: 'promo', label: 'Promo' },
+        { value: 'free', label: 'Gratuit' }
+      ],
+      physical: [
+        { value: 'clothing', label: '👕 Vêtements' },
+        { value: 'electronics', label: '📱 Électronique' },
+        { value: 'accessories', label: '💍 Accessoires' },
+        { value: 'books', label: '📚 Livres physiques' },
+        { value: 'home', label: '🏠 Maison & Déco' },
+        { value: 'sports', label: '⚽ Sports & Loisirs' },
+        { value: 'beauty', label: '💄 Beauté & Santé' },
+        { value: 'other', label: '📦 Autre' }
+      ]
+    };
+
+    function updateCategories(productType) {
+      if (!categorySelect) return;
+      
+      const options = categoryOptions[productType] || categoryOptions.numeric;
+      const currentValue = categorySelect.value;
+      
+      categorySelect.innerHTML = '';
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        categorySelect.appendChild(option);
+      });
+
+      const optionExists = options.find(opt => opt.value === currentValue);
+      if (optionExists) {
+        categorySelect.value = currentValue;
+      } else {
+        categorySelect.value = options[0].value;
+      }
+
+      if (previewUploader && previewUrlContainer) {
+        if (productType === 'physical') {
+          previewUploader.style.display = 'none';
+          previewUrlContainer.style.display = 'none';
+        } else {
+          previewUploader.style.display = '';
+          previewUrlContainer.style.display = '';
+        }
+      }
+    }
+
+    if (productTypeSelect) {
+      productTypeSelect.addEventListener('change', function() {
+        updateCategories(this.value);
+      });
+      updateCategories('numeric');
+    }
+
+    // Thumbnail picker
+    const thumbnailBtn = modal.querySelector('#pe-pick-thumbnail');
+    const thumbnailInput = modal.querySelector('#pe-thumbnail-input');
+    const thumbnailPreview = modal.querySelector('#pe-thumbnail-preview');
+
+    if (thumbnailBtn && thumbnailInput && thumbnailPreview) {
+      thumbnailBtn.addEventListener('click', () => {
+        thumbnailInput.click();
+      });
+      
+      thumbnailInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const file = this.files[0];
+          
+          if (!file.type.startsWith('image/')) {
+            alert('Safidio sary ihany');
+            return;
+          }
+          
+          if (file.size > 5 * 1024 * 1024) {
+            alert('Lehibe loatra ny sary (max 5MB)');
+            return;
+          }
+          
+          window.peLocal.imageFile = file;
+          
+          const url = URL.createObjectURL(file);
+          thumbnailPreview.innerHTML = `<img src="${url}" style="width:100%;height:auto;max-height:120px;object-fit:contain">`;
+          
+          console.log('[Modal] ✅ Thumbnail selected:', file.name);
+        }
+      });
+    }
+
+    // Gallery picker
+    const galleryBtn = modal.querySelector('#pe-pick-gallery');
+    const galleryInput = modal.querySelector('#pe-gallery-input');
+
+    if (galleryBtn && galleryInput) {
+      galleryBtn.addEventListener('click', () => {
+        galleryInput.click();
+      });
+      
+      galleryInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+          console.log('[Modal] Gallery files selected:', this.files.length);
+          peSetGalleryFiles(this.files);
+          this.value = '';
+        }
+      });
+    }
+
+    // Preview picker
+    const previewBtn = modal.querySelector('#pe-pick-preview');
+    const previewPreview = modal.querySelector('#pe-preview-preview');
+
+    if (previewBtn) {
+      previewBtn.addEventListener('click', async () => {
+        const files = await pickFiles({ multiple: false });
+        if (files && files[0]) {
+          peSetLocalFile('preview', files[0], previewPreview);
+        }
+      });
+    }
+
+    // Test preview
+    const testBtn = modal.querySelector('#pe-test-preview');
+    const previewUrlInput = modal.querySelector('#pe-preview-url');
+
+    if (testBtn && previewUrlInput) {
+      testBtn.addEventListener('click', () => {
+        const url = previewUrlInput.value.trim();
+        if (!url) {
+          alert('Ampidiro URL preview aloha');
+          return;
+        }
+        if (typeof openPreview === 'function') {
+          const titleInput = modal.querySelector('#pe-title-input');
+          openPreview({ 
+            title: titleInput ? titleInput.value.trim() || 'Preview' : 'Preview', 
+            preview_url: url 
+          });
+        }
+      });
+    }
+
+    // Form submit
+    const form = modal.querySelector('#pe-form');
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await peSubmitForm();
+          peClose();
+          if (typeof fetchSupabaseProducts === 'function') {
+            await fetchSupabaseProducts();
+          }
+        } catch (err) {
+          console.error('[Modal] Submit error:', err);
+          alert('Erreur: ' + err.message);
+        }
+      });
+    }
+
+    // Drag & drop
+    modal.querySelectorAll('.pe-uploader').forEach(box => {
+      box.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        box.style.borderColor = '#5b78ff';
+      });
+      
+      box.addEventListener('dragleave', () => {
+        box.style.borderColor = '#2a2d38';
+      });
+      
+      box.addEventListener('drop', (e) => {
+        e.preventDefault();
+        box.style.borderColor = '#2a2d38';
+        const files = Array.from(e.dataTransfer.files || []);
+        if (!files.length) return;
+        
+        if (box.id === 'pe-gallery-preview') {
+          peSetGalleryFiles(files);
+        } else if (box.getAttribute('data-kind') === 'preview') {
+          peSetLocalFile('preview', files[0], box.querySelector('#pe-preview-preview'));
+        } else {
+          const isImage = files[0].type.startsWith('image/');
+          if (isImage) {
+            window.peLocal.imageFile = files[0];
+            const url = URL.createObjectURL(files[0]);
+            thumbnailPreview.innerHTML = `<img src="${url}" style="width:100%;height:auto;max-height:120px;object-fit:contain">`;
+          }
+        }
+      });
+    });
+    
+    console.log('[Modal] ✅ Events wired');
+  }
+  
+  // ========================================
+  // GALLERY MANAGEMENT
+  // ========================================
+  
+  function peSetGalleryFiles(files) {
+    console.log('[Gallery] 📸 Adding', files.length, 'files');
+    
+    // ✅ Compter TOTAL: existantes + nouvelles
+const existingCount = window.peLocal.existingGalleryIds?.length || 0;
+const remainingSlots = 5 - existingCount - window.peLocal.galleryFiles.length;
+
+console.log('[Gallery] Slots disponibles:', remainingSlots, '(existantes:', existingCount, ', nouvelles:', window.peLocal.galleryFiles.length, ')');
+    const filesToAdd = Array.from(files).slice(0, remainingSlots);
+    
+    if (filesToAdd.length < files.length) {
+      alert(`⚠️ Maximum 5 images. ${files.length - filesToAdd.length} image(s) ignorée(s).`);
+    }
+    
+    filesToAdd.forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        console.warn('[Gallery] Invalid file type:', file.type);
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`⚠️ ${file.name} lehibe loatra (max 5MB)`);
+        return;
+      }
+      
+      const id = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      window.peLocal.galleryFiles.push({ id, file });
+    });
+    
+    console.log('[Gallery] ✅ Total images:', window.peLocal.galleryFiles.length);
+    renderGalleryPreview();
+  }
+  
+  function renderGalleryPreview() {
+    const modal = document.getElementById('product-edit-modal');
+    if (!modal) {
+      console.warn('[Gallery] Modal not found');
+      return;
+    }
+    
+    const preview = modal.querySelector('#pe-gallery-preview');
+    if (!preview) {
+      console.warn('[Gallery] Preview container not found');
+      return;
+    }
+    
+    if (window.peLocal.galleryFiles.length === 0) {
+      preview.innerHTML = '<span style="opacity:.6;grid-column:1/-1;text-align:center;padding:20px">Aucune image</span>';
+      return;
+    }
+    
+    preview.innerHTML = window.peLocal.galleryFiles.map(item => {
+      const url = URL.createObjectURL(item.file);
+      return `
+        <div class="gallery-item" data-id="${item.id}" style="position:relative;border-radius:8px;overflow:hidden">
+          <img src="${url}" 
+               style="width:100%;height:100px;object-fit:cover;display:block"
+               alt="Gallery image">
+          <button type="button" 
+                  class="gallery-remove" 
+                  data-id="${item.id}" 
+                  style="position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      `;
+    }).join('');
+    
+    preview.querySelectorAll('.gallery-remove').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const id = this.getAttribute('data-id');
+        console.log('[Gallery] Removing image:', id);
+        
+        window.peLocal.galleryFiles = window.peLocal.galleryFiles.filter(item => item.id !== id);
+        renderGalleryPreview();
+      });
+    });
+  }
+  
+  // ========================================
+  // FILE HANDLING
+  // ========================================
+  
+  function peSetLocalFile(kind, file, previewElement) {
+    const { kind: detectKind } = detectAssetKind(file);
+    
+    if (kind === 'preview' && !(detectKind === 'video' || detectKind === 'pdf')) {
+      alert('Safidio vidéo na PDF ho an\'ny preview.');
+      return;
+    }
+
+    window.peLocal.previewFile = file;
+    
+    if (!previewElement) return;
+    
+    if (detectKind === 'pdf') {
+      previewElement.innerHTML = `<div style="opacity:.85"><i class="fa-solid fa-file-pdf"></i> ${file.name}</div>`;
+    } else {
+      const url = URL.createObjectURL(file);
+      previewElement.innerHTML = `<video src="${url}" style="max-width:100%;max-height:110px" muted></video>`;
+    }
+  }
+  
+  // ========================================
+  // MODAL OPEN/CLOSE
+  // ========================================
+  
+  function peOpen({ mode = 'add', product = null, productType = 'numeric' } = {}) {
+    if (!isOwner()) {
+      alert('Owner ihany no afaka manao izao.');
+      return;
+    }
+    
+    const modal = ensureProductModal();
+    window.peLocal.mode = mode;
+    window.peLocal.recordId = product?.id || null;
+    window.peLocal.imageFile = null;
+    window.peLocal.previewFile = null;
+    window.peLocal.galleryFiles = [];
+    window.peLocal.existingGalleryIds = []; // ← NOUVELLE LIGNE
+    const productTypeSelect = modal.querySelector('#pe-product-type');
+    const finalProductType = product?.product_type || product?._db?.product_type || productType;
+    
+    if (productTypeSelect) {
+      productTypeSelect.value = finalProductType;
+      productTypeSelect.dispatchEvent(new Event('change'));
+    }
+    
+    const typeLabel = finalProductType === 'physical' ? '📦 Produit Physique' : '💻 Produit Numérique';
+    const titleEl = modal.querySelector('#pe-title');
+    if (titleEl) {
+      titleEl.textContent = (mode === 'add') ? `Ajouter ${typeLabel}` : `Éditer ${typeLabel}`;
+    }
+    
+    // Fill form fields
+    const fields = {
+      '#pe-title-input': product?.title || '',
+      '#pe-price-input': Number(product?.price || 0),
+      '#pe-category': normalizeCategory(product?.category || (finalProductType === 'physical' ? 'other' : 'ebooks')),
+      '#pe-badge': product?._db?.badge || '',
+      '#pe-tags': Array.isArray(product?._db?.tags) ? product._db.tags.join(', ') : '',
+      '#pe-description': product?.description || product?.description_short || '',
+      '#pe-preview-url': product?.preview_url || product?._db?.preview_url || ''
+    };
+    
+    Object.keys(fields).forEach(selector => {
+      const el = modal.querySelector(selector);
+      if (el) el.value = fields[selector];
+    });
+    
+    // Load thumbnail preview
+    const thumbnailPreview = modal.querySelector('#pe-thumbnail-preview');
+    if (thumbnailPreview) {
+      thumbnailPreview.innerHTML = product?.image?.url ?
+        `<img src="${product.image.url}" alt="thumbnail" style="width:100%;height:110px;object-fit:cover">` :
+        `<span style="opacity:.6">Aucune image</span>`;
+    }
+    
+    // Load preview preview
+    const previewPreview = modal.querySelector('#pe-preview-preview');
+    const existingPreview = product?.preview_url || product?._db?.preview_url || '';
+    if (previewPreview) {
+      if (existingPreview) {
+        if (/\.pdf(\?|#|$)/i.test(existingPreview)) {
+          previewPreview.innerHTML = `<div style="opacity:.85"><i class="fa-solid fa-file-pdf"></i> PDF</div>`;
+        } else if (/\.(mp4|webm|mkv)(\?|#|$)/i.test(existingPreview)) {
+          previewPreview.innerHTML = `<video src="${existingPreview}" style="max-width:100%;max-height:110px" muted></video>`;
+        } else {
+          previewPreview.innerHTML = `<div style="opacity:.8">${existingPreview}</div>`;
+        }
+      } else {
+        previewPreview.innerHTML = `<span style="opacity:.6">Tsy misy vidéo/PDF</span>`;
+      }
+    }
+    
+    // Load gallery if editing
+    if (mode === 'edit' && product && product.id) {
+      (async function loadGallery() {
+  try {
+    const sb = await ensureSupabase();
+    
+    const { data: galleryImages, error } = await sb
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .eq('image_type', 'gallery')
+      .order('position');
+    
+    if (error) throw error;
+    
+    if (galleryImages && galleryImages.length > 0) {
+      // ✅ STOCKER les IDs existants
+      window.peLocal.existingGalleryIds = galleryImages.map(img => img.id);
+      
+      const galleryPreview = modal.querySelector('#pe-gallery-preview');
+      if (galleryPreview) {
+        galleryPreview.innerHTML = galleryImages.map(img => `
+          <div class="gallery-item-existing" 
+               data-db-id="${img.id}"
+               style="position:relative;border-radius:8px;overflow:hidden;border:2px solid rgba(59,130,246,.3)">
+            <img src="${img.image_url}" 
+                 style="width:100%;height:100px;object-fit:cover;display:block"
+                 alt="Gallery image">
+            <button type="button"
+                    class="gallery-remove-existing"
+                    data-db-id="${img.id}"
+                    style="position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3)">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <small style="position:absolute;bottom:4px;left:4px;background:rgba(59,130,246,.9);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700">
+              <i class="fa-solid fa-check"></i> Existant
+            </small>
+          </div>
+        `).join('');
+        
+        // ✅ WIRE delete buttons
+        galleryPreview.querySelectorAll('.gallery-remove-existing').forEach(btn => {
+          btn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dbId = this.getAttribute('data-db-id');
+            if (!confirm('Supprimer cette image?')) return;
+            
+            try {
+              const sb = await ensureSupabase();
+              await sb.from('product_images').delete().eq('id', dbId);
+              
+              // Remove from UI and state
+              window.peLocal.existingGalleryIds = window.peLocal.existingGalleryIds.filter(id => id !== dbId);
+              this.closest('.gallery-item-existing').remove();
+              
+              // Update preview if empty
+              if (window.peLocal.existingGalleryIds.length === 0 && window.peLocal.galleryFiles.length === 0) {
+                galleryPreview.innerHTML = '<span style="opacity:.6;grid-column:1/-1;text-align:center;padding:20px">Aucune image</span>';
+              }
+              
+              console.log('[Gallery] Image deleted:', dbId);
+            } catch (err) {
+              console.error('[Gallery] Delete error:', err);
+              alert('Erreur suppression: ' + err.message);
+            }
+          });
+        });
+      }
+    }
+  } catch (e) {
+    console.error('[peOpen] Gallery load error:', e);
+  }
+})();
+    }
+    
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    const titleInput = modal.querySelector('#pe-title-input');
+    if (titleInput) titleInput.focus();
+  }
+  
+  function peClose() {
+    const modal = document.getElementById('product-edit-modal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  
+  // ========================================
+  // SUBMIT FORM
+  // ========================================
+  
+  async function peSubmitForm() {
+    if (!isOwner()) throw new Error('Owner ihany no afaka manova.');
+    
+    console.log('[peSubmitForm] 🚀 Starting...');
+    
+    const sb = await ensureSupabase();
+    const modal = document.getElementById('product-edit-modal');
+    
+    if (!modal) throw new Error('Modal not found');
+    
+    // Get form values
+    const title = modal.querySelector('#pe-title-input')?.value.trim();
+    const price = Number(modal.querySelector('#pe-price-input')?.value || 0);
+    const category = normalizeCategory(modal.querySelector('#pe-category')?.value || 'ebooks');
+    const badge = modal.querySelector('#pe-badge')?.value.trim() || null;
+    const tagsRaw = modal.querySelector('#pe-tags')?.value.trim();
+    const description = modal.querySelector('#pe-description')?.value.trim() || null;
+    let preview_url = modal.querySelector('#pe-preview-url')?.value.trim() || null;
+    
+    const productTypeSelect = modal.querySelector('#pe-product-type');
+    const product_type = productTypeSelect ? productTypeSelect.value : 'numeric';
+    
+    console.log('[peSubmitForm] 📋 Form data:', { title, price, category, product_type });
+    
+    // Validation
+    if (!title || title.trim() === '') {
+      alert('⚠️ Veuillez entrer un titre');
+      return;
+    }
+    
+    // Upload thumbnail
+    let thumbnail_url = null;
+    
+    if (window.peLocal.imageFile) {
+      console.log('[peSubmitForm] 📤 Uploading thumbnail...');
+      
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      const extension = window.peLocal.imageFile.name.split('.').pop();
+      const fileName = `thumbnail_${timestamp}_${randomStr}.${extension}`;
+      
+      // ✅ CORRECTION ITO
+const { data: uploadData, error: uploadError } = await sb.storage
+  .from('products') // ← OVAINA: Bucket marina
+  .upload(fileName, window.peLocal.imageFile, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: window.peLocal.imageFile.type
+  });
+
+if (uploadError) {
+  console.error('[peSubmitForm] ❌ Thumbnail upload error:', uploadError);
+  alert('❌ Erreur upload thumbnail: ' + uploadError.message);
+  throw uploadError;
+}
+
+// ✅ CORRECTION ITO KOA
+const { data: urlData } = sb.storage
+  .from('products') // ← OVAINA: Bucket marina
+  .getPublicUrl(fileName);
+
+thumbnail_url = urlData.publicUrl;
+console.log('[peSubmitForm] ✅ Thumbnail uploaded:', thumbnail_url);
+}
+    
+    // Upload preview
+    if (window.peLocal.previewFile && !preview_url) {
+      console.log('[peSubmitForm] 📤 Uploading preview file...');
+      
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      const extension = window.peLocal.previewFile.name.split('.').pop();
+      const fileName = `preview_${timestamp}_${randomStr}.${extension}`;
+      
+      const { data: uploadData, error: uploadError } = await sb.storage
+        .from('products')
+        .upload(fileName, window.peLocal.previewFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: window.peLocal.previewFile.type
+        });
+      
+      if (uploadError) {
+        console.error('[peSubmitForm] ⚠️ Preview upload error:', uploadError);
+      } else {
+        const { data: urlData } = sb.storage
+          .from('product')
+          .getPublicUrl(fileName);
+        
+        preview_url = urlData.publicUrl;
+        console.log('[peSubmitForm] ✅ Preview uploaded:', preview_url);
+      }
+    }
+    
+    // Build payload
+    const payload = {
+      title,
+      category,
+      price,
+      is_free: price === 0,
+      preview_url,
+      thumbnail_url,
+      badge,
+      tags: tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [],
+      description,
+      product_type
+    };
+    
+    console.log('[peSubmitForm] 📦 Payload:', payload);
+    
+    let productId;
+    
+    // Insert or Update
+    if (window.peLocal.mode === 'add') {
+      console.log('[peSubmitForm] ➕ Inserting new product...');
+      
+      const { data: inserted, error } = await sb
+        .from('products')
+        .insert(payload)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('[peSubmitForm] ❌ Insert error:', error);
+        alert('❌ Erreur insertion: ' + error.message);
+        throw error;
+      }
+      
+      productId = inserted.id;
+      console.log('[peSubmitForm] ✅ Product inserted, ID:', productId);
+      
+    } else {
+      console.log('[peSubmitForm] 🔄 Updating product:', window.peLocal.recordId);
+      
+      const { error } = await sb
+        .from('products')
+        .update(payload)
+        .eq('id', window.peLocal.recordId);
+      
+      if (error) {
+        console.error('[peSubmitForm] ❌ Update error:', error);
+        alert('❌ Erreur modification: ' + error.message);
+        throw error;
+      }
+      
+      productId = window.peLocal.recordId;
+      console.log('[peSubmitForm] ✅ Product updated');
+    }
+    
+// ========================================
+// GALLERY UPLOAD - VERSION CORRIGÉE ✅
+// ========================================
+
+if (window.peLocal.galleryFiles.length > 0) {
+  console.log('[peSubmitForm] 📸 Uploading NEW gallery images:', window.peLocal.galleryFiles.length);
+  
+  let successCount = 0;
+  let errorCount = 0;
+  
+  // ✅ Calculer position de départ (après les images existantes)
+  const startPosition = window.peLocal.existingGalleryIds?.length || 0;
+  
+  for (let i = 0; i < window.peLocal.galleryFiles.length; i++) {
+    const item = window.peLocal.galleryFiles[i];
+    
+    try {
+      console.log('[peSubmitForm] 📤 Processing NEW image', i + 1, '/', window.peLocal.galleryFiles.length);
+      
+      if (!item.file) {
+        console.error('[peSubmitForm] ❌ No file at index', i);
+        errorCount++;
+        continue;
+      }
+      
+      // ✅ Generate unique filename
+      const timestamp = Date.now();
+      const randomStr = Math.random().toString(36).substring(2, 8);
+      const extension = item.file.name.split('.').pop() || 'jpg';
+      const fileName = `${productId}_gallery_${startPosition + i}_${timestamp}_${randomStr}.${extension}`;
+      
+      console.log('[peSubmitForm]   Filename:', fileName);
+      
+      // ✅ STEP 1: Upload to Storage
+      const { data: uploadData, error: uploadError } = await sb.storage
+        .from('products')
+        .upload(fileName, item.file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: item.file.type
+        });
+      
+      if (uploadError) {
+        console.error('[peSubmitForm] ❌ Upload error:', uploadError);
+        errorCount++;
+        continue;
+      }
+      
+      console.log('[peSubmitForm]   ✅ Uploaded to storage');
+      
+      // ✅ STEP 2: Get Public URL
+      const { data: urlData } = sb.storage
+        .from('products')
+        .getPublicUrl(fileName);
+      
+      const publicUrl = urlData.publicUrl;
+      console.log('[peSubmitForm]   🔗 Public URL:', publicUrl);
+      
+      // ✅ STEP 3: Save to Database
+      const { data: insertData, error: insertError } = await sb
+        .from('product_images')
+        .insert({
+          product_id: productId,
+          image_url: publicUrl,
+          image_type: 'gallery',
+          position: startPosition + i
+        })
+        .select();
+      
+      if (insertError) {
+        console.error('[peSubmitForm] ❌ DB insert error:', insertError);
+        errorCount++;
+        continue;
+      }
+      
+      console.log('[peSubmitForm]   ✅ Saved to database');
+      successCount++;
+      
+    } catch (e) {
+      console.error('[peSubmitForm] 💥 Exception:', e);
+      errorCount++;
+    }
+  }
+  
+  console.log('[peSubmitForm] 📸 Gallery upload complete:');
+  console.log('[peSubmitForm]   ✅ Success:', successCount);
+  console.log('[peSubmitForm]   ❌ Errors:', errorCount);
+  
+  if (errorCount > 0) {
+    alert(`⚠️ Gallery: ${successCount} OK, ${errorCount} erreurs`);
+  }
+}
+    
+    // Send notifications (only for new products)
+    if (window.peLocal.mode === 'add') {
+      try {
+        console.log('[peSubmitForm] 📤 Sending push notifications...');
+        
+        const notifPayload = {
+          productId: productId,
+          productTitle: title,
+          productPrice: price,
+          productType: product_type,
+          thumbnail: thumbnail_url,
+          productImage: thumbnail_url,
+          thumbnail_url: thumbnail_url
+        };
+        
+        const notifResponse = await fetch(
+          window.SUPABASE_URL + '/functions/v1/send-push',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + window.SUPABASE_ANON_KEY,
+              'apikey': window.SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify(notifPayload)
+          }
+        );
+        
+        if (notifResponse.ok) {
+          const result = await notifResponse.json();
+          console.log('[peSubmitForm] ✅ Notifications sent:', result.sent, '/', result.total);
+        }
+      } catch (notifErr) {
+        console.error('[peSubmitForm] ⚠️ Notification error:', notifErr);
+      }
+      
+      // Local notification
+      if (typeof window.notifyNewProduct === 'function') {
+        window.notifyNewProduct({ id: productId, title: title, price: price });
+      }
+    }
+    
+    // Reset state
+    window.peLocal.imageFile = null;
+    window.peLocal.previewFile = null;
+    window.peLocal.galleryFiles = [];
+    
+    // Success message
+    const typeEmoji = product_type === 'physical' ? '📦' : '💻';
+    const galleryInfo = window.peLocal.mode === 'add' && window.peLocal.galleryFiles.length > 0 ?
+      `\n📸 ${window.peLocal.galleryFiles.length} image(s) de galerie` :
+      '';
+    
+    alert(`${typeEmoji} Produit ${window.peLocal.mode === 'add' ? 'ajouté' : 'modifié'} avec succès!${galleryInfo}`);
+    
+    console.log('[peSubmitForm] 🎉 TERMINÉ AVEC SUCCÈS');
+  }
+  
+  // ========================================
+  // EXPOSE GLOBALLY
+  // ========================================
+  
+  window.ensureProductModal = ensureProductModal;
+  window.peOpen = peOpen;
+  window.peClose = peClose;
+  window.peSubmitForm = peSubmitForm;
+  window.peSetGalleryFiles = peSetGalleryFiles;
+  window.renderGalleryPreview = renderGalleryPreview;
+  window.peSetLocalFile = peSetLocalFile;
+  
+  console.log('[Product Modal] ✅ System initialized');
+  
+})();
+
+/* ==========================================
+   HELPER FUNCTIONS (si pas déjà définies)
+   ========================================== */
+
+if (typeof normalizeCategory !== 'function') {
+  window.normalizeCategory = function(c) {
+    if (!c) return '';
+    c = String(c).toLowerCase();
+    if (['app', 'apps', 'jeu', 'jeux', 'game', 'games'].indexOf(c) !== -1) return 'apps';
+    if (['ebook', 'ebooks', 'book', 'livre', 'livres'].indexOf(c) !== -1) return 'ebooks';
+    if (['video', 'vidéo', 'videos', 'vidéos'].indexOf(c) !== -1) return 'videos';
+    if (['promotion', 'promo'].indexOf(c) !== -1) return 'promo';
+    if (['gratuit', 'gratuits', 'free'].indexOf(c) !== -1) return 'free';
+    return c;
+  };
+}
+
+if (typeof escapeAttr !== 'function') {
+  window.escapeAttr = function(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+}
+
+if (typeof escapeHtml !== 'function') {
+  window.escapeHtml = function(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, function(m) {
+      var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return map[m] || m;
+    });
+  };
+}
+
+/* ==========================================
+   CRUD API FUNCTIONS
+   ========================================== */
+
+async function addProductPrompt() {
+  window.peOpen({ mode: 'add', product: null, productType: 'numeric' });
+}
+
+async function addPhysicalProductPrompt() {
+  window.peOpen({ mode: 'add', product: null, productType: 'physical' });
+}
+
+async function editProductPrompt(id) {
+  if (!isOwner()) {
+    alert('Owner ihany no afaka manova.');
+    return;
+  }
+  
+  try {
+    const sb = await ensureSupabase();
+    const { data, error } = await sb
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    
+    if (!data) {
+      alert('Produit introuvable');
+      return;
+    }
+    
+    // Map DB data to UI format
+    const product = {
+      id: data.id,
+      title: data.title,
+      price: data.price,
+      category: data.category,
+      description: data.description,
+      description_short: data.subtitle,
+      image: { url: data.thumbnail_url },
+      preview_url: data.preview_url,
+      product_type: data.product_type,
+      _db: data
+    };
+    
+    window.peOpen({ mode: 'edit', product: product });
+    
+  } catch (e) {
+    console.error('[editProductPrompt]', e);
+    alert('Erreur: ' + e.message);
+  }
+}
+
+async function deleteProductConfirm(id) {
+  if (!isOwner()) {
+    alert('Owner ihany no afaka mamafa.');
+    return;
+  }
+  
+  if (!confirm('Hofafana ve ity produit ity?')) return;
+  
+  try {
+    const sb = await ensureSupabase();
+    
+    // Delete gallery images first
+    const { error: galleryError } = await sb
+      .from('product_images')
+      .delete()
+      .eq('product_id', id);
+    
+    if (galleryError) {
+      console.warn('[deleteProductConfirm] Gallery delete error:', galleryError);
+    }
+    
+    // Delete product
+    const { error } = await sb
+      .from('products')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    
+    alert('Voafafa.');
+    
+    if (typeof fetchSupabaseProducts === 'function') {
+      await fetchSupabaseProducts();
+    }
+    
+  } catch (e) {
+    console.error('[deleteProductConfirm]', e);
+    alert('Erreur suppression: ' + e.message);
+  }
+}
+
+// Expose globally
+window.addProductPrompt = addProductPrompt;
+window.addPhysicalProductPrompt = addPhysicalProductPrompt;
+window.editProductPrompt = editProductPrompt;
+window.deleteProductConfirm = deleteProductConfirm;
+
+/* ==========================================
+   EVENT DELEGATION FOR PRODUCT CARDS
+   ========================================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+  function delegateToolButtons(container) {
+    if (!container) return;
+    
+    container.addEventListener('click', function(e) {
+      const toolBtn = e.target.closest('.owner-tool');
+      if (!toolBtn) return;
+      
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const card = toolBtn.closest('.product-card');
+      if (!card) return;
+      
+      const id = card.getAttribute('data-id');
+      const tool = toolBtn.getAttribute('data-tool');
+      
+      if (tool === 'edit') {
+        editProductPrompt(id);
+      } else if (tool === 'delete') {
+        deleteProductConfirm(id);
+      }
+    });
+  }
+  
+  // Wire to product containers
+  delegateToolButtons(document.getElementById('products-row'));
+  delegateToolButtons(document.getElementById('products-box'));
+});
+
+/* ==========================================
+   WIRE ADD PRODUCT BUTTONS
+   ========================================== */
+
+document.addEventListener('DOMContentLoaded', function() {
+  const addBtn = document.getElementById('btnAddProduct');
+  const addPhysicalBtn = document.getElementById('btnAddPhysical');
+  
+  if (addBtn) {
+    addBtn.addEventListener('click', addProductPrompt);
+  }
+  
+  if (addPhysicalBtn) {
+    addPhysicalBtn.addEventListener('click', addPhysicalProductPrompt);
+  }
+});
+
+console.log('[Product Modal] ✅ Complete system loaded');// À LA FIN du fichier
+document.addEventListener('DOMContentLoaded', function() {
+  // Attendre que tout soit chargé
+  setTimeout(() => {
+    console.log('[Init] Wiring product buttons...');
+    
+    const addBtn = document.getElementById('btnAddProduct');
+    const addPhysicalBtn = document.getElementById('btnAddPhysical');
+    
+    if (addBtn) {
+      addBtn.removeEventListener('click', addProductPrompt); // Remove old
+      addBtn.addEventListener('click', function() {
+        if (typeof window.peOpen === 'function') {
+          window.peOpen({ mode: 'add', product: null, productType: 'numeric' });
+        } else {
+          console.error('[btnAddProduct] peOpen not available');
+          alert('❌ Erreur: Module produits non chargé');
+        }
+      });
+      console.log('[Init] ✓ btnAddProduct wired');
+    }
+    
+    if (addPhysicalBtn) {
+      addPhysicalBtn.removeEventListener('click', addPhysicalProductPrompt);
+      addPhysicalBtn.addEventListener('click', function() {
+        if (typeof window.peOpen === 'function') {
+          window.peOpen({ mode: 'add', product: null, productType: 'physical' });
+        } else {
+          console.error('[btnAddPhysical] peOpen not available');
+          alert('❌ Erreur: Module produits non chargé');
+        }
+      });
+      console.log('[Init] ✓ btnAddPhysical wired');
+    }
+    
+  }, 1000); // Délai de sécurité
+})
+;async function showProduct(id) {
+  try {
+    const p = (window.products || []).find(x => x.id === id);
+    if (!p) {
+      alert('Tsy hita ny produit');
+      return;
+    }
+    
+    const modal = document.getElementById('info-modal');
+    const title = document.getElementById('info-title');
+    const content = document.getElementById('info-content');
+    
+    if (!modal || !content || !title) return;
+    
+    title.textContent = p.title || 'Détails du produit';
+    
+    const imgUrl = (p.image && p.image.url) ? p.image.url : FALLBACK_IMG;
+    const price = Number(p.price) || 0;
+    const isFree = price === 0;
+    const category = normalizeCategory(p.category || '');
+    const description = p.description || 'Aucune description disponible.';
+    
+// ✅ CORRECTION: Charger gallery avec debug complet
+let galleryHTML = '';
+try {
+  console.log('[showProduct] 🔍 Loading gallery for product ID:', id);
+  
+  const sb = await ensureSupabase();
+  
+  // ✅ FIX CRITIQUE: Convertir l'ID en string propre
+  const cleanId = String(id).trim();
+  
+  console.log('[showProduct] 🔍 Clean ID:', cleanId);
+  
+  const { data: galleryImages, error } = await sb
+    .from('product_images')
+    .select('*')
+    .eq('product_id', cleanId) // ← CORRIGÉ: ID nettoyé
+    .eq('image_type', 'gallery')
+    .order('position', { ascending: true });
+  
+  console.log('[showProduct] 📊 Gallery query result:', {
+    found: galleryImages?.length || 0,
+    error: error?.message || null,
+    data: galleryImages
+  });
+  
+  if (error) {
+    console.error('[showProduct] ❌ Gallery error:', error);
+    galleryHTML = `
+          <div style="margin-top:16px;padding:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px">
+            <p style="margin:0;color:#ef4444">⚠️ Erreur chargement galerie: ${error.message}</p>
+          </div>
+        `;
+  } else if (galleryImages && galleryImages.length > 0) {
+    console.log('[showProduct] ✅ Found', galleryImages.length, 'gallery images');
+    
+    // ✅ NOUVEAU: Créer un lightbox simple
+    galleryHTML = `
+          <div style="margin-top:16px">
+            <h4 style="margin:0 0 12px 0;color:#fff;font-size:16px;display:flex;align-items:center;gap:8px">
+              <i class="fa-solid fa-images"></i>
+              Galerie (${galleryImages.length})
+            </h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px">
+              ${galleryImages.map((img, index) => `
+                <div style="position:relative;overflow:hidden;border-radius:8px;border:2px solid rgba(59,130,246,.3);cursor:pointer;transition:transform 0.2s"
+                     onclick="window.open('${escapeAttr(img.image_url)}', '_blank')"
+                     onmouseover="this.style.transform='scale(1.05)'"
+                     onmouseout="this.style.transform='scale(1)'">
+                  <img 
+                    src="${escapeAttr(img.image_url)}" 
+                    alt="Gallery ${index + 1}" 
+                    loading="lazy"
+                    style="width:100%;height:100px;object-fit:cover;display:block"
+                    onerror="this.style.border='2px solid #ef4444'; this.alt='❌ Erreur'">
+                  <div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.8);color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;backdrop-filter:blur(4px)">
+                    ${index + 1}/${galleryImages.length}
+                  </div>
+                  <div style="position:absolute;inset:0;background:rgba(0,0,0,.4);opacity:0;transition:opacity 0.2s;display:flex;align-items:center;justify-content:center"
+                       onmouseover="this.style.opacity='1'"
+                       onmouseout="this.style.opacity='0'">
+                    <i class="fa-solid fa-expand" style="font-size:24px;color:#fff"></i>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            <p style="margin:8px 0 0;font-size:12px;color:#94a3b8;text-align:center">
+              <i class="fa-solid fa-info-circle"></i> Cliquez pour ouvrir en grand
+            </p>
+          </div>
+        `;
+  } else {
+    console.log('[showProduct] ℹ️ No gallery images found');
+    // ✅ Pas de HTML si pas d'images (évite "Aucune image")
+  }
+} catch (e) {
+  console.error('[showProduct] 💥 Gallery load error:', e);
+  console.error('Stack:', e.stack);
+  
+  galleryHTML = `
+        <div style="margin-top:16px;padding:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px">
+          <p style="margin:0;color:#ef4444">⚠️ Erreur: ${e.message}</p>
+          <small style="display:block;margin-top:4px;opacity:0.8">Vérifiez la console pour détails</small>
+        </div>
+      `;
+}
+    
+    // Build HTML
+    let html = `
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="width:100%;max-height:300px;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.12)">
+          <img src="${escapeAttr(imgUrl)}" alt="${escapeAttr(p.title)}" style="width:100%;height:auto;object-fit:cover;display:block">
+        </div>
+        
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>${fmtPrice(price)}</div>
+          <span class="badge" style="padding:4px 10px;border-radius:999px;font-size:12px">${category}</span>
+        </div>
+        
+        <div style="line-height:1.6;color:#e5e7eb">
+          <h4 style="margin:0 0 8px 0;color:#fff">Description</h4>
+          <p style="margin:0;white-space:pre-wrap">${escapeHtml(description)}</p>
+        </div>
+        
+        ${galleryHTML}
+        
+        <div style="display:flex;gap:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)">
+          <button type="button" class="param-btn" onclick="buyOrRead({id:'${escapeAttr(p.id)}',title:'${escapeAttr(p.title)}',price:${price}})" style="flex:1;background:linear-gradient(135deg,#10b981,#059669);border:none;color:#fff">
+            <i class="fa-brands fa-whatsapp"></i> ${isFree ? 'Obtenir' : 'Commander'}
+          </button>
+        </div>
+      </div>
+    `;
+    
+    content.innerHTML = html;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+    modal.style.display = 'flex';
+    
+  } catch (err) {
+    console.error('[showProduct error]', err);
+    alert('Erreur: ' + err.message);
+  }
+}
+/* ==========================================
+   GALLERY INDICATOR ANIMATION ✅
+   ========================================== */
+
+if (!document.getElementById('gallery-indicator-styles')) {
+  const styles = document.createElement('style');
+  styles.id = 'gallery-indicator-styles';
+  styles.textContent = `
+    @keyframes galleryPulse {
+      0%, 100% { 
+        transform: scale(1); 
+        box-shadow: 0 4px 12px rgba(0,0,0,.3);
+      }
+      50% { 
+        transform: scale(1.05); 
+        box-shadow: 0 6px 16px rgba(59,130,246,.4);
+      }
+    }
+    
+    .gallery-indicator:hover {
+      background: rgba(59,130,246,1) !important;
+      transform: scale(1.1) !important;
+      animation: none !important;
+    }
+  `;
+  document.head.appendChild(styles);
+}
