@@ -4287,3 +4287,46 @@ body.theme-switching * {
     font-size: 9px;
     padding: 3px 6px;
   }
+}/* ==========================================
+   RECEIPT MODAL STYLES
+   ========================================== */
+
+#receipt-modal {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+#receipt-modal > div {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(20px); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+.receipt-btn:active {
+  transform: scale(0.98) !important;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  #receipt-modal {
+    padding: 0 !important;
+  }
+  
+  #receipt-modal > div {
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+  }
+}
