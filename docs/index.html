@@ -190,125 +190,127 @@
      ======================================== -->
 <section id="home" class="active" aria-label="Accueil" aria-hidden="false">
   
-  <!-- Slideshow -->
-  <div class="slideshow" aria-label="Promotion">
-    <div class="slide-track" id="slide-track">
-      <!-- Slides rendered by JS -->
+  <!-- ✅ NOUVEAU: Wrapper scrollable -->
+  <div id="home-content">
+    
+    <!-- Slideshow -->
+    <div class="slideshow" aria-label="Promotion">
+      <div class="slide-track" id="slide-track">
+        <!-- Slides rendered by JS -->
+      </div>
+      <div class="slide-dots" id="slide-dots" aria-hidden="true"></div>
     </div>
-    <div class="slide-dots" id="slide-dots" aria-hidden="true"></div>
-  </div>
-  
-  <!-- Add Slide Button (Owner only) -->
-  <div style="margin-top:16px; display:flex; justify-content:center; padding:0 12px">
-    <button 
-      id="btnAddSlide" 
-      type="button" 
-      class="param-btn owner-tool" 
-      style="display:none; gap:6px; align-items:center" 
-      title="Ajouter un slide" 
-      aria-label="Ajouter un slide au carrousel"
-      data-i18n="slide_add"
-      data-i18n-title="slide_add">
-      <i class="fa-solid fa-plus"></i>
-      <span>Ajouter Slide</span>
-    </button>
-  </div>
-  
-  <!-- Subscribe Button -->
-  <div style="margin-top:20px; display:flex; justify-content:center; padding:0 12px">
-    <button 
-      id="btnSubscribe" 
-      type="button" 
-      class="subscribe-btn"
-      title="Recevoir les notifications de nouveaux produits"
-      aria-label="S'abonner aux notifications"
-      data-i18n-title="notif_subscribe">
-      <i class="fa-solid fa-bell"></i>
-      <span class="subscribe-text" data-i18n="notif_subscribe">S'abonner aux notifications</span>
-    </button>
-  </div>
-  
-  <!-- Home Title & Subtitle -->
-  <h1 id="home-title" data-i18n="home_title">Tongasoa eto amin'ny fivarotana Malagasy!</h1>
-  <p id="home-sub" data-i18n="home_sub">Découvre des eBooks, vidéos et apps/jeux pour t'aider à réussir en ligne.</p>
+    
+    <!-- Add Slide Button (Owner only) -->
+    <div style="margin-top:16px; display:flex; justify-content:center; padding:0 12px">
+      <button 
+        id="btnAddSlide" 
+        type="button" 
+        class="param-btn owner-tool" 
+        style="display:none; gap:6px; align-items:center" 
+        title="Ajouter un slide" 
+        aria-label="Ajouter un slide au carrousel"
+        data-i18n="slide_add"
+        data-i18n-title="slide_add">
+        <i class="fa-solid fa-plus"></i>
+        <span>Ajouter Slide</span>
+      </button>
+    </div>
+    
+    <!-- Subscribe Button -->
+    <div style="margin-top:20px; display:flex; justify-content:center; padding:0 12px">
+      <button 
+        id="btnSubscribe" 
+        type="button" 
+        class="subscribe-btn"
+        title="Recevoir les notifications de nouveaux produits"
+        aria-label="S'abonner aux notifications"
+        data-i18n-title="notif_subscribe">
+        <i class="fa-solid fa-bell"></i>
+        <span class="subscribe-text" data-i18n="notif_subscribe">S'abonner aux notifications</span>
+      </button>
+    </div>
+    
+    <!-- Home Title & Subtitle -->
+    <h1 id="home-title" data-i18n="home_title">Tongasoa eto amin'ny fivarotana Malagasy!</h1>
+    <p id="home-sub" data-i18n="home_sub">Découvre des eBooks, vidéos et apps/jeux pour t'aider à réussir en ligne.</p>
 
-
-<!-- Quick Order Section -->
-
-<div class="quick-order-card" id="qoCard">
-  <!-- Header with collapse button -->
-  <div class="qo-header">
-  <i class="fa-solid fa-bolt"></i>
-  <h3>Commande Express</h3>
-  <!-- ✅ NOUVEAU: Counter -->
-  <span class="qo-counter" id="qoCounter">0/8</span>
-  <button type="button" 
-          class="qo-toggle-btn" 
-            id="qoToggle"
-            aria-expanded="true"
-            aria-label="Toggle Quick Order">
-      <i class="fa-solid fa-chevron-up"></i>
-    </button>
-  </div>
-  
-  <!-- ✅ NOUVEAU: Owner Tools Bar -->
-<div class="qo-tools owner-tool" style="display:none">
-  <button type="button" 
-          class="qo-tool-btn" 
-          id="qoAddBtn"
-          title="Ajouter des produits">
-    <i class="fa-solid fa-plus"></i>
-    <span>Ajouter</span>
-  </button>
-  <button type="button" 
-          class="qo-tool-btn qo-manage-btn" 
-          id="qoManageBtn"
-          title="Gérer l'ordre">
-    <i class="fa-solid fa-list"></i>
-    <span>Gérer</span>
-  </button>
-  <!-- ✅ NOUVEAU: Export/Import -->
-  <div class="qo-tools-more">
-    <button type="button" 
-            class="qo-tool-btn-small" 
-            id="qoExportBtn"
-            title="Exporter">
-      <i class="fa-solid fa-download"></i>
-    </button>
-    <button type="button" 
-            class="qo-tool-btn-small" 
-            id="qoImportBtn"
-            title="Importer">
-      <i class="fa-solid fa-upload"></i>
-    </button>
-  </div>
-  <!-- Hidden file input -->
-  <input type="file" 
-         id="qoImportFile" 
-         accept=".json"
-         style="display:none">
-</div>
-  
-  <!-- Content (collapsible) -->
-  <div id="qoContent">
-    <!-- Grid with scrollbar -->
-    <div class="qo-scroll-wrapper">
-      <div class="qo-grid" id="featured-products">
-        <!-- Products will be rendered here -->
+    <!-- Quick Order Section -->
+    <div class="quick-order-card" id="qoCard">
+      <!-- Header with collapse button -->
+      <div class="qo-header">
+        <i class="fa-solid fa-bolt"></i>
+        <h3>Commande Express</h3>
+        <span class="qo-counter" id="qoCounter">0/8</span>
+        <button type="button" 
+                class="qo-toggle-btn" 
+                id="qoToggle"
+                aria-expanded="true"
+                aria-label="Toggle Quick Order">
+          <i class="fa-solid fa-chevron-up"></i>
+        </button>
+      </div>
+      
+      <!-- Owner Tools Bar -->
+      <div class="qo-tools owner-tool" style="display:none">
+        <button type="button" 
+                class="qo-tool-btn" 
+                id="qoAddBtn"
+                title="Ajouter des produits">
+          <i class="fa-solid fa-plus"></i>
+          <span>Ajouter</span>
+        </button>
+        <button type="button" 
+                class="qo-tool-btn qo-manage-btn" 
+                id="qoManageBtn"
+                title="Gérer l'ordre">
+          <i class="fa-solid fa-list"></i>
+          <span>Gérer</span>
+        </button>
+        <div class="qo-tools-more">
+          <button type="button" 
+                  class="qo-tool-btn-small" 
+                  id="qoExportBtn"
+                  title="Exporter">
+            <i class="fa-solid fa-download"></i>
+          </button>
+          <button type="button" 
+                  class="qo-tool-btn-small" 
+                  id="qoImportBtn"
+                  title="Importer">
+            <i class="fa-solid fa-upload"></i>
+          </button>
+        </div>
+        <input type="file" 
+               id="qoImportFile" 
+               accept=".json"
+               style="display:none">
+      </div>
+      
+      <!-- Content (collapsible) -->
+      <div id="qoContent">
+        <div class="qo-scroll-wrapper">
+          <div class="qo-grid" id="featured-products">
+            <!-- Products will be rendered here -->
+          </div>
+        </div>
+        
+        <button type="button" 
+                class="qo-view-all" 
+                onclick="showSection('shop')">
+          <span>Voir tout</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
       </div>
     </div>
     
-    <!-- View all button -->
-    <button type="button" 
-            class="qo-view-all" 
-            onclick="showSection('shop')">
-      <span>Voir tout</span>
-      <i class="fa-solid fa-arrow-right"></i>
-    </button>
-  </div>
-</div>
+  </div> <!-- ✅ FIN de #home-content -->
+  
+  <!-- ⚠️ Les modals RESTENT EN DEHORS de #home-content -->
+  
+</section>
 
-<!-- ✅ NOUVEAU: Modal Add Products to QO -->
+<!-- ✅ Modals QO (en dehors de #home) -->
 <div id="qo-add-modal" 
      class="modal-overlay" 
      aria-hidden="true"
@@ -324,7 +326,6 @@
       </button>
     </div>
     
-    <!-- Search products -->
     <div class="modal-search">
       <input type="search" 
              id="qoSearchProducts" 
@@ -332,12 +333,9 @@
              class="search-input">
     </div>
     
-    <!-- Products list (scrollable) -->
     <div class="qo-modal-products" id="qoModalProductsList">
-      <!-- Products rendered here -->
     </div>
     
-    <!-- Actions -->
     <div class="modal-actions">
       <button type="button" 
               class="btn btn-secondary" 
@@ -354,7 +352,6 @@
   </div>
 </div>
 
-<!-- ✅ NOUVEAU: Modal Manage QO -->
 <div id="qo-manage-modal" 
      class="modal-overlay" 
      aria-hidden="true"
@@ -374,12 +371,9 @@
       Glissez pour réorganiser, cliquez sur <i class="fa-solid fa-trash"></i> pour supprimer
     </p>
     
-    <!-- Current QO products (sortable) -->
     <div class="qo-manage-list" id="qoManageList">
-      <!-- Products rendered here -->
     </div>
     
-    <!-- Actions -->
     <div class="modal-actions">
       <button type="button" 
               class="btn btn-secondary" 
@@ -623,6 +617,22 @@
     <span class="label" data-i18n="nav_shop">Shop</span>
   </button>
   
+  <!-- ✅ MIORA BUTTON -->
+  <button type="button" class="nav-btn" id="nav-miora" aria-label="Miora AI" aria-controls="miora-chat">
+  <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+       alt="Miora" 
+       class="icon-miora"
+       loading="lazy">
+  <span class="label">Miora</span>
+</button>
+  
+  <button type="button" class="nav-btn owner-tool" data-section="dashboard" aria-label="Dashboard" data-i18n-aria-label="nav_dashboard" style="display:none">
+    <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+      <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="currentColor" />
+    </svg>
+    <span class="label" data-i18n="nav_dashboard">Dashboard</span>
+  </button>
+  
   <button type="button" class="nav-btn" data-section="params" aria-label="Paramètre" data-i18n-aria-label="nav_params">
     <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
       <path d="M19.4 12.9a7.2 7.2 0 0 0 0-1.8l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.4a.5.5 0 0 0-.6-.2l-2.5 1a7.1 7.1 0 0 0-1.6-.9L14 2.4a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.1 7.1 0 0 0-1.6.9l-2.5-1a.5.5 0 0 0-.6.2l-2 3.4a.5.5 0 0 0 .1.6L4.6 11a7.2 7.2 0 0 0 0 1.8L2.5 14.4a.5.5 0 0 0-.1.6l2 3.4c.1.2.4.3.6.2l2.5-1c.5.4 1 0 1.6.9l.4 2.7c.05.2.2.4.4.4h4c.2 0 .4-.2.4-.4l.4-2.7c.6-.9 1.1-.5 1.6-.9l2.5 1c.2.1.5 0 .6-.2l2-3.4a.5.5 0 0 0-.1-.6l-2.1-1.6zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" fill="currentColor" />
@@ -815,7 +825,98 @@
       </span>
     </div>
   </div>
+<!-- ========================================
+     MIORA AI ASSISTANT SETTINGS (OWNER ONLY)
+     ======================================== -->
+<div class="param-section owner-tool" id="miora-settings-section" style="display:none">
+  <h4 style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+         alt="Miora" 
+         style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(102,126,234,.3)">
+    <span>Miora AI Assistant</span>
+    <span style="font-size:11px;padding:2px 8px;background:rgba(102,126,234,.2);border-radius:6px;color:#667eea;font-weight:700">PRO</span>
+  </h4>
+  
+  <p style="margin-bottom:16px;color:#94a3b8;font-size:13px;line-height:1.5">
+    Configuration complète de votre assistant IA avec support multi-modèles et fallback automatique.
+  </p>
 
+  <!-- Status Badge -->
+  <div id="miora-status-badge" style="margin-bottom:16px;padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;display:flex;align-items:center;gap:10px;font-size:13px">
+    <i class="fa-solid fa-exclamation-triangle" style="color:#ef4444;font-size:18px"></i>
+    <div>
+      <div style="color:#ef4444;font-weight:700;margin-bottom:2px">⚠️ Aucune API configurée</div>
+      <div style="color:#94a3b8;font-size:12px">Configurez au moins un modèle AI pour activer Miora</div>
+    </div>
+  </div>
+
+  <!-- Quick Config Button -->
+  <button type="button" 
+          class="param-btn" 
+          onclick="window.mioraOpenSettings()"
+          style="width:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border:none;color:#fff;font-weight:700;padding:14px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(102,126,234,.3);margin-bottom:12px">
+    <i class="fa-solid fa-sliders"></i>
+    <span>Configurer Miora AI</span>
+  </button>
+
+  <!-- Stats Grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+    <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:4px">Messages</div>
+      <div style="color:#fff;font-size:20px;font-weight:800" id="miora-stats-messages">0</div>
+    </div>
+    <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:4px">Modèle actif</div>
+      <div style="color:#10b981;font-size:14px;font-weight:700" id="miora-stats-model">-</div>
+    </div>
+  </div>
+
+  <!-- Features Info -->
+  <div style="padding:12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <i class="fa-solid fa-sparkles" style="color:#10b981"></i>
+      <strong style="color:#10b981;font-size:14px">Fonctionnalités disponibles</strong>
+    </div>
+    <ul style="margin:0;padding-left:20px;color:#94a3b8;font-size:12px;line-height:1.8">
+      <li>Multi-AI: Groq, Gemini, OpenAI, Claude, etc.</li>
+      <li>Fallback automatique si modèle indisponible</li>
+      <li>Génération d'images (Pollinations AI)</li>
+      <li>Reconnaissance vocale & synthèse</li>
+      <li>Thèmes personnalisables (6 thèmes)</li>
+      <li>Mode sombre automatique</li>
+      <li>Export/Import conversations</li>
+      <li>Statistiques détaillées</li>
+    </ul>
+  </div>
+
+  <!-- Quick Actions -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <button type="button" 
+            class="param-btn" 
+            onclick="window.mioraOpenAnalytics()"
+            style="font-size:13px;padding:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#3b82f6">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Statistiques</span>
+    </button>
+    <button type="button" 
+            class="param-btn" 
+            onclick="exportConversation()"
+            style="font-size:13px;padding:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981">
+      <i class="fa-solid fa-download"></i>
+      <span>Exporter</span>
+    </button>
+  </div>
+
+  <!-- Documentation Link -->
+  <div style="margin-top:12px;text-align:center">
+    <a href="#" 
+       onclick="alert('📚 Documentation Miora AI:\n\n1. Configurez vos clés API\n2. Activez les modèles souhaités\n3. Testez avec Quick Actions\n4. Activez le fallback pour fiabilité\n\n💡 Les modèles GRATUITS: Groq, Gemini, Cohere'); return false;"
+       style="color:#667eea;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+      <i class="fa-solid fa-book"></i>
+      <span>Documentation & Aide</span>
+    </a>
+  </div>
+</div>
   <!-- ========================================
        ACTION BUTTONS
        ======================================== -->
@@ -852,7 +953,74 @@
     </div>
   </div>
 </div>
+<!-- ==========================================
+     MIORA AI ASSISTANT - CHAT WINDOW
+     ========================================== -->
 
+<!-- Chat Window -->
+<div id="miora-chat" class="miora-chat" aria-hidden="true" role="dialog" aria-labelledby="miora-title">
+  <!-- Header -->
+  <div class="miora-header">
+    <div class="miora-avatar">
+      <!-- ✅ NOUVELLE URL -->
+      <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+           alt="Miora" 
+           class="miora-header-avatar">
+    </div>
+    <div class="miora-title">
+      <div class="miora-name" id="miora-title">Miora</div>
+      <div class="miora-status">Assistant AI • En ligne</div>
+    </div>
+    <button class="miora-close" id="miora-close" aria-label="Fermer">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- Messages Container -->
+  <div class="miora-messages" id="miora-messages">
+    <!-- Welcome Message -->
+    <div class="miora-message miora-bot">
+      <div class="miora-message-avatar">
+        <!-- ✅ NOUVELLE URL -->
+        <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+             alt="Miora" 
+             class="miora-msg-avatar">
+      </div>
+      <div class="miora-message-content">
+
+</div>
+</div>
+</div>
+
+
+
+  <!-- Input Area -->
+  <div class="miora-input-area">
+    
+    <input type="file" id="miora-file-input" accept="image/*" style="display:none">
+    
+   <textarea 
+  id="miora-input" 
+  placeholder="soraty..." 
+  class="miora-input"
+  rows="1"
+  maxlength="2000"></textarea>
+    
+    <button class="miora-send" id="miora-send" aria-label="Send">
+      <i class="fa-solid fa-paper-plane"></i>
+    </button>
+  </div>
+  
+  <!-- Image Preview -->
+  <div class="miora-image-preview" id="miora-image-preview">
+    <div class="miora-preview-container">
+      <img id="miora-preview-img" class="miora-preview-img" alt="Preview">
+      <button class="miora-preview-remove" id="miora-preview-remove" aria-label="Remove">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+</div>
 <!-- ✅ PWA REGISTRATION SCRIPT -->
 <script>
 // ========================================
