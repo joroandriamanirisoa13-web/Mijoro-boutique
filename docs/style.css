@@ -366,20 +366,55 @@ p {
    HOME SECTION
    ========================================== */
 
+/* ✅ NOUVEAU CODE FLEXIBLE */
 #home {
+  position: fixed;
+  inset: 0;
   display: flex !important;
   flex-direction: column;
-  height: calc(100vh - var(--bottom-menu-h, 74px) - 20px);
+  height: 100vh !important;
   overflow: hidden !important;
-  padding: 12px;
-  margin: 10px auto;
-  max-width: 980px;
-  position: relative;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent;
+  border-radius: 0;
+  max-width: none;
+  z-index: 1;
 }
 
-#home > * {
+#home>* {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+}
+
+/* Container interne pour le contenu */
+@media (max-width: 768px) {
+  #home-content {
+    padding: 10px 10px calc(var(--bottom-menu-h) + 16px) 10px;
+  }
+
+#home h1 {
+  font-size: 20px;
+  margin: 12px 0 6px 0;
+}
+
+#home p {
+  font-size: 13px;
+  margin: 0 0 12px 0;
+}
+}
+
+/* Slideshow flexible */
+#home .slideshow {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+/* Quick Order flexible */
+#home .quick-order-card {
+  flex-shrink: 0;
+  margin-top: 16px;
 }
 
 #home .slide-track,
@@ -430,20 +465,7 @@ p {
   background: linear-gradient(135deg, #1a1a2e, #16213e);
 }
 
-.slideshow::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.1) 50%,
-    rgba(0, 0, 0, 0.3) 100%
-  );
-  z-index: 1;
-  pointer-events: none;
-  border-radius: 20px;
-}
+
 
 .slide-track {
   display: flex;
@@ -1216,7 +1238,7 @@ body.owner-mode .qo-tools {
    SHOP SECTION
    ======================================== */
 #shop {
-  position: relative;
+  position: fixed;
 
   inset: 0;
   display: flex !important;
@@ -1228,7 +1250,7 @@ body.owner-mode .qo-tools {
   background:
     linear-gradient(to bottom, rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.55)),
     url("https://i.ibb.co/rGwjX7y5/images-22.jpg") center/cover no-repeat;
-  background-attachment: fixed;
+  background-attachment: relative;
   border-radius: 0;
   max-width: none;
 }
@@ -4329,4 +4351,1830 @@ body.theme-switching * {
     border-radius: 0 !important;
     max-height: 100vh !important;
   }
+}/* ==========================================
+   MIORA AI ASSISTANT - FULL SCREEN MOBILE ✅
+   ========================================== */
+
+/* Chat Window - FULL SCREEN MOBILE */
+.miora-chat {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  display: flex;
+  flex-direction: column;
+  z-index: 10000; /* ← Plus haut que tout */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
+
+.miora-chat[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Header */
+.miora-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  padding-top: max(16px, env(safe-area-inset-top)); /* iOS notch */
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.miora-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #667eea;
+  flex-shrink: 0;
+}
+
+.miora-header-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.miora-title {
+  flex: 1;
+}
+
+.miora-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.miora-status {
+  font-size: 12px;
+  color: #10b981;
+}
+
+.miora-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.miora-close:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+/* Messages Container - SCROLLABLE */
+.miora-messages {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scroll */
+}
+
+/* Message */
+.miora-message {
+  display: flex;
+  gap: 12px;
+  animation: messageSlide 0.3s ease;
+}
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.miora-message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #667eea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+}
+
+.miora-msg-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.miora-message-content {
+  flex: 1;
+  max-width: 80%;
+}
+
+.miora-message-text {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px 16px;
+  border-radius: 16px;
+  color: #e2e8f0;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+/* User message - right aligned */
+.miora-user {
+  flex-direction: row-reverse;
+}
+
+.miora-user .miora-message-content {
+  margin-left: auto;
+}
+
+.miora-user .miora-message-text {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+}
+
+/* ✅ IMAGE IN MESSAGE */
+.miora-message-image {
+  margin-top: 8px;
+  max-width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.miora-message-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Typing indicator */
+.miora-typing {
+  display: flex;
+  gap: 4px;
+}
+
+.miora-typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+  animation: typing 1.4s infinite;
+}
+
+.miora-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.miora-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+
+
+/* ✅ INPUT AREA - FIXED BOTTOM */
+.miora-input-area {
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom)); /* iOS home indicator */
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+
+
+
+.miora-send {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.miora-send:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.miora-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ✅ IMAGE PREVIEW */
+.miora-image-preview {
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: none;
+  flex-shrink: 0;
+}
+
+.miora-image-preview.show {
+  display: block;
+}
+
+.miora-preview-container {
+  position: relative;
+  display: inline-block;
+}
+
+.miora-preview-img {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 8px;
+  display: block;
+}
+
+.miora-preview-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+/* ==========================================
+   DESKTOP (OPTIONAL)
+   ========================================== */
+@media (min-width: 768px) {
+  .miora-chat {
+    position: fixed;
+    bottom: calc(var(--bottom-menu-h, 74px) + 20px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    height: 650px;
+    max-height: calc(100vh - 200px);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    top: auto;
+    right: auto;
+  }
+  
+  .miora-chat[aria-hidden="false"] {
+    animation: slideUp 0.3s ease;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translate(-50%, 20px);
+      opacity: 0;
+    }
+    to {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+  }
+}/* ==========================================
+   MIORA BUTTON IN NAV - FIXED ✅
+   ========================================== */
+
+/* Icon Miora (image ronde) */
+.icon-miora {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  border: 2px solid transparent;
+}
+
+/* Active state */
+#nav-miora.active .icon-miora {
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(102, 126, 234, 0.5);
+}
+
+/* Hover effect */
+#nav-miora:hover .icon-miora {
+  transform: scale(1.1);
+}
+
+/* Badge notification (optional) */
+.miora-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid var(--nav-bg, #fff);
+  pointer-events: none;
+}/* ==========================================
+   FIX: Isolation des sections fixed
+   ========================================== */
+
+/* Empêche les touch events de traverser */
+#home,
+#shop,
+#params {
+  position: fixed;
+  inset: 0;
+  touch-action: pan-y !important; /* Autorise scroll vertical uniquement */
+  isolation: isolate; /* Isole le stacking context */
+}
+
+/* Cache les sections inactives */
+section:not(.active) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+section.active {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 1 !important;
+}
+
+/* Home content scrollable */
+#home-content {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* Empêche le scroll de déborder */
+  touch-action: pan-y; /* Scroll vertical uniquement */
+}
+
+/* Shop wrapper scrollable */
+#products-wrapper {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/* Background body ne doit pas interférer */
+body {
+  touch-action: pan-y;
+  overflow: hidden;
+}
+
+body::before,
+body::after {
+  pointer-events: none !important;
+  touch-action: none !important;
+}/* Transitions douces entre sections */
+section {
+  transition: 
+    opacity 0.3s ease,
+    visibility 0.3s ease,
+    z-index 0s linear 0.3s; /* z-index change après la transition */
+}
+
+section.active {
+  transition: 
+    opacity 0.3s ease,
+    visibility 0s ease,
+    z-index 0s linear 0s; /* z-index change immédiatement */
+}
+
+.miora-mic-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.miora-mic-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.miora-mic-btn.listening {
+  animation: pulse 1s infinite;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.miora-export-btn,
+.miora-clear-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.miora-export-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.miora-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.miora-message-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.miora-message:hover .miora-message-actions {
+  opacity: 1;
+}
+
+.msg-action-btn {
+  padding: 4px 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.msg-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.msg-action-btn:active {
+  transform: scale(0.95);
+}
+
+.miora-message-image {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.miora-message-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.miora-message-image img:hover {
+  transform: scale(1.02);
+}
+
+.miora-image-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.miora-image-viewer {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.miora-image-viewer img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.miora-image-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.miora-image-close:hover {
+  background: rgba(239, 68, 68, 0.8);
+  transform: rotate(90deg);
+}
+
+.miora-typing {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.miora-typing span {
+  width: 8px;
+  height: 8px;
+  background: #667eea;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.miora-typing span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.miora-typing span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.miora-notification {
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.miora-message-text ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.miora-message-text li {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.miora-message-text code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.miora-message-text strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.miora-message-text em {
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .miora-mic-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+  
+  .miora-export-btn,
+  .miora-clear-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+  
+  .miora-image-viewer {
+    max-width: 95%;
+  }
+  
+  .miora-message-actions {
+    flex-wrap: wrap;
+  }
+  
+  .msg-action-btn {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+}
+
+/* Dark theme enhancements */
+body[data-theme="dark"] .miora-mic-btn {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+body[data-theme="dark"] .msg-action-btn {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body[data-theme="dark"] .msg-action-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Light theme adjustments */
+body[data-theme="light"] .miora-mic-btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body[data-theme="light"] .msg-action-btn {
+  background: rgba(0, 0, 0, 0.05);
+  color: #64748b;
+}
+
+body[data-theme="light"] .msg-action-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #334155;
+}
+
+body[data-theme="light"] .miora-typing span {
+  background: #3b82f6;
+}
+
+/* Accessibility improvements */
+.miora-mic-btn:focus,
+.miora-export-btn:focus,
+.miora-clear-btn:focus,
+.msg-action-btn:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Animation for message entry */
+.miora-message {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading state for images */
+.miora-message-image img {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.miora-message-image img[src] {
+  animation: none;
+  background: transparent;
+}
+@media (max-width: 480px) {
+  .miora-chat-window {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .miora-quick-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  .miora-input-area {
+    flex-wrap: wrap;
+  }
+}/* Additional Pro Styles */
+:root {
+--miora-primary: #667eea;
+--miora-secondary: #764ba2;
+--miora-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+/* Header Buttons */
+.miora-header-btn {
+width: 36px;
+height: 36px;
+border: none;
+background: rgba(255, 255, 255, 0.1);
+color: #fff;
+border-radius: 8px;
+cursor: pointer;
+transition: all 0.2s ease;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+margin-left: 6px;
+}
+.miora-header-btn:hover {
+background: rgba(255, 255, 255, 0.2);
+transform: scale(1.05);
+}
+.miora-clear-btn:hover {
+background: rgba(239, 68, 68, 0.3);
+color: #fee2e2;
+}
+/* Mic Button */
+.miora-mic-btn {
+width: 42px;
+height: 42px;
+border: none;
+background: var(--miora-gradient);
+color: white;
+border-radius: 10px;
+cursor: pointer;
+transition: all 0.3s ease;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 16px;
+box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+.miora-mic-btn:hover {
+transform: scale(1.05);
+box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+.miora-mic-btn.listening {
+animation: pulse 1s infinite;
+background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+@keyframes pulse {
+0%, 100% { transform: scale(1); }
+50% { transform: scale(1.1); }
+}
+/* Settings Panel */
+.miora-settings-panel {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+z-index: 9999;
+display: none;
+}
+.miora-settings-panel.show {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.miora-settings-overlay {
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.7);
+backdrop-filter: blur(4px);
+}
+.miora-settings-content {
+position: relative;
+width: 90%;
+max-width: 600px;
+max-height: 80vh;
+background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+border-radius: 20px;
+box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+overflow: hidden;
+animation: slideUp 0.3s ease;
+}
+@keyframes slideUp {
+from {
+opacity: 0;
+transform: translateY(30px);
+}
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+
+
+/* ========================================
+   RESPONSIVE - MOBILE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .miora-settings-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .miora-settings-header {
+    padding: 16px 20px;
+  }
+  
+  .miora-settings-header h3 {
+    font-size: 18px;
+  }
+  
+  .miora-header-btn {
+    font-size: 16px;
+    padding: 8px;
+    min-width: 38px;
+    height: 38px;
+  }
+  
+  .miora-settings-body {
+    padding: 16px;
+  }
+  
+  .setting-section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .setting-section h4 {
+    font-size: 15px;
+  }
+  
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .stat-value {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .miora-settings-header h3 {
+    font-size: 16px;
+  }
+  
+  .miora-header-btn {
+    font-size: 14px;
+    padding: 6px;
+    min-width: 34px;
+    height: 34px;
+  }
+  
+  .miora-settings-body {
+    padding: 12px;
+  }
+  
+  .setting-section {
+    padding: 12px;
+  }
+  
+  .theme-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.miora-settings-panel.show .miora-settings-content {
+  animation: slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.miora-settings-panel.show .miora-settings-overlay {
+  animation: fadeIn 0.3s ease;
+}/* ==========================================
+   MIORA MOBILE OPTIMIZATION
+   Ajouter ce code dans votre CSS principal
+   ========================================== */
+
+/* === BASE MOBILE FIXES === */
+@media (max-width: 768px) {
+  
+  /* Chat Window - Full Screen Mobile */
+  #miora-chat {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0 !important;
+    transform: translateX(100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  
+  #miora-chat[aria-hidden="false"] {
+    transform: translateX(0) !important;
+  }
+  
+  /* Header Mobile */
+  .miora-header {
+    padding: 16px !important;
+    border-radius: 0 !important;
+  }
+  
+  .miora-header h3 {
+    font-size: 18px !important;
+  }
+  
+  .miora-header-btn {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 16px !important;
+  }
+  
+  /* Messages Container */
+  #miora-messages {
+    padding: 12px !important;
+    height: calc(100vh - 180px) !important; /* Adjust for mobile keyboard */
+  }
+  
+  /* Message Bubbles */
+  .miora-message {
+    max-width: 85% !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .miora-message-text {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    padding: 10px 12px !important;
+  }
+  
+  .miora-message-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  /* Product Cards Mobile */
+  .miora-product-card,
+  [style*="background:rgba(30,41,59"] {
+    margin-bottom: 12px !important;
+  }
+  
+  /* Product Images */
+  [id^="gallery-"] {
+    height: 200px !important;
+  }
+
+  
+
+  
+  /* Input Area */
+  .miora-input-area {
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+  
+  #miora-input {
+    font-size: 15px !important; /* Prevent zoom on iOS */
+    min-height: 42px !important;
+    padding: 10px 12px !important;
+  }
+  
+  #miora-send,
+  #miora-upload-btn,
+  #miora-mic-btn {
+    min-width: 42px !important;
+    min-height: 42px !important;
+    font-size: 18px !important;
+  }
+  
+  /* Settings Panel Mobile */
+  .miora-settings-panel {
+    position: fixed !important;
+    inset: 0 !important;
+  }
+  
+  .miora-settings-content {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+  
+  .theme-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Image Overlay Mobile */
+  .miora-image-viewer img {
+    max-width: 95% !important;
+    max-height: 70vh !important;
+  }
+  
+
+}
+
+/* === SMALL MOBILE (< 400px) === */
+@media (max-width: 400px) {
+  
+  
+  
+  .miora-message {
+    max-width: 90% !important;
+  }
+  
+  [onclick*="mioraAddToCart"],
+  [onclick*="mioraViewProduct"] {
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+}
+
+/* === LANDSCAPE MOBILE === */
+@media (max-height: 500px) and (orientation: landscape) {
+  
+  #miora-messages {
+    height: calc(100vh - 140px) !important;
+  }
+  
+  .miora-header {
+    padding: 10px 16px !important;
+  }
+  
+  .miora-input-area {
+    padding: 8px !important;
+  }
+  
+  #miora-input {
+    min-height: 36px !important;
+  }
+}
+
+/* === TOUCH IMPROVEMENTS === */
+@media (hover: none) and (pointer: coarse) {
+  
+  /* Bigger tap targets */
+  button, 
+  [onclick],
+  [role="button"] {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  
+  /* Remove hover effects on touch */
+  *:hover {
+    transform: none !important;
+  }
+  
+  /* Active state for touch feedback */
+  button:active,
+  [onclick]:active {
+    opacity: 0.7 !important;
+    transform: scale(0.98) !important;
+  }
+}
+
+/* === SAFE AREA (iPhone notch) === */
+@supports (padding: max(0px)) {
+  #miora-chat {
+    padding-top: max(env(safe-area-inset-top), 0) !important;
+    padding-bottom: max(env(safe-area-inset-bottom), 0) !important;
+  }
+  
+  .miora-input-area {
+    padding-bottom: max(env(safe-area-inset-bottom), 12px) !important;
+  }
+}@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(1.1); 
+    opacity: 0.8; 
+  }
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.9); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+}
+
+@keyframes fadeOut {
+  from { 
+    opacity: 1; 
+    transform: translate(-50%, -50%) scale(1); 
+  }
+  to { 
+    opacity: 0; 
+    transform: translate(-50%, -50%) scale(0.9); 
+  }
+}
+
+.miora-mic-btn.pulsing {
+  animation: pulse 1.5s infinite !important;
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}/* ========================================
+   MIORA AI - ADDITIONAL ANIMATIONS
+   ======================================== */
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Lazy loading shimmer effect */
+.miora-lazy-image[data-src] {
+  background: linear-gradient(
+    90deg,
+    #1e293b 0%,
+    #334155 50%,
+    #1e293b 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Recording indicator pulse */
+@keyframes recordingPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+  }
+}
+
+#miora-recording-indicator > div:first-child {
+  animation: recordingPulse 1.5s infinite;
+}
+
+/* Comparison button hover */
+#miora-comparison-float-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 32px rgba(139,92,246,0.6);
+}
+
+/* Language button transitions */
+.language-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.language-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.language-btn.active {
+  transform: scale(1.05);
+}.miora-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  outline: none;
+  transition: all 0.3s ease;
+  
+  /* ✅ VAOVAO - Textarea specific */
+  resize: none;
+  overflow-y: auto;
+  min-height: 44px;
+  max-height: 120px;
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139,92,246,0.3) transparent;
+}
+
+.miora-input::-webkit-scrollbar {
+  width: 6px;
+}
+
+.miora-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.miora-input::-webkit-scrollbar-thumb {
+  background: rgba(139,92,246,0.3);
+  border-radius: 10px;
+}
+
+.miora-input:focus {
+  border-color: var(--miora-primary, #8b5cf6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.miora-input::placeholder {
+  color: #64748b;
+}/* ==========================================
+   SETTINGS PANEL - FULL RESPONSIVE
+   ========================================== */
+
+.miora-settings-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.miora-settings-panel.show {
+  display: block;
+}
+
+.miora-settings-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.miora-settings-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Header */
+.miora-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(124,58,237,0.2));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  flex-shrink: 0;
+}
+
+.miora-settings-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.miora-settings-close {
+  width: 36px;
+  height: 36px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 50%;
+  color: #fca5a5;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.miora-settings-close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
+/* Body - Scrollable */
+.miora-settings-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139,92,246,0.3) transparent;
+}
+
+.miora-settings-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.miora-settings-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.miora-settings-body::-webkit-scrollbar-thumb {
+  background: rgba(139,92,246,0.3);
+  border-radius: 10px;
+}
+
+.miora-settings-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(139,92,246,0.5);
+}
+
+/* Sections */
+.setting-section {
+  margin-bottom: 28px;
+}
+
+.setting-section:last-child {
+  margin-bottom: 0;
+}
+
+.setting-section h4 {
+  margin: 0 0 16px 0;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Setting Items */
+.setting-item {
+  margin-bottom: 12px;
+}
+
+.setting-item label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #cbd5e1;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.setting-item label:hover {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.setting-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--miora-primary, #8b5cf6);
+}
+
+/* Language Selector */
+.language-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.language-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 12px;
+  background: rgba(148,163,184,0.2);
+  color: #fff;
+  border: 1px solid rgba(148,163,184,0.3);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.language-btn:hover {
+  background: rgba(148,163,184,0.3);
+  transform: translateY(-2px);
+}
+
+.language-btn.active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+}
+
+/* Theme Grid */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.theme-option {
+  padding: 16px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  text-align: center;
+}
+
+.theme-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.theme-option.active {
+  border-color: rgba(255,255,255,0.4);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.theme-option i {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 16px;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-item {
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Action Buttons */
+.setting-action-btn {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 10px;
+  color: #cbd5e1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.setting-action-btn:hover {
+  background: rgba(148, 163, 184, 0.3);
+  border-color: rgba(148, 163, 184, 0.5);
+  transform: translateY(-2px);
+}
+
+.setting-action-btn:active {
+  transform: translateY(0);
+}
+
+/* Footer */
+.miora-settings-footer {
+  padding: 16px 24px;
+  background: rgba(15, 23, 42, 0.8);
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.miora-settings-footer small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* ==========================================
+   MOBILE RESPONSIVE
+   ========================================== */
+
+@media (max-width: 768px) {
+  .miora-settings-content {
+    width: 95%;
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+  
+  .miora-settings-header {
+    padding: 16px 20px;
+  }
+  
+  .miora-settings-header h3 {
+    font-size: 18px;
+  }
+  
+  .miora-settings-body {
+    padding: 20px 16px;
+  }
+  
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .language-selector {
+    flex-direction: column;
+  }
+  
+  .language-btn {
+    flex: none;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .miora-settings-content {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+  }
+  
+  .miora-settings-header {
+    padding: 14px 16px;
+  }
+  
+  .miora-settings-header h3 {
+    font-size: 16px;
+  }
+  
+  .miora-settings-body {
+    padding: 16px;
+  }
+  
+  .setting-section h4 {
+    font-size: 15px;
+  }
+  
+  .theme-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .theme-option {
+    padding: 14px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Mobile animation override */
+@media (max-width: 480px) {
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
