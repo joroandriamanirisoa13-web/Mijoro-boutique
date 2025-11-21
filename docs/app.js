@@ -3547,33 +3547,7 @@ function applyAuthUI() {
     return supabase;
   }
 
-  /* ---------- Auth (Email/Password) ---------- */
-  function ensureOwnerLoginModal(){
-    let m = document.getElementById('owner-login-modal');
-    if (m) return m;
-    m = document.createElement('div');
-    m.id = 'owner-login-modal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:7000';
-    m.innerHTML = `
-      <div style="background:#0e0f13;color:#fff;border-radius:12px;width:min(420px,94%);padding:16px;box-shadow:0 10px 35px rgba(0,0,0,.5)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h3 style="margin:0">Owner Login</h3>
-          <button type="button" class="param-btn" id="ol-close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <input id="ol-email" type="email" placeholder="Email" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          <input id="ol-pass" type="password" placeholder="Mot de passe" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          <small style="opacity:.8">Midira amin'ny email/password (tsy OTP).</small>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button type="button" class="param-btn" id="ol-submit"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(m);
-    m.querySelector('#ol-close').onclick = () => { m.style.display='none'; m.setAttribute('aria-hidden','true'); };
-    return m;
-  }
+
 
   async function openOwnerLoginModal(){
     const m = ensureOwnerLoginModal();
@@ -3667,74 +3641,73 @@ function applyAuthUI() {
 
 async function fetchSupabaseProducts() {
   try {
-    console.log('[fetchSupabaseProducts] 📡 Starting fetch...');
+    console.log('[fetchSupabaseProducts] 📡 Starting...');
     
     const sb = await ensureSupabase();
     
-    if (!sb) {
-      throw new Error('Supabase client not initialized');
+    let productsData;
+    let error;
+    
+    if (window.MijoroAuth && window.MijoroAuth.isOwner) {
+      // Owner voit TOUS les produits
+      console.log('[fetchSupabaseProducts] Loading all products (Owner)');
+      
+      const result = await sb
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      productsData = result.data;
+      error = result.error;
+      
+    } else if (window.MijoroAuth && window.MijoroAuth.isVendor) {
+      // Vendeur voit SEULEMENT ses produits
+      const ownerId = window.MijoroAuth.userAccount.id;
+      console.log('[fetchSupabaseProducts] Loading vendor products:', ownerId);
+      
+      const result = await sb
+        .from('products')
+        .select('*')
+        .eq('owner_id', ownerId)
+        .order('created_at', { ascending: false });
+      
+      productsData = result.data;
+      error = result.error;
+      
+      // ✅ NOUVEAU: Afficher warning si aucun produit
+      if (!error && (!productsData || productsData.length === 0)) {
+        console.warn('[fetchSupabaseProducts] ⚠️ Vendor has no products');
+      }
+      
+    } else {
+      // Public: tous les produits actifs
+      console.log('[fetchSupabaseProducts] Loading public products');
+      
+      const result = await sb
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      productsData = result.data;
+      error = result.error;
     }
     
-    console.log('[fetchSupabaseProducts] ✓ Supabase client ready');
-    
-    // ✅ ÉTAPE 1: Charger les produits
-    const { data: productsData, error: productsError } = await sb
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (productsError) throw productsError;
+    if (error) {
+      console.error('[fetchSupabaseProducts] ❌ Error:', error);
+      return;
+    }
     
     if (!productsData || productsData.length === 0) {
-      console.warn('[fetchSupabaseProducts] ⚠️ No products in database');
+      console.warn('[fetchSupabaseProducts] ⚠️ No products found');
       window.products = [];
       return;
     }
     
     console.log('[fetchSupabaseProducts] ✅ Products loaded:', productsData.length);
     
-    // ✅ ÉTAPE 2: Charger TOUS les compteurs galerie d'un coup
-    const { data: galleryCounts, error: galleryError } = await sb
-      .from('product_images')
-      .select('product_id, id')
-      .eq('image_type', 'gallery');
-    
-    if (galleryError) {
-      console.warn('[fetchSupabaseProducts] Gallery count error:', galleryError);
-    }
-    
-    // ✅ ÉTAPE 3: Créer un Map pour compter rapidement
-    const galleryMap = {};
-    if (galleryCounts) {
-      galleryCounts.forEach(img => {
-        galleryMap[img.product_id] = (galleryMap[img.product_id] || 0) + 1;
-      });
-      console.log('[fetchSupabaseProducts] 📸 Gallery counts loaded:', Object.keys(galleryMap).length, 'products');
-    }
-    
-    // ✅ ÉTAPE 4: Mapper avec galleryCount
-    const converted = productsData.map(row => {
-      const uiProduct = mapRowToUI(row);
-      uiProduct.galleryCount = galleryMap[row.id] || 0; // ← ICI: Ajout du compteur
-      
-      // ✅ DEBUG
-      if (uiProduct.galleryCount > 0) {
-        console.log('[fetchSupabaseProducts] 📸', uiProduct.title, '→', uiProduct.galleryCount, 'images');
-      }
-      
-      return uiProduct;
-    });
-    
+    // Map to UI format
+    const converted = productsData.map(row => mapRowToUI(row));
     window.products = converted;
-    
-    console.log('[fetchSupabaseProducts] ✅ Products loaded:', converted.length);
-    
-    // ✅ Debug: Afficher les produits avec galerie
-    const withGallery = converted.filter(p => p.galleryCount > 0);
-    if (withGallery.length > 0) {
-      console.log('[fetchSupabaseProducts] 📸 Products with gallery:',
-        withGallery.map(p => `${p.title} (${p.galleryCount} images)`));
-    }
     
     if (typeof applyAuthUI === 'function') {
       applyAuthUI();
@@ -3742,12 +3715,9 @@ async function fetchSupabaseProducts() {
     
   } catch (e) {
     console.error('[fetchSupabaseProducts] 💥 Fatal error:', e);
-    console.error('Stack:', e.stack);
     window.products = [];
-    throw e;
   }
 }
-
 
   /* ---------- Upload helpers (image / video / pdf) ---------- */
   
@@ -5952,32 +5922,7 @@ function applyAuthUI() {
   }
 
   /* ---------- Auth (Email/Password) ---------- */
-  function ensureOwnerLoginModal(){
-    let m = document.getElementById('owner-login-modal');
-    if (m) return m;
-    m = document.createElement('div');
-    m.id = 'owner-login-modal';
-    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:7000';
-    m.innerHTML = `
-      <div style="background:#0e0f13;color:#fff;border-radius:12px;width:min(420px,94%);padding:16px;box-shadow:0 10px 35px rgba(0,0,0,.5)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <h3 style="margin:0">Owner Login</h3>
-          <button type="button" class="param-btn" id="ol-close"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <input id="ol-email" type="email" placeholder="Email" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          <input id="ol-pass" type="password" placeholder="Mot de passe" style="padding:10px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff">
-          <small style="opacity:.8">Midira amin'ny email/password (tsy OTP).</small>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
-            <button type="button" class="param-btn" id="ol-submit"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(m);
-    m.querySelector('#ol-close').onclick = () => { m.style.display='none'; m.setAttribute('aria-hidden','true'); };
-    return m;
-  }
+  
 
   async function openOwnerLoginModal(){
     const m = ensureOwnerLoginModal();
@@ -7741,6 +7686,7 @@ if (!document.getElementById('qo-premium-styles')) {
   document.head.appendChild(styles);
 }
 
+
 /* ==========================================
    QUICK ORDER - OWNER MANAGEMENT ✅
    ========================================== */
@@ -7760,17 +7706,29 @@ if (!document.getElementById('qo-premium-styles')) {
       try {
         console.log('[QO] Saving', qoProducts.length, 'products...');
         
-        // ✅ 1. Save to Supabase (source of truth)
+        // ✅ Vérifier authentification
+        if (!window.MijoroAuth || !window.MijoroAuth.isAuthenticated) {
+          console.warn('[QO] Not authenticated, saving to localStorage only');
+          localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
+          updateCounter();
+          return;
+        }
+        
+        const ownerId = window.MijoroAuth.userAccount.id;
         const sb = await ensureSupabase();
         
-        // Delete all existing
-        await sb.from('quick_order_products').delete().neq('id', 0);
+        // ✅ Delete existing QO for THIS owner
+        await sb
+          .from('quick_order_products')
+          .delete()
+          .eq('owner_id', ownerId); // ← FILTRE CRITIQUE
         
-        // Insert new products
+        // Insert new products with owner_id
         if (qoProducts.length > 0) {
           const rows = qoProducts.map((p, index) => ({
             product_id: p.id,
             position: index,
+            owner_id: ownerId, // ← AJOUT CRITIQUE
             added_at: p.addedAt ? new Date(p.addedAt).toISOString() : new Date().toISOString()
           }));
           
@@ -7783,39 +7741,44 @@ if (!document.getElementById('qo-premium-styles')) {
           console.log('[QO] ✓ Saved to Supabase:', qoProducts.length, 'products');
         }
         
-        // ✅ 2. Fallback: Save to localStorage
+        // Fallback localStorage
         try {
           localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
-          console.log('[QO] ✓ Saved to localStorage (backup)');
-        } catch (localErr) {
-          console.warn('[QO] LocalStorage save failed:', localErr);
-        }
+        } catch (_) {}
         
-        // ✅ 3. Update counter
         updateCounter();
         
       } catch (e) {
         console.error('[QO] Save error:', e);
-        
-        // Fallback: localStorage only
+        // Fallback localStorage
         try {
           localStorage.setItem(QO_STORAGE_KEY, JSON.stringify(qoProducts));
-          console.log('[QO] ⚠️ Saved to localStorage only (Supabase failed)');
           updateCounter();
-        } catch (fallbackErr) {
-          console.error('[QO] All save methods failed:', fallbackErr);
-          alert('❌ Erreur: Impossible de sauvegarder les produits');
-        }
+        } catch (_) {}
       }
     }
     
     async function loadQOProducts() {
       try {
+        // ✅ Vérifier authentification
+        if (!window.MijoroAuth || !window.MijoroAuth.isAuthenticated) {
+          console.warn('[QO] Not authenticated, loading from localStorage only');
+          const raw = localStorage.getItem(QO_STORAGE_KEY);
+          if (raw) {
+            qoProducts = JSON.parse(raw);
+          }
+          updateCounter();
+          return;
+        }
+        
+        const ownerId = window.MijoroAuth.userAccount.id;
         const sb = await ensureSupabase();
         
+        // ✅ Load QO for THIS owner only
         const { data, error } = await sb
           .from('quick_order_products')
           .select('*')
+          .eq('owner_id', ownerId) // ← FILTRE CRITIQUE
           .order('position');
         
         if (error) throw error;
@@ -7838,17 +7801,13 @@ if (!document.getElementById('qo-premium-styles')) {
         }
       } catch (e) {
         console.error('[QO] Load error:', e);
-        
-        // Fallback: localStorage
+        // Fallback localStorage
         try {
           const raw = localStorage.getItem(QO_STORAGE_KEY);
           if (raw) {
             qoProducts = JSON.parse(raw);
-            console.log('[QO] ⚠️ Loaded from localStorage (Supabase failed)');
           }
-        } catch (fallbackErr) {
-          console.error('[QO] All load methods failed:', fallbackErr);
-        }
+        } catch (_) {}
       }
       
       updateCounter();
@@ -7921,7 +7880,7 @@ if (!document.getElementById('qo-premium-styles')) {
     // Filter
     const filtered = allProducts.filter(p => {
       const inQO = qoProductIds.has(p.id);
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         p.title.toLowerCase().includes(searchTerm.toLowerCase());
       return !inQO && matchesSearch;
     });
@@ -8227,7 +8186,8 @@ if (isFull) {
     };
     
     console.log('[QO Management] ✓ QuickOrder patched');
-  }// ========================================
+  }
+// ========================================
 // EXPORT/IMPORT QO ✅
 // ========================================
 
@@ -8330,41 +8290,42 @@ function handleImportFile(e) {
   e.target.value = '';
 }
   
+  
   // ========================================
   // WIRE BUTTONS
   // ========================================
   
   function wireButtons() {
-  // Add button
-  const addBtn = document.getElementById('qoAddBtn');
-  if (addBtn) {
-    addBtn.addEventListener('click', openAddModal);
-  }
-  
-  // Manage button
-  const manageBtn = document.getElementById('qoManageBtn');
-  if (manageBtn) {
-    manageBtn.addEventListener('click', openManageModal);
-  }
-  
-  // ✅ NOUVEAU: Export button
-  const exportBtn = document.getElementById('qoExportBtn');
-  if (exportBtn) {
-    exportBtn.addEventListener('click', exportQO);
-  }
-  
-  // ✅ NOUVEAU: Import button
-  const importBtn = document.getElementById('qoImportBtn');
-  if (importBtn) {
-    importBtn.addEventListener('click', importQO);
-  }
-  
-  // ✅ NOUVEAU: File input handler
-  const fileInput = document.getElementById('qoImportFile');
-  if (fileInput) {
-    fileInput.addEventListener('change', handleImportFile);
-  }
-  
+    // Add button
+    const addBtn = document.getElementById('qoAddBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', openAddModal);
+    }
+    
+    // Manage button
+    const manageBtn = document.getElementById('qoManageBtn');
+    if (manageBtn) {
+      manageBtn.addEventListener('click', openManageModal);
+    }
+    
+    // ✅ NOUVEAU: Export button
+    const exportBtn = document.getElementById('qoExportBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', exportQO);
+    }
+    
+    // ✅ NOUVEAU: Import button
+    const importBtn = document.getElementById('qoImportBtn');
+    if (importBtn) {
+      importBtn.addEventListener('click', importQO);
+    }
+    
+    // ✅ NOUVEAU: File input handler
+    const fileInput = document.getElementById('qoImportFile');
+    if (fileInput) {
+      fileInput.addEventListener('change', handleImportFile);
+    }
+    
     
     // Modal Add - Close buttons
     const addModalClose = document.getElementById('qoModalClose');
@@ -8423,6 +8384,7 @@ function handleImportFile(e) {
     console.log('[QO Management] ✓ Buttons wired');
   }
   // Dans initQOManagement, après wireButtons():
+// Dans initQOManagement, après wireButtons():
 async function subscribeToQOChanges() {
   try {
     const sb = await ensureSupabase();
@@ -8477,15 +8439,15 @@ window.QOManagement = {
   // ========================================
   
   function init() {
-  console.log('[QO Management] 🚀 Initializing...');
-  
-  loadQOProducts();
-  updateCounter(); // ✅ NOUVEAU
-  wireButtons();
-  patchQuickOrderRender();
-  
-  console.log('[QO Management] ✅ Initialized with', qoProducts.length, 'products');
-}
+    console.log('[QO Management] 🚀 Initializing...');
+    
+    loadQOProducts();
+    updateCounter(); // ✅ NOUVEAU
+    wireButtons();
+    patchQuickOrderRender();
+    
+    console.log('[QO Management] ✅ Initialized with', qoProducts.length, 'products');
+  }
   
   // Auto-init
   if (document.readyState === 'loading') {
@@ -8494,7 +8456,7 @@ window.QOManagement = {
     init();
   }
   
-})();
+  })();
 /* ==========================================
    QUICK ORDER - COLLAPSE/EXPAND LOGIC
    ========================================== */
@@ -8623,80 +8585,7 @@ window.QOManagement = {
     collapse();
   });
   
-  // ========================================
-  // DRAG LOGIC (icon + header)
-  // ========================================
-  
-  function dragStart(e) {
-    const target = e.target.closest('#cart-icon-collapsed, #cart-drag-handle');
-    if (!target) return;
-    
-    initialX = (e.type === 'touchstart' ? e.touches[0].clientX : e.clientX) - xOffset;
-    initialY = (e.type === 'touchstart' ? e.touches[0].clientY : e.clientY) - yOffset;
-    
-    isDragging = true;
-    drawer.style.transition = 'none';
-  }
-  
-  function drag(e) {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    
-    currentX = (e.type === 'touchmove' ? e.touches[0].clientX : e.clientX) - initialX;
-    currentY = (e.type === 'touchmove' ? e.touches[0].clientY : e.clientY) - initialY;
-    
-    xOffset = currentX;
-    yOffset = currentY;
-    
-    setTranslate(currentX, currentY, drawer);
-  }
-  
-  function dragEnd() {
-    if (!isDragging) return;
-    
-    initialX = currentX;
-    initialY = currentY;
-    isDragging = false;
-    
-    drawer.style.transition = '';
-  }
-  
-  function setTranslate(xPos, yPos, el) {
-    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
-  }
-  
-  // Wire events (icon)
-  iconCollapsed.addEventListener('mousedown', dragStart);
-  iconCollapsed.addEventListener('touchstart', dragStart);
-  
-  // Wire events (header)
-  dragHandle.addEventListener('mousedown', dragStart);
-  dragHandle.addEventListener('touchstart', dragStart);
-  
-  // ✅ PATCH: Dragable ny drawer manontolo (expanded mode)
-  drawer.addEventListener('mousedown', function(e) {
-    // Tsy drag raha mipoitsika button/input/content
-    if (e.target.closest('button, input, a, .cart-list')) return;
-    if (drawer.classList.contains('expanded')) {
-      dragStart(e);
-    }
-  });
-  
-  drawer.addEventListener('touchstart', function(e) {
-    if (e.target.closest('button, input, a, .cart-list')) return;
-    if (drawer.classList.contains('expanded')) {
-      dragStart(e);
-    }
-  }, { passive: true });
-  
-  // Global move/end
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('touchmove', drag, { passive: false });
-  document.addEventListener('mouseup', dragEnd);
-  document.addEventListener('touchend', dragEnd);
-  
-  console.log('[Cart Drawer] ✓ Drag + Collapse initialized');
+
 })();
 // ✅ PATCH: Shop section - Numeric + Physical products toggle
 
@@ -11155,3 +11044,624 @@ if (!document.getElementById('gallery-indicator-styles')) {
   `;
   document.head.appendChild(styles);
 }
+
+
+/* ==========================================
+   SECURE AUTHENTICATION MODULE ✅
+   ========================================== */
+
+(function initSecureAuth() {
+  'use strict';
+  
+  // ✅ CONFIGURATION SÉCURISÉE
+  const AUTH_CONFIG = {
+    supabaseUrl: window.SUPABASE_URL || "https://zogohkfzplcuonkkfoov.supabase.co",
+    supabaseKey: window.SUPABASE_ANON_KEY,
+    storageKey: 'mijoro-auth-v1',
+    ownerEmail: window.OWNER_EMAIL // Stocké dans une variable globale, pas exposé dans le DOM
+  };
+  
+  // État d'authentification
+  let authState = {
+    user: null,
+    session: null,
+    isOwner: false
+  };
+  
+  let authSubscription = null;
+  
+  // ========================================
+  // MODAL LOGIN SÉCURISÉ
+  // ========================================
+  
+  function createSecureLoginModal() {
+    let modal = document.getElementById('secure-login-modal');
+    if (modal) return modal;
+    
+    modal = document.createElement('div');
+    modal.id = 'secure-login-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9000;backdrop-filter:blur(4px)';
+    modal.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('role', 'dialog');
+    
+    modal.innerHTML = `
+      <div style="background:#0e0f13;color:#fff;border-radius:16px;width:min(420px,94%);padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1)">
+        
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:48px;height:48px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:12px;display:flex;align-items:center;justify-content:center">
+              <i class="fa-solid fa-shield-halved" style="font-size:24px;color:#fff"></i>
+            </div>
+            <div>
+              <h3 style="margin:0;font-size:20px;font-weight:700">Connexion Sécurisée</h3>
+              <small style="opacity:.7;display:block;margin-top:2px">Accès propriétaire</small>
+            </div>
+          </div>
+          <button type="button" 
+                  class="param-btn" 
+                  id="secure-login-close"
+                  aria-label="Fermer"
+                  style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        
+        <!-- Info Box -->
+        <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:12px;margin-bottom:20px">
+          <p style="margin:0;font-size:13px;color:#93c5fd;display:flex;align-items:start;gap:8px">
+            <i class="fa-solid fa-info-circle" style="margin-top:2px;flex-shrink:0"></i>
+            <span>Cette zone est réservée au propriétaire. Vous devez disposer d'identifiants valides pour accéder aux fonctionnalités d'administration.</span>
+          </p>
+        </div>
+        
+        <!-- Form -->
+        <form id="secure-login-form" style="display:flex;flex-direction:column;gap:16px">
+          
+          <!-- Email Field -->
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-weight:600;font-size:14px">Adresse email</span>
+            <div style="position:relative">
+              <input 
+                id="secure-email-input" 
+                type="email" 
+                required
+                placeholder="votre@email.com"
+                autocomplete="email"
+                style="width:100%;padding:12px 12px 12px 40px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;font-size:14px;transition:border-color 0.2s"
+                onfocus="this.style.borderColor='#3b82f6'"
+                onblur="this.style.borderColor='#2a2d38'">
+              <i class="fa-solid fa-envelope" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none"></i>
+            </div>
+          </label>
+          
+          <!-- Password Field -->
+          <label style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-weight:600;font-size:14px">Mot de passe</span>
+            <div style="position:relative">
+              <input 
+                id="secure-password-input" 
+                type="password" 
+                required
+                placeholder="••••••••"
+                autocomplete="current-password"
+                style="width:100%;padding:12px 40px 12px 40px;border:1px solid #2a2d38;border-radius:10px;background:#14161c;color:#fff;font-size:14px;transition:border-color 0.2s"
+                onfocus="this.style.borderColor='#3b82f6'"
+                onblur="this.style.borderColor='#2a2d38'">
+              <i class="fa-solid fa-lock" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#64748b;pointer-events:none"></i>
+              <button type="button"
+                      id="toggle-password"
+                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;padding:4px;transition:color 0.2s"
+                      onmouseover="this.style.color='#fff'"
+                      onmouseout="this.style.color='#64748b'">
+                <i class="fa-solid fa-eye" id="toggle-password-icon"></i>
+              </button>
+            </div>
+          </label>
+          
+          <!-- Error Message -->
+          <div id="secure-login-error" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px">
+            <p style="margin:0;font-size:13px;color:#fca5a5;display:flex;align-items:start;gap:8px">
+              <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px;flex-shrink:0"></i>
+              <span id="secure-login-error-text"></span>
+            </p>
+          </div>
+          
+          <!-- Submit Button -->
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button 
+              type="button" 
+              class="param-btn" 
+              id="secure-login-cancel"
+              style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)">
+              Annuler
+            </button>
+            <button 
+              type="submit" 
+              class="param-btn" 
+              id="secure-login-submit"
+              style="flex:2;background:linear-gradient(135deg,#3b82f6,#2563eb);border:none;color:#fff;font-weight:700;position:relative;overflow:hidden">
+              <span id="secure-login-submit-text">
+                <i class="fa-solid fa-right-to-bracket"></i> Se connecter
+              </span>
+              <div id="secure-login-loader" style="display:none;position:absolute;inset:0;background:inherit;display:flex;align-items:center;justify-content:center">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+              </div>
+            </button>
+          </div>
+          
+        </form>
+        
+        <!-- Security Note -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)">
+          <p style="margin:0;font-size:11px;color:#64748b;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">
+            <i class="fa-solid fa-shield-check"></i>
+            Connexion sécurisée via Supabase Authentication
+          </p>
+        </div>
+        
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // ✅ Wire events APRÈS append
+    wireModalEvents(modal);
+    
+    return modal;
+  }
+  
+  // ========================================
+  // WIRE MODAL EVENTS
+  // ========================================
+  
+  function wireModalEvents(modal) {
+    const form = modal.querySelector('#secure-login-form');
+    const closeBtn = modal.querySelector('#secure-login-close');
+    const cancelBtn = modal.querySelector('#secure-login-cancel');
+    const submitBtn = modal.querySelector('#secure-login-submit');
+    const emailInput = modal.querySelector('#secure-email-input');
+    const passwordInput = modal.querySelector('#secure-password-input');
+    const togglePassword = modal.querySelector('#toggle-password');
+    const errorDiv = modal.querySelector('#secure-login-error');
+    const errorText = modal.querySelector('#secure-login-error-text');
+    
+    // Close handlers
+    closeBtn.addEventListener('click', closeLoginModal);
+    cancelBtn.addEventListener('click', closeLoginModal);
+    
+    // Toggle password visibility
+    togglePassword.addEventListener('click', function() {
+      const icon = document.getElementById('toggle-password-icon');
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        passwordInput.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
+    });
+    
+    // Form submit
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Validation
+      if (!email || !password) {
+        showError('Veuillez remplir tous les champs');
+        return;
+      }
+      
+      if (!isValidEmail(email)) {
+        showError('Format d\'email invalide');
+        return;
+      }
+      
+      // Hide error
+      errorDiv.style.display = 'none';
+      
+      // Show loader
+      submitBtn.disabled = true;
+      document.getElementById('secure-login-submit-text').style.display = 'none';
+      document.getElementById('secure-login-loader').style.display = 'flex';
+      
+      try {
+        await handleLogin(email, password);
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        submitBtn.disabled = false;
+        document.getElementById('secure-login-submit-text').style.display = 'flex';
+        document.getElementById('secure-login-loader').style.display = 'none';
+      }
+    });
+    
+    function showError(message) {
+      errorText.textContent = message;
+      errorDiv.style.display = 'block';
+      
+      // Shake animation
+      errorDiv.style.animation = 'shake 0.5s ease';
+      setTimeout(() => {
+        errorDiv.style.animation = '';
+      }, 500);
+    }
+  }
+  
+  // ========================================
+  // VALIDATION
+  // ========================================
+  
+  function isValidEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+  
+  // ========================================
+  // LOGIN HANDLER
+  // ========================================
+  
+  async function handleLogin(email, password) {
+    try {
+      console.log('[Auth] 🔐 Attempting login...');
+      
+      // ✅ VÉRIFICATION: Email owner (côté client, invisible dans DOM)
+      if (email.toLowerCase() !== AUTH_CONFIG.ownerEmail.toLowerCase()) {
+        throw new Error('Accès refusé. Cette adresse email n\'est pas autorisée.');
+      }
+      
+      const sb = await window.ensureSupabase();
+      
+      // Attempt login
+      const { data, error } = await sb.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+      
+      if (error) {
+        console.error('[Auth] ❌ Login error:', error);
+        
+        // ✅ Messages d'erreur améliorés
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Email ou mot de passe incorrect');
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error('Email non confirmé. Vérifiez votre boîte mail.');
+        } else {
+          throw new Error(error.message);
+        }
+      }
+      
+      console.log('[Auth] ✅ Login successful');
+      
+      // Update state
+      authState.user = data.user;
+      authState.session = data.session;
+      authState.isOwner = true;
+      
+      // Close modal
+      closeLoginModal();
+      
+      // Update UI
+      updateAuthUI();
+      
+      // Reload products
+      if (typeof window.fetchSupabaseProducts === 'function') {
+        await window.fetchSupabaseProducts();
+      }
+      
+      // Show success toast
+      showToast('✅ Connexion réussie', 'success');
+      
+    } catch (err) {
+      console.error('[Auth] 💥 Login failed:', err);
+      throw err;
+    }
+  }
+  
+  // ========================================
+  // LOGOUT HANDLER
+  // ========================================
+  
+  async function handleLogout() {
+    if (!confirm('Voulez-vous vraiment vous déconnecter?')) {
+      return;
+    }
+    
+    try {
+      console.log('[Auth] 🚪 Logging out...');
+      
+      const sb = await window.ensureSupabase();
+      const { error } = await sb.auth.signOut();
+      
+      if (error) throw error;
+      
+      // Clear state
+      authState.user = null;
+      authState.session = null;
+      authState.isOwner = false;
+      
+      // Update UI
+      updateAuthUI();
+      
+      // Show toast
+      showToast('👋 Déconnecté', 'info');
+      
+      console.log('[Auth] ✅ Logout successful');
+      
+    } catch (err) {
+      console.error('[Auth] ❌ Logout error:', err);
+      showToast('❌ Erreur de déconnexion', 'error');
+    }
+  }
+  
+  // ========================================
+  // MODAL OPEN/CLOSE
+  // ========================================
+  
+  function openLoginModal() {
+    const modal = createSecureLoginModal();
+    
+    // Reset form
+    modal.querySelector('#secure-email-input').value = '';
+    modal.querySelector('#secure-password-input').value = '';
+    modal.querySelector('#secure-login-error').style.display = 'none';
+    
+    // Show modal
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Focus email input
+    setTimeout(() => {
+      modal.querySelector('#secure-email-input').focus();
+    }, 100);
+    
+    console.log('[Auth] 📋 Login modal opened');
+  }
+  
+  function closeLoginModal() {
+    const modal = document.getElementById('secure-login-modal');
+    if (!modal) return;
+    
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  
+  // ========================================
+  // UI UPDATE
+  // ========================================
+  
+  function updateAuthUI() {
+  const isAuthenticated = authState.isOwner;
+  
+  console.log('[Auth] 🎨 Updating UI, authenticated:', isAuthenticated);
+  
+  // Update buttons visibility
+  const loginBtn = document.getElementById('btnLogin');
+  const logoutBtn = document.getElementById('btnLogout');
+  const addBtn = document.getElementById('btnAddProduct');
+  const addPhysicalBtn = document.getElementById('btnAddPhysical');
+  
+  if (loginBtn) loginBtn.style.display = isAuthenticated ? 'none' : 'inline-flex';
+  if (logoutBtn) logoutBtn.style.display = isAuthenticated ? 'inline-flex' : 'none';
+  if (addBtn) addBtn.style.display = isAuthenticated ? 'inline-flex' : 'none';
+  if (addPhysicalBtn) addPhysicalBtn.style.display = isAuthenticated ? 'inline-flex' : 'none';
+  
+  // Update body class
+  document.body.classList.toggle('owner-mode', isAuthenticated);
+  
+  // Update owner tools
+  document.querySelectorAll('.owner-tool').forEach(el => {
+    el.style.display = isAuthenticated ? (el.dataset.display || 'inline-flex') : 'none';
+  });
+  
+  // ✅ ===== AMPIANA ITY: MIORA SETTINGS VISIBILITY =====
+  const mioraSettingsSection = document.getElementById('miora-settings-section');
+  if (mioraSettingsSection) {
+    mioraSettingsSection.style.display = isAuthenticated ? 'block' : 'none';
+    
+    // Update stats if authenticated
+    if (isAuthenticated && typeof updateMioraSettingsUI === 'function') {
+      updateMioraSettingsUI();
+    }
+  }
+  // ✅ ===== FARANY =====
+  
+  // Call global applyAuthUI if exists
+  if (typeof window.applyAuthUI === 'function') {
+    window.applyAuthUI();
+  }
+}
+  // ========================================
+  // TOAST NOTIFICATION
+  // ========================================
+  
+  function showToast(message, type = 'info') {
+    // Remove existing toasts
+    document.querySelectorAll('.auth-toast').forEach(t => t.remove());
+    
+    const colors = {
+      success: 'linear-gradient(135deg, #10b981, #059669)',
+      error: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      info: 'linear-gradient(135deg, #3b82f6, #2563eb)'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = 'auth-toast';
+    toast.textContent = message;
+    
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: ${colors[type] || colors.info};
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      animation: toastIn 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'toastOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+  
+  // ========================================
+  // AUTH STATE LISTENER
+  // ========================================
+  
+  async function initAuthListener() {
+    try {
+      const sb = await window.ensureSupabase();
+      
+      // Get initial session
+      const { data: { session } } = await sb.auth.getSession();
+      
+      if (session && session.user) {
+        // ✅ Vérifier si c'est le owner
+        if (session.user.email.toLowerCase() === AUTH_CONFIG.ownerEmail.toLowerCase()) {
+          authState.user = session.user;
+          authState.session = session;
+          authState.isOwner = true;
+          updateAuthUI();
+        }
+      }
+      
+      // Subscribe to auth changes
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+      
+      const { data: { subscription } } = sb.auth.onAuthStateChange((event, session) => {
+        console.log('[Auth] 🔄 Auth state changed:', event);
+        
+        if (session && session.user) {
+          if (session.user.email.toLowerCase() === AUTH_CONFIG.ownerEmail.toLowerCase()) {
+            authState.user = session.user;
+            authState.session = session;
+            authState.isOwner = true;
+          } else {
+            authState.user = null;
+            authState.session = null;
+            authState.isOwner = false;
+          }
+        } else {
+          authState.user = null;
+          authState.session = null;
+          authState.isOwner = false;
+        }
+        
+        updateAuthUI();
+        
+        // Reload products on auth change
+        if (typeof window.fetchSupabaseProducts === 'function') {
+          window.fetchSupabaseProducts().catch(console.error);
+        }
+      });
+      
+      authSubscription = subscription;
+      
+      console.log('[Auth] ✓ Auth listener initialized');
+      
+    } catch (err) {
+      console.error('[Auth] ❌ Listener init error:', err);
+    }
+  }
+  
+  // ========================================
+  // WIRE BUTTONS
+  // ========================================
+  
+  function wireAuthButtons() {
+    const loginBtn = document.getElementById('btnLogin');
+    const logoutBtn = document.getElementById('btnLogout');
+    
+    if (loginBtn) {
+      loginBtn.addEventListener('click', openLoginModal);
+      console.log('[Auth] ✓ Login button wired');
+    }
+    
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', handleLogout);
+      console.log('[Auth] ✓ Logout button wired');
+    }
+  }
+  
+  // ========================================
+  // PUBLIC API
+  // ========================================
+  
+  window.MijoroAuth = {
+    openLogin: openLoginModal,
+    closeLogin: closeLoginModal,
+    logout: handleLogout,
+    isAuthenticated: () => authState.isOwner,
+    getUser: () => authState.user,
+    userAccount: authState.user
+  };
+  
+  // Compatibility with old code
+  window.isOwner = () => authState.isOwner;
+  window.openOwnerLoginModal = openLoginModal;
+  window.signOutOwner = handleLogout;
+  
+  // ========================================
+  // INITIALIZE
+  // ========================================
+  
+  function init() {
+    console.log('[Auth] 🚀 Initializing secure authentication system...');
+    
+    wireAuthButtons();
+    initAuthListener();
+    updateAuthUI();
+    
+    console.log('[Auth] ✅ Authentication system ready');
+  }
+  
+  // Auto-init
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+})();
+
+/* ==========================================
+   TOAST ANIMATIONS
+   ========================================== */
+
+if (!document.getElementById('auth-toast-styles')) {
+  const styles = document.createElement('style');
+  styles.id = 'auth-toast-styles';
+  styles.textContent = `
+    @keyframes toastIn {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+    
+    @keyframes toastOut {
+      from { transform: translateX(-50%) translateY(0); opacity: 1; }
+      to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+  `;
+  document.head.appendChild(styles);
+}
+
