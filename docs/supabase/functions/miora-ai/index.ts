@@ -18,7 +18,7 @@ const corsHeaders = {
 // Utility: sanitize user-provided search text
 function sanitizeText(input: string) {
   if (!input) return "";
-  // remove quotes/backticks/backslashes and collapse whitespace
+  // remove quotes/newlines and trim
   return input.replace(/["'`\\]/g, '').replace(/\s+/g, ' ').trim();
 }
 
@@ -248,7 +248,7 @@ serve(async (req) => {
               searchType: searchContext.type,
               addToCartEndpointHint: {
                 method: "POST",
-                url: "/api/cart",
+                url: "/api/cart", // frontend should adapt if different
                 bodyExample: { userId: userId || null, productId: "<id>", qty: 1 }
               }
             }),
