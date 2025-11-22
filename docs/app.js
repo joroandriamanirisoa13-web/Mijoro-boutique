@@ -11664,7 +11664,6 @@ if (!document.getElementById('auth-toast-styles')) {
   `;
   document.head.appendChild(styles);
 }
-
 // ==========================================
 // MIORA AI ASSISTANT - VERSION 2.1 FIXED
 // Mijoro Boutique Integration
