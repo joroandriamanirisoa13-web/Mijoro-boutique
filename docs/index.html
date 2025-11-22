@@ -961,7 +961,16 @@
 <div id="miora-chat" class="miora-chat" aria-hidden="true" role="dialog" aria-labelledby="miora-title">
   <!-- Header -->
   <div class="miora-header">
-   
+    <div class="miora-avatar">
+      <!-- ✅ NOUVELLE URL -->
+      <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+           alt="Miora" 
+           class="miora-header-avatar">
+    </div>
+    <div class="miora-title">
+      <div class="miora-name" id="miora-title">Miora</div>
+      <div class="miora-status">Assistant AI • En ligne</div>
+    </div>
     <button class="miora-close" id="miora-close" aria-label="Fermer">
       <i class="fa-solid fa-xmark"></i>
     </button>
@@ -969,39 +978,61 @@
 
   <!-- Messages Container -->
   <div class="miora-messages" id="miora-messages">
+    <!-- Welcome Message -->
     <div class="miora-message miora-bot">
       <div class="miora-message-avatar">
         <!-- ✅ NOUVELLE URL -->
-        <img src="https://i.ibb.co/Fks6hW82/Small-Tile-scale-400.png" 
+        <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
              alt="Miora" 
-             class="miora-msg-avatar"
-      </div> 
-      
-    
-<div class="miora-message-content">
+             class="miora-msg-avatar">
+      </div>
+      <div class="miora-message-content">
   <div class="miora-message-text">
-    👋 Salama tompoko ô! tongasoa ato amin'ny chat ☺.<br>
-    afaka misafady izay tianao hiresahana ianao ,afaka mandray anao avokoa na i Miora na i Agent Miora,fa alohan'ny hanoratanao dia mila mipotsika ianao ny bouton safidinao amin'izy roa (Miora(boutique) na Agent miora(culture générale) <br><br>
- 
-    mazotoa miresaka dia mazahoa izay tadiavinao ! 😊
+    👋 Bienvenue ! Je suis Miora, l'assistant IA de Mijoro Boutique.<br><br>
+    Je peux vous aider avec :<br>
+    • Marketing digital & Design<br>
+    • Questions de culture générale<br>
+    • Gestion & Management<br>
+     <br><br>
+    Posez-moi une question ! 😊
   </div>
 </div>
 </div>
 </div>
 
-
+  <!-- Quick Actions -->
+  <div class="miora-quick-actions">
+    <button class="miora-quick-btn" data-prompt="Create a professional logo design">
+      🎨 Logo Design
+    </button>
+    <button class="miora-quick-btn" data-prompt="Design a social media post">
+      📱 Social Post
+    </button>
+    <button class="miora-quick-btn" data-prompt="Create an advertisement poster">
+      📢 Ad Poster
+    </button>
+    <button class="miora-quick-btn" data-prompt="Design an eBook cover">
+      📚 eBook Cover
+    </button>
+    <button class="miora-quick-btn" data-prompt="Create a YouTube thumbnail">
+      🎬 Thumbnail
+    </button>
+  </div>
 
   <!-- Input Area -->
   <div class="miora-input-area">
-    
+    <button class="miora-upload-btn" id="miora-upload-btn" aria-label="Upload image">
+      <i class="fa-solid fa-image"></i>
+    </button>
     <input type="file" id="miora-file-input" accept="image/*" style="display:none">
     
-   <textarea 
-  id="miora-input" 
-  placeholder="soraty..." 
-  class="miora-input"
-  rows="1"
-  maxlength="2000"></textarea>
+    <input 
+      type="text" 
+      id="miora-input" 
+      class="miora-input" 
+      placeholder="Type your message..."
+      autocomplete="off"
+      aria-label="Message">
     
     <button class="miora-send" id="miora-send" aria-label="Send">
       <i class="fa-solid fa-paper-plane"></i>
@@ -1162,7 +1193,8 @@ window.addEventListener('DOMContentLoaded', () => {
 <div class="touch-edge-bottom" aria-hidden="true"></div>
 
 <!-- App bundle -->
-<script src="app.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="app.js"></script>
+
 </body>
 </html>
