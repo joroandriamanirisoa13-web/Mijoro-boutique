@@ -11706,9 +11706,27 @@ const conversationalPatterns = [
   /\b(?:ianao|vous|you)\s+(?:iza|qui|who|inona|quoi|what)\b/i,
   /^(?:what|qui|iza|inona)\s+(?:is|are|es|no)\s+(?:miora|your|ton|votre)/i,
   
-  // ✅ VAOVAO: Questions about news/updates
-  /\b(?:inona|quoi|what|ahoana|comment|how)\s+(?:ny|avy|les|le|the)\s+(?:vaovao|nouvelles?|news|update)/i,
-  /\b(?:misy|y\s+a-t-il|is there|any)\s+(?:vaovao|nouvelles?|news)/i,
+  // ✅ VAOVAO: Questions about Mijoro Boutique itself
+  /\b(?:momba|à propos|about|concernant)\s+(?:ny\s+)?(?:mijoro\s*boutique|boutique|shop|magasin)\b/i,
+  /\b(?:inona|quoi|what)\s+(?:no\s+)?(?:mijoro\s*boutique|la\s+boutique|the\s+shop)\b/i,
+  /\b(?:mahalala|connaître|know)\s+.*(?:mijoro|boutique)\b/i,
+  /\b(?:lazao|dis|tell).*(?:momba|à propos|about).*(?:mijoro|boutique)\b/i,
+  
+  // ✅ VAOVAO: About founder
+  /\b(?:iza|qui|who)\s+(?:no\s+)?(?:namorona|a créé|created|fondateur|founder)\b/i,
+  /\b(?:nahoana|pourquoi|why).*(?:mijoro|nom|name|anarana)\b/i,
+  
+  // ✅ VAOVAO: Job opportunities
+  /\b(?:mandray|recrute|hiring|recherche).*(?:mpiasa|employés|workers|personnel)\b/i,
+  /\b(?:asa|travail|job|emploi|mitady\s+asa)\b/i,
+  
+  // ✅ VAOVAO: Training questions
+  /\b(?:fampiofanana|formation|training|cours)\b/i,
+  /\b(?:mampanao|propose|offer).*(?:fampiofanana|formation|training)\b/i,
+  
+  // ✅ VAOVAO: Ordering process (not specific product)
+  /\b(?:afaka|peut|can).*(?:manao\s+commande|commander|order|manafatra)\b/i,
+  /^(?:manao|commander|order).*(?:commande|order)\s*ve\??$/i,
   
   // Help/Information about AI
   /\b(?:afaka|peut|can)\s+(?:manampy|aider|help|manao|faire|do)\b/i,
@@ -11720,20 +11738,12 @@ const conversationalPatterns = [
   // Questions about Miora itself
   /\b(?:miora|assistant|chatbot|ai|intelligence)\b.*\b(?:ianao|vous|you|ton|votre|your)\b/i,
   
-  // ✅ VAOVAO: Questions about boutique features (not product search)
-  /\b(?:ahoana|comment|how)\s+(?:ny|le|the)\s+(?:fividianana|achat|purchase|commande|order|fampiasana|utilisation|use)/i,
-  /\b(?:taiza|où|where)\s+(?:ny|le|la|the)\s+(?:panier|cart|basket|boutique|shop)/i,
-  /\b(?:manao|faire|do|utiliser|use)\s+(?:ahoana|comment|how)/i,
-  
-  // ✅ VAOVAO: Contact questions (not product search)
+  // Contact questions (not product search)
   /\b(?:contact|fifandraisana|communication|joindre|mahazo|appeler|call)\b/i,
-  /\b(?:whatsapp|email|téléphone|telephone|finday|numero|number|numéro)/i,
+  /\b(?:whatsapp|email|téléphone|telephone|finday|numero|number|numéro)\b/i,
   
-  // ✅ VAOVAO: General questions without specific product intent
-  /^(?:inona|quoi|what|ahoana|comment|how|oviana|quand|when|taiza|où|where|nahoana|pourquoi|why)\s+(?!.*(?:produit|product|zavatra|ebook|video|app|vêtement|vetement|akanjo))/i,
-  
-  // ✅ VAOVAO: Questions about the boutique itself
-  /\b(?:momba|à propos|about|concernant)\s+(?:ny|la|le|the)\s+(?:boutique|shop|magasin|Mijoro)/i
+  // General questions without specific product intent
+  /^(?:inona|quoi|what|ahoana|comment|how|oviana|quand|when|taiza|où|where|nahoana|pourquoi|why)\s+(?!.*(?:produit|product|zavatra|ebook|video|app|vêtement|vetement|akanjo))/i
 ];
   
   // Check if message matches conversational patterns
@@ -11790,15 +11800,86 @@ const conversationalPatterns = [
       return { type: 'search', query: keywords };
     }
   }
+  // ========================================
+  // NOUVEAUTÉS / RECENT PRODUCTS
+  // ========================================
+  if (/(?:produit|zavatra|product).*(?:vaovao|nouveau|nouveauté|new|recent|farany|latest)|(?:vaovao|nouveau|new).*(?:produit|product)|(?:misy|y\s+a-t-il|are\s+there).*(?:vaovao|nouveau|new)|(?:nivoaka|sorti|released).*(?:farany|dernier|last)|(?:inona|quoi|what).*(?:nivoaka|sorti|released)|nouveauté/i.test(msg)) {
+    console.log('[Detect] 🆕 New/recent products query');
+    return { type: 'nouveaute', query: 'nouveaux produits' };
+  }
   
   // ========================================
-  // FREE PRODUCTS (IMPROVED with cleaning)
+  // PRIX - CHEAP PRODUCTS
   // ========================================
-  if (/maimaim.?poana|gratuit|free.*produit|poana|tsy.*vola|sans.*payer/i.test(msg)) {
-    // ✅ Extract clean keyword
+  if (/(?:mora|pas\s+cher|cheap|low\s+cost|bon\s+marché|abordable|affordable).*(?:vidy|prix|price|cost)|(?:produit|zavatra|product).*(?:mora|cheap|pas\s+cher)|(?:misy|y\s+a-t-il|are\s+there).*(?:mora|cheap)|prix\s+(?:mora|moyen|bas|low)/i.test(msg)) {
+    console.log('[Detect] 💰 Cheap products query');
+    return { type: 'mora', query: 'produits bon marché' };
+  }
+  
+  // ========================================
+  // PRIX - EXPENSIVE PRODUCTS
+  // ========================================
+  if (/(?:lafo|cher|expensive|couteux|high\s+cost).*(?:vidy|prix|price|cost)|(?:produit|zavatra|product).*(?:lafo|cher|expensive)|(?:misy|y\s+a-t-il|are\s+there).*(?:lafo|cher)|prix\s+(?:lafo|élevé|high)/i.test(msg)) {
+    console.log('[Detect] 💎 Expensive products query');
+    return { type: 'lafo', query: 'produits chers' };
+  }
+  
+  // ========================================
+  // PROMOTIONS
+  // ========================================
+  if (/promotion|promo|fihainambidy|fihenam[-\s]?bidy|réduction|discount|solde|sale|special\s+(?:offer|price)/i.test(msg)) {
+    console.log('[Detect] 🎉 Promotion query');
+    return { type: 'promo', query: 'promotions' };
+  }
+// ========================================
+// FREE PRODUCTS (ENHANCED - ALL PATTERNS)
+// ========================================
+// ✅ MALAGASY patterns
+const mgFreePatterns = [
+  /\b(?:mitady|tadidio|hitady)\s+.*(?:maimaim[-\s]?poana|poana)/i, // mitady maimaim-poana
+  /\b(?:misy|inona|ahoana)\s+.*(?:maimaim[-\s]?poana|poana)/i, // misy maimaim-poana ve
+  /\b(?:inona\s+(?:avy\s+)?(?:ny|ireo))\s+.*(?:maimaim[-\s]?poana|poana)/i, // inona avy ireo maimaim-poana
+  /\b(?:asehoy|lazao)\s+.*(?:maimaim[-\s]?poana|poana)/i, // asehoy maimaim-poana
+  /\bvokatra\s+(?:maimaim[-\s]?poana|poana)/i, // vokatra maimaim-poana
+  /\b(?:produit|zavatra)\s+(?:maimaim[-\s]?poana|poana)/i, // produit maimaim-poana
+  /\b(?:maimaim[-\s]?poana|poana)\s+(?:rehetra|daholo)/i, // maimaim-poana rehetra
+  /^(?:maimaim[-\s]?poana|poana)\s*(?:ve)?\s*\??$/i // maimaim-poana / maimaim-poana ve
+];
+
+// ✅ FRENCH patterns
+const frFreePatterns = [
+  /\b(?:cherche|trouve|voir)\s+.*(?:gratuit|maimaim[-\s]?poana)/i, // cherche gratuit
+  /\b(?:y\s+a-t-il|existe|avez-vous)\s+.*(?:gratuit|maimaim[-\s]?poana)/i, // y a-t-il gratuit
+  /\b(?:quels?|quoi|lesquels)\s+.*(?:gratuit|maimaim[-\s]?poana)/i, // quels produits gratuits
+  /\b(?:montre|donne)\s+.*(?:gratuit|maimaim[-\s]?poana)/i, // montre gratuit
+  /\bproduits?\s+(?:gratuit|maimaim[-\s]?poana)/i, // produits gratuits
+  /\b(?:gratuit|maimaim[-\s]?poana)\s+(?:disponible|en stock)/i, // gratuit disponible
+  /^(?:gratuit|maimaim[-\s]?poana)s?\s*\??$/i // gratuit / gratuits?
+];
+
+// ✅ ENGLISH patterns
+const enFreePatterns = [
+  /\b(?:search|find|looking for)\s+.*(?:free|maimaim[-\s]?poana)/i, // search free
+  /\b(?:are there|do you have|any)\s+.*(?:free|maimaim[-\s]?poana)/i, // are there free
+  /\b(?:what|which)\s+.*(?:free|maimaim[-\s]?poana)/i, // what free products
+  /\b(?:show|give)\s+.*(?:free|maimaim[-\s]?poana)/i, // show free
+  /\bproducts?\s+(?:free|maimaim[-\s]?poana)/i, // products free
+  /\b(?:free|maimaim[-\s]?poana)\s+(?:products?|items?)/i, // free products
+  /^(?:free|maimaim[-\s]?poana)\s*\??$/i // free / free?
+];
+
+// ✅ COMBINED check
+const allFreePatterns = [...mgFreePatterns, ...frFreePatterns, ...enFreePatterns];
+
+for (const pattern of allFreePatterns) {
+  if (pattern.test(msg)) {
+    console.log('[Detect] 🎁 Free products query detected:', msg);
+    console.log('[Detect] 🎯 Matched pattern:', pattern);
+    
+    // ✅ Extract clean keyword based on language
     let cleanQuery = 'produits gratuits';
     
-    if (/maimaim.?poana/i.test(msg)) {
+    if (/maimaim[-\s]?poana/i.test(msg)) {
       cleanQuery = 'maimaim-poana';
     } else if (/gratuit/i.test(msg)) {
       cleanQuery = 'gratuit';
@@ -11808,9 +11889,16 @@ const conversationalPatterns = [
       cleanQuery = 'poana';
     }
     
-    console.log('[Detect] 🎁 Free products:', cleanQuery);
+    console.log('[Detect] 🎁 Clean query:', cleanQuery);
     return { type: 'free', query: cleanQuery };
   }
+}
+
+// ✅ FALLBACK: Simple keyword match (original logic)
+if (/maimaim[-\s]?poana|gratuit|free|poana|tsy.*vola|sans.*payer/i.test(msg)) {
+  console.log('[Detect] 🎁 Free products (fallback)');
+  return { type: 'free', query: 'produits gratuits' };
+}
   
   // ========================================
   // CATEGORIES - NUMÉRIQUE
@@ -11858,8 +11946,48 @@ const conversationalPatterns = [
     return { type: 'category', category: 'numérique', query: 'produits numériques' };
   }
   
-  console.log('[Detect] ❓ No specific query type detected');
-  return null;
+  // ========================================
+// IMAGE GENERATION
+// ========================================
+if (/(?:sary|sarin|image|photo|dessin|picture|draw|generate.*image|create.*image|manao.*sary|mamorona.*sary)/i.test(msg)) {
+  console.log('[Detect] 🎨 Potential image generation request');
+  
+  // Extract prompt intelligently
+  const patterns = [
+    /manao\s+sary\s+(.+)/i,
+    /mamorona\s+sary\s+(.+)/i,
+    /sary\s+(.+)/i,
+    /g[ée]n[ée]r(?:e|er)\s+(?:une\s+)?image\s+(?:de\s+)?(.+)/i,
+    /cr[ée]er?\s+(?:une\s+)?image\s+(?:de\s+)?(.+)/i,
+    /create\s+(?:an?\s+)?image\s+(?:of\s+)?(.+)/i,
+    /generate\s+(?:an?\s+)?image\s+(?:of\s+)?(.+)/i,
+    /draw\s+(?:me\s+)?(?:an?\s+)?(.+)/i,
+    /picture\s+of\s+(.+)/i,
+    /photo\s+(?:de\s+)?(.+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = msg.match(pattern);
+    if (match) {
+      let prompt = match[1].trim();
+      
+      // Clean prompt
+      prompt = prompt
+        .replace(/\?+$/g, '')
+        .replace(/\s+(?:ve|svp|please|azafady)\s*$/i, '')
+        .replace(/^(?:ny|ireo|ilay|le|la|les|the|a|an)\s+/i, '')
+        .trim();
+      
+      if (prompt.length >= 3) {
+        console.log('[Detect] 🎨 Image generation prompt:', prompt);
+        return { type: 'image', prompt: prompt };
+      }
+    }
+  }
+}
+
+console.log('[Detect] ❓ No specific query type detected');
+return null;
 };
 })();
 
@@ -11938,9 +12066,9 @@ const conversationalPatterns = [
   
   console.log('[Miora Products] 🔍 Initializing...');
   
-async function searchProducts(query, limit = 5) {
-  try {
-    console.log('[Search] 🔍 Smart Query:', query);
+async function searchProducts(query, limit = 10) { // ⬅️ 5 → 10
+    try {
+      console.log('[Search] 🔍 Smart Query:', query);
     
     if (!window.supabaseClient) {
       console.error('[Search] ❌ Supabase client not available');
@@ -12072,9 +12200,9 @@ async function searchProducts(query, limit = 5) {
 }
 
 // ✅ GET FREE PRODUCTS
-async function getFreeProducts(limit = 5) {
+async function getFreeProducts(limit = 10) { // ⬅️ 5 → 10
   try {
-    console.log('[Search] 🎁 Getting free products...');
+   console.log('[Search] 🎁 Getting free products...'); //
     
     if (!window.supabaseClient) {
       console.error('[Search] ❌ Supabase client not available');
@@ -12093,8 +12221,25 @@ async function getFreeProducts(limit = 5) {
     }
     
     const free = data.filter(p => {
-      return p.is_free === true || Number(p.price) === 0;
-    });
+  // ✅ VAOVAO: Multiple checks
+  const price = Number(p.price) || 0;
+  const isFree = p.is_free === true || p.is_free === 'true';
+  const isZeroPrice = price === 0;
+  
+  // ✅ Check badge too
+  const hasFreeTag = p.badge && /gratuit|free|poana|maimaim/i.test(p.badge);
+  const hasFreeInTags = Array.isArray(p.tags) &&
+    p.tags.some(tag => /gratuit|free|poana|maimaim/i.test(tag));
+  
+  const result = isFree || isZeroPrice || hasFreeTag || hasFreeInTags;
+  
+  if (result) {
+    console.log('[Search] ✅ Free product found:', p.title,
+      'price:', price, 'is_free:', p.is_free, 'badge:', p.badge);
+  }
+  
+  return result;
+});
     
     console.log('[Search] ✅ Found:', free.length, 'free products');
     return free.slice(0, limit);
@@ -12106,9 +12251,9 @@ async function getFreeProducts(limit = 5) {
 }
 
 // ✅ GET BY CATEGORY
-async function getByCategory(category, limit = 5) {
-  try {
-    console.log('[Search] 📂 Category:', category);
+async function getByCategory(category, limit = 10) { // ⬅️ 5 → 10
+    try {
+      console.log('[Search] 📂 Category:', category);
     
     if (!window.supabaseClient) {
       console.error('[Search] ❌ Supabase client not available');
@@ -12180,9 +12325,9 @@ window.MioraSearch = {
   
   // TEST AUTOMATIQUE
   setTimeout(async () => {
-    console.log('[Search] 🧪 Running automatic test...');
-    try {
-      const allProducts = await getAllProducts(5);
+        console.log('[Search] 🧪 Running automatic test...');
+        try {
+          const allProducts = await getAllProducts(10); // ⬅️ 5 → 10
       console.log('[Search] 🧪 Sample products:', allProducts.length);
       
       if (allProducts.length > 0) {
@@ -12207,6 +12352,98 @@ window.MioraSearch = {
       console.error('[Search] ❌ TEST ERROR:', err);
     }
   }, 2000);
+  
+})();
+// ==========================================
+// 3.5 PRODUCT CACHE SYSTEM
+// ==========================================
+(function initProductCache() {
+  'use strict';
+  
+  console.log('[Miora Cache] 💾 Initializing...');
+  
+  // ✅ Cache variables
+  let productCache = null;
+  let cacheTime = 0;
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  // ✅ Clear cache function
+  window.mioraClearCache = function() {
+    productCache = null;
+    cacheTime = 0;
+    console.log('[Cache] 🗑️ Cleared');
+    if (typeof showNotification === 'function') {
+      showNotification('🔄 Cache effacé', 'info', 2000);
+    }
+  };
+  
+  // ✅ Get cache info
+  window.mioraGetCacheInfo = function() {
+    if (!productCache) {
+      return { cached: false, count: 0, age: 0 };
+    }
+    
+    const age = Date.now() - cacheTime;
+    const remaining = CACHE_DURATION - age;
+    
+    return {
+      cached: true,
+      count: productCache.length,
+      age: Math.floor(age / 1000), // seconds
+      remaining: Math.floor(remaining / 1000) // seconds
+    };
+  };
+  
+  // ✅ Override getAllProducts with cache
+  const originalGetAllProducts = window.MioraSearch.getAll;
+  
+  window.MioraSearch.getAll = async function(limit = 20) {
+    const now = Date.now();
+    
+    // Check cache validity
+    if (productCache && (now - cacheTime < CACHE_DURATION)) {
+      console.log('[Cache] ✅ Using cached products:', productCache.length, '→', limit);
+      console.log('[Cache] ⏱️ Age:', Math.floor((now - cacheTime) / 1000), 'seconds');
+      return productCache.slice(0, limit);
+    }
+    
+    // Cache expired or empty - fetch fresh
+    console.log('[Cache] 🔄 Fetching fresh data...');
+    
+    try {
+      const data = await originalGetAllProducts.call(this, 200); // Fetch max
+      
+      if (data && data.length > 0) {
+        productCache = data;
+        cacheTime = now;
+        console.log('[Cache] ✅ Cached:', data.length, 'products');
+      }
+      
+      return data.slice(0, limit);
+      
+    } catch (error) {
+      console.error('[Cache] ❌ Fetch error:', error);
+      
+      // Fallback to old cache if exists
+      if (productCache) {
+        console.log('[Cache] ⚠️ Using old cache as fallback');
+        return productCache.slice(0, limit);
+      }
+      
+      throw error;
+    }
+  };
+  
+  // ✅ Auto-clear cache after duration
+  setInterval(() => {
+    if (productCache && (Date.now() - cacheTime >= CACHE_DURATION)) {
+      console.log('[Cache] ⏰ Auto-clearing expired cache');
+      productCache = null;
+      cacheTime = 0;
+    }
+  }, 60000); // Check every minute
+  
+  console.log('[Miora Cache] ✅ Ready (5min duration)');
   
 })();
 
@@ -12321,6 +12558,8 @@ const elements = {
   isDarkMode: localStorage.getItem('miora-dark-mode') === 'true',
   isTyping: false,
   isRecording: false, // ⬅️ VAOVAO: Track recording state
+   currentAssistant: localStorage.getItem('miora-current-assistant') || 'miora',
+  // ⬆️⬆️⬆️ FIN AJOUT ⬆️⬆️⬆️
   pinnedMessages: JSON.parse(localStorage.getItem('miora-pinned') || '[]'),
   favorites: JSON.parse(localStorage.getItem('miora-favorites') || '[]'),
   imageStyle: localStorage.getItem('miora-image-style') || 'professional',
@@ -12605,7 +12844,97 @@ window.detectLanguage = function(text, currentLanguage = 'mg') {
     
     showNotification(enabled ? '🌙 Dark Mode' : '☀️ Light Mode', 'info', 1500);
   }
-
+// ========================================
+  // ✅✅✅ DÉBUT AJOUT - ASSISTANT SWITCH ✅✅✅
+  // ========================================
+  
+  // CREATE SWITCH UI
+  function createAssistantSwitch() {
+    const switchContainer = document.createElement('div');
+    switchContainer.className = 'miora-assistant-switch';
+    switchContainer.id = 'miora-assistant-switch';
+    switchContainer.innerHTML = `
+      <div class="assistant-switch-wrapper">
+        <button class="assistant-option active" data-assistant="miora" title="Miora - Assistant Boutique">
+          <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" alt="Miora" class="assistant-avatar">
+          <div class="assistant-info">
+            <div class="assistant-name">Miora</div>
+            <div class="assistant-role">Boutique</div>
+          </div>
+        </button>
+        
+        <button class="assistant-option" data-assistant="agent" title="Agent Miora - Assistant Général">
+          <img src="https://i.ibb.co/fVfNcLv9/file-000000008188722fb075911ad3cee715.png" alt="Agent Miora" class="assistant-avatar">
+          <div class="assistant-info">
+            <div class="assistant-name">Agent Miora</div>
+            <div class="assistant-role">Culture Générale</div>
+          </div>
+        </button>
+      </div>
+    `;
+    
+    return switchContainer;
+  }
+  
+  // SWITCH FUNCTION
+  function switchAssistant(assistantType) {
+    console.log('[Assistant] 🔄 Switching to:', assistantType);
+    
+    state.currentAssistant = assistantType;
+    localStorage.setItem('miora-current-assistant', assistantType);
+    
+    // Update UI
+    document.querySelectorAll('.assistant-option').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    
+    const selectedBtn = document.querySelector(`.assistant-option[data-assistant="${assistantType}"]`);
+    if (selectedBtn) {
+      selectedBtn.classList.add('active');
+    }
+    
+    // Update avatar
+    updateMessageAvatars(assistantType);
+    
+    // Show notification
+    const names = {
+      'miora': '🏪 Miora - Assistant Boutique',
+      'agent': '🌍 Agent Miora - Culture Générale'
+    };
+    
+    showNotification(names[assistantType] || 'Assistant changé', 'success', 2000);
+    
+    // Add system message
+    const messages = {
+      'mg': {
+        'miora': '🏪 Tongasoa eto amin\'ny Miora 😁 🇲🇬! Afaka manampy anao momba ny Mijoro Boutique.',
+        'agent': '🌍 Tongasoa eto amin\'ny Agent Miora🇲🇬! Afaka manampy anao amin\'ny zavatra rehetra.'
+      },
+      'fr': {
+        'miora': '🏪 Bienvenue avec Miora! Je vous aide avec Mijoro Boutique.',
+        'agent': '🌍 Bienvenue avec Agent Miora! Je peux vous aider avec tout.'
+      },
+      'en': {
+        'miora': '🏪 Welcome to Miora! I help you with Mijoro Boutique.',
+        'agent': '🌍 Welcome to Agent Miora! I can help you with anything.'
+      }
+    };
+    
+    const msg = messages[state.currentLanguage]?.[assistantType] || messages['mg'][assistantType];
+    addMessage(msg, false, null, false);
+  }
+  
+  function updateMessageAvatars(assistantType) {
+    const avatarUrl = assistantType === 'miora' 
+      ? 'https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg'
+      : 'https://i.ibb.co/fVfNcLv9/file-000000008188722fb075911ad3cee715.png';
+    
+    window.currentAssistantAvatar = avatarUrl;
+  }
+  
+  // EXPOSE GLOBALLY
+  window.mioraSwitchAssistant = switchAssistant;
+  
   function saveDraft() {
     const text = elements.inputField.value.trim();
     if (text) {
@@ -12704,9 +13033,16 @@ console.log('🗑️ History cleared from memory only');
       `;
     }
     
-    const avatarHTML = isUser 
-      ? '<i class="fa-solid fa-user"></i>' 
-      : '<img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" alt="Miora" class="miora-msg-avatar">';
+  // ✅✅✅ REMPLACER CETTE PARTIE ✅✅✅
+const currentAvatar = window.currentAssistantAvatar ||
+  (state.currentAssistant === 'agent' ?
+    'https://i.ibb.co/fVfNcLv9/file-000000008188722fb075911ad3cee715.png' :
+    'https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg');
+
+const avatarHTML = isUser ?
+  '<i class="fa-solid fa-user"></i>' :
+  `<img src="${currentAvatar}" alt="${state.currentAssistant === 'agent' ? 'Agent Miora' : 'Miora'}" class="miora-msg-avatar">`;
+// ⬆️⬆️⬆️ FIN REMPLACEMENT ⬆️⬆️⬆️
     
     const isPinned = state.pinnedMessages.includes(msgDiv.dataset.messageId);
     const pinIcon = isPinned ? 'fa-solid fa-thumbtack' : 'fa-regular fa-thumbtack';
@@ -13193,15 +13529,28 @@ function toggleVoiceRecognition() {
   
   async function callAI(userMessage, addToHistory = true) {
   try {
-    // ✅ FIX: Get current language safely
-    const currentLanguage = state?.currentLanguage || localStorage.getItem('miora-language') || 'mg';
+    // ✅ FIX: Get current language safely FIRST
+    let currentLanguage = 'mg';
+    try {
+      currentLanguage = state?.currentLanguage || localStorage.getItem('miora-language') || 'mg';
+    } catch (err) {
+      console.warn('[AI] Language access error:', err);
+      currentLanguage = 'mg';
+    }
+    
+    console.log('[AI] 🌐 Using language:', currentLanguage);
     
     // Detect language
     const detectedLang = window.detectLanguage(userMessage, currentLanguage);
     if (detectedLang !== currentLanguage) {
-      state.currentLanguage = detectedLang;
-      localStorage.setItem('miora-language', detectedLang);
-      console.log('🌐 Language switched to:', state.currentLanguage);
+      try {
+        state.currentLanguage = detectedLang;
+        localStorage.setItem('miora-language', detectedLang);
+        currentLanguage = detectedLang;
+        console.log('🌐 Language switched to:', currentLanguage);
+      } catch (err) {
+        console.warn('[AI] Failed to switch language:', err);
+      }
     }
     
     if (addToHistory) {
@@ -13217,9 +13566,21 @@ function toggleVoiceRecognition() {
       state.conversationHistory = state.conversationHistory.slice(-config.maxHistoryLength);
     }
     
+    // ✅ Get current assistant safely
+    let currentAssistant = 'miora';
+    try {
+      currentAssistant = state?.currentAssistant || localStorage.getItem('miora-current-assistant') || 'miora';
+    } catch (err) {
+      console.warn('[AI] Assistant access error:', err);
+      currentAssistant = 'miora';
+    }
+    
+    console.log('[AI] 👤 Using assistant:', currentAssistant);
+    
     // ✅ Build system prompt with safe language access
-    const systemPrompts = {
-      'mg': `Ianao dia **Miora**, assistante IA ofisialy an'ny **Mijoro Boutique** 🇲🇬
+    const assistantPrompts = {
+      'miora': {
+        'mg': `Ianao dia **Miora**, assistante IA ofisialy an'ny **Mijoro Boutique** 🇲🇬
 
 🏪 **MOMBA NY MIJORO BOUTIQUE**
 - Boutique en ligne malagasy nanomboka tamin'ny 2025
@@ -13234,12 +13595,13 @@ function toggleVoiceRecognition() {
 🛒 **FOMBA FIVIDIANANA**
 
 **1️⃣ Quick Order Section**
-- Ao @ homepage: "Commande Express"
+- Ao @ homepage: "Commande Express"  
+      
 - 8 produits vedette
 - "Ajouter au panier" → maintso
 
 **2️⃣ Panier - Ambany ankavanana**
-- Icône 🛒 @ coin ambany ankavanana
+- Icône  🛒 @ coin ambany ankavanana
 - Click → panier drawer misokatra
 - Hitanao ny produits rehetra
 
@@ -13259,34 +13621,58 @@ function toggleVoiceRecognition() {
 **⚠️ RÈGLE: Manondro PRODUIT SEARCH na CONVERSATION**
 
 **CONVERSATION (valio ianao):**
-- "Inona ny vaovao?" → Lazao produits nouveaux, promos
-- "Manao ahoana?" → Valiny mpinamana
-- "Ahoana ny fividianana?" → Ampahafantaro dingana 4
-- "Contact?" → WhatsApp: 0333106055 + email
-- "Salama" → Tongasoa, manontania inona tadiavinao
-- "Ahoana ny site?" → Manazava features
 
-**PRODUCT SEARCH (aza mamaly):**
-- "Mitady ebook" → Engine mikarakara
-- "Misy video ve?" → Engine mikarakara
-- "Maimaim-poana" → Engine mikarakara
+**1️⃣ Momba ny Boutique:**
+- "Lazao ahy ny momba Mijoro Boutique" → Boutique en ligne malagasy, produits digital + physiques, WhatsApp: 0333106055
+- "Mahalala ny momba Mijoro Boutique ve?" → Eny! Boutique vaovao 2025, varimbazaha + physique, contact: 0333106055 / mioraandriamiadana@gmail.com
+- "Inona no Mijoro Boutique?" → Boutique officielle vente digital + physique, tsara indrindra @ Madagascar
 
-**Raha "Inona ny vaovao?":**
-- Lazao produits nouveaux
-- Catégories populaires
-- Produits maimaim-poana
-- Nouveautés @ boutique
+**2️⃣ Founder & Histoire:**
+- "Iza no namorona Mijoro Boutique?" → **ANDRIAMIADANARISON Miora** no namorona
+- "Nahoana no antsoina hoe Mijoro?" → Tsy voahofana amin'io fanontaniana io aho, tsara kokoa manontany an'i Miora @ WhatsApp: 0333106055
+
+**3️⃣ Asa sy Fampiofanana:**
+- "Mandray mpiasa ve?" → Ny asa tsy sarotra fa TSARA KOKOA manontany an'i Miora @ WhatsApp (0333106055/0337829146), izy no afaka manapaka
+- "Mampanao fampiofanana ve?" → Tsy afaka mamaly anizay aho fa afaka manontany @ WhatsApp (0333106055), FA KOSA misy produits formation ato @ boutique!
+
+**4️⃣ Fividianana / Commande:**
+- "Afaka manao commande ve?" → ENY AFAKA! 
+  **Raha produit EFA AO @ shop:**
+    - Quick Order: Mijery → Ajouter au panier (maintso) → Commander via WhatsApp
+    - Shop: Recherche → Potsero produit → WhatsApp direct
+  **Raha TSY AO:**
+    - Manontany @ WhatsApp: 0333106055 / 0337829146
+
+**5️⃣ Contact & Info:**
+- WhatsApp: 0333106055 (PRIORITAIRE!)
+- Email: mioraandriamiadana@gmail.com
+- "Manao ahoana?" → Tsara aho misaotra! Inona azoko ampy anao?
+- "Salama" → Tongasoa! Inona tadiavinao @ boutique?
+
+**6️⃣ Vaovao ny boutique:**
+- "Inona ny vaovao?" → Lazao: Produits nouveaux (60 jours), promos, categories populaires
+- "Misy vaovao ve?" → ENY! Misy produits vaovao, mitadidiava fotsiny @ boutique
+
+**PRODUCT SEARCH (aza mamaly - engine mikarakara):**
+- "Mitady ebook" → Engine
+- "Misy video ve?" → Engine
+- "Maimaim-poana" → Engine
+- "Mora vidy" → Engine (< 5000 AR)
+- "Lafo vidy" → Engine (> 20000 AR)
+- "Promotion" → Engine (badge promo)
+- "Nouveauté" → Engine (< 60 jours)
 
 **Fomba:** Mpinamana 😊, mazava, professionnel
 
 ⚠️ **TSY HADINO:**
-- WhatsApp = 0333106055
+- WhatsApp = 0333106055 (IMPORTANTE!)
 - Panier = ambany ankavanana (🛒)
+- Founder = ANDRIAMIADANARISON Miora
 - BALANCE: Conversation vs Search
 
 Valio amin'ny **Malagasy**.`,
-      
-      'fr': `Tu es **Miora**, assistante IA de **Mijoro Boutique** 🇫🇷
+        
+        'fr': `Tu es **Miora**, assistante IA de **Mijoro Boutique** 🇫🇷
 
 🏪 **MIJORO BOUTIQUE**
 - Boutique malgache depuis 2025
@@ -13351,8 +13737,8 @@ Valio amin'ny **Malagasy**.`,
 - BALANCE: Conversation vs Recherche
 
 Réponds en **Français**.`,
-      
-      'en': `You are **Miora**, AI assistant at **Mijoro Boutique** 🇬🇧
+        
+        'en': `You are **Miora**, AI assistant at **Mijoro Boutique** 🇬🇧
 
 🏪 **MIJORO BOUTIQUE**
 - Malagasy boutique since 2025
@@ -13417,9 +13803,119 @@ Réponds en **Français**.`,
 - BALANCE: Conversation vs Search
 
 Respond in **English**.`
+      },
+      
+      'agent': {
+        'mg': `Ianao dia **Agent Miora**, AI assistant mahay zavatra rehetra 🌍
+
+🎯 **NY ASANAO**
+- Manampy amin'ny **culture générale** (tantara, siansa, kolontsaina...)
+- **Marketing & Business** (stratégie, copywriting, branding...)
+- **Prompt Engineering** (AI prompts, optimization...)
+- **Multilingual** (Malagasy, Français, English, español...)
+- **Creative Tasks** (écriture, design concepts, idées...)
+- **Technical Help** (code, web, apps...)
+- **Education** (fianarana, fanazavana...)
+
+💬 **FOMBA**
+- Mpinamana 😊, mazava, professionnel
+- Manome fanazavana lalina sy mazava
+- Manome ohatra raha ilaina
+- Misokatra amin'ny resaka rehetra
+- Manaraka fiteny tadiavin'ny user
+
+⚠️ **TSY HADINO:**
+-Raha manontany momba **Mijoro Boutique sy produits mijoro boutique**: lazao fa Miora boutique assistant no mahay kokoa → miverina @ "Miora (Boutique AI)"
+- Raha question **générale** (siantifika, technologie, histoire, creativity...): valio tsara
+
+- Focus @ fanampiana sy fanazavana
+- Mandray fiteny rehetra (Malagasy, Français, English...)
+- Hanampy @ zavatra rehetra (marketing, prompt, culture...)
+
+💡 **EXPERTISE:**
+- **Marketing:** Stratégie digitale, copywriting, SEO, social media
+- **Prompt Engineering:** Optimisation prompts AI, techniques avancées
+- **Culture:** Histoire, sciences, arts, littérature
+- **Business:** Entrepreneuriat, gestion, développement
+- **Tech:** Code, web dev, apps, AI tools
+
+Valio amin'ny **Malagasy**.`,
+        
+        'fr': `Tu es **Agent Miora**, assistant IA polyvalent 🌍
+
+🎯 **TON RÔLE**
+- Aide avec la **culture générale** (histoire, sciences, culture...)
+- **Marketing & Business** (stratégie, copywriting, branding...)
+- **Prompt Engineering** (prompts IA, optimisation...)
+- **Multilingue** (Malagasy, Français, Anglais, Espagnol...)
+- **Tâches Créatives** (écriture, concepts design, idées...)
+- **Aide Technique** (code, web, apps...)
+- **Éducation** (apprentissage, explications...)
+
+💬 **STYLE**
+- Amical 😊, clair, professionnel
+- Explications approfondies et claires
+- Exemples si nécessaire
+- Ouvert à tous sujets
+- Adapte la langue selon l'utilisateur
+
+⚠️ **IMPORTANTE:**
+- Si on demande **à propos de mijoro boutique ou produits Mijoro Boutique**: dis que Miora boutique est spécialisé → retourner à "Miora (Boutique AI)"
+- Si question **générale** (science, tech, histoire, créativité...): réponds bien
+
+- Focus sur l'aide et l'explication
+- Accepte toutes langues (Malagasy, Français, English...)
+- Aide sur tout sujet (marketing, prompts, culture...)
+
+💡 **EXPERTISE:**
+- **Marketing:** Stratégie digitale, copywriting, SEO, réseaux sociaux
+- **Prompt Engineering:** Optimisation prompts IA, techniques avancées
+- **Culture:** Histoire, sciences, arts, littérature
+- **Business:** Entrepreneuriat, gestion, développement
+- **Tech:** Code, web dev, apps, outils IA
+
+Réponds en **Français**.`,
+        
+        'en': `You are **Agent Miora**, versatile AI assistant 🌍
+
+🎯 **YOUR ROLE**
+- Help with **general knowledge** (history, science, culture...)
+- **Marketing & Business** (strategy, copywriting, branding...)
+- **Prompt Engineering** (AI prompts, optimization...)
+- **Multilingual** (Malagasy, French, English, Spanish...)
+- **Creative Tasks** (writing, design concepts, ideas...)
+- **Technical Help** (code, web, apps...)
+- **Education** (learning, explanations...)
+
+💬 **STYLE**
+- Friendly 😊, clear, professional
+- In-depth and clear explanations
+- Examples when needed
+- Open to all topics
+- Adapt language to user
+
+⚠️ **IMPORTANT:**
+- If asked about **Mijoro Boutique or Mijoro boutique products**: say Miora boutique is specialized → switch back to "Miora (Boutique AI)"
+- If **general question** (science, tech, history, creativity...): answer well
+
+- Focus on help and explanation
+- Accept all languages (Malagasy, French, English...)
+- Help with anything (marketing, prompts, culture...)
+
+💡 **EXPERTISE:**
+- **Marketing:** Digital strategy, copywriting, SEO, social media
+- **Prompt Engineering:** AI prompt optimization, advanced techniques
+- **Culture:** History, sciences, arts, literature
+- **Business:** Entrepreneurship, management, development
+- **Tech:** Code, web dev, apps, AI tools
+
+Respond in **English**.`
+      }
     };
-    
-    const SYSTEM_PROMPT = systemPrompts[state.currentLanguage] || systemPrompts.mg;
+
+    const SYSTEM_PROMPT = assistantPrompts[currentAssistant]?.[currentLanguage] || 
+                          assistantPrompts['miora']?.[currentLanguage] ||
+                          assistantPrompts['miora']['mg'];
     
     // Call Edge Function
     const response = await fetch(config.apiUrl, {
@@ -13486,7 +13982,58 @@ Respond in **English**.`
     return errorMsg;
   }
 }
+// ========================================
+// IMAGE GENERATION (POLLINATIONS AI)
+// ========================================
+async function generateImage(prompt, style = 'professional', size = 'square') {
+  try {
+    console.log('[Image] 🎨 Generating:', prompt);
+    
+    // Get size dimensions
+    const dimensions = config.imageSizes[size] || config.imageSizes.square;
+    
+    // Build enhanced prompt with style
+    const stylePrompt = config.imageStyles[style] || config.imageStyles.professional;
+    const fullPrompt = `${prompt}, ${stylePrompt}`;
+    
+    // Encode prompt for URL
+    const encodedPrompt = encodeURIComponent(fullPrompt);
+    
+    // Build Pollinations URL
+    const imageUrl = `${config.imageApiUrl}${encodedPrompt}?width=${dimensions.width}&height=${dimensions.height}&seed=${Date.now()}&nologo=true&enhance=true`;
+    
+    console.log('[Image] 🖼️ URL:', imageUrl);
+    
+    // Test if image loads
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        console.log('[Image] ✅ Generated successfully');
+        resolve(imageUrl);
+      };
+      
+      img.onerror = () => {
+        console.error('[Image] ❌ Failed to load');
+        reject(new Error('Image generation failed'));
+      };
+      
+      // Set timeout (30 seconds max)
+      setTimeout(() => {
+        reject(new Error('Image generation timeout'));
+      }, 30000);
+      
+      img.src = imageUrl;
+    });
+    
+  } catch (error) {
+    console.error('[Image] ❌ Error:', error);
+    throw error;
+  }
+}
 
+// Expose globally
+window.mioraGenerateImage = generateImage;
   // ========================================
   // SEND MESSAGE
   // ========================================
@@ -13703,8 +14250,8 @@ elements.sendBtn.disabled = false;
             </div>
           </div>
           
-          <!-- Actions -->
-          <div class="setting-section">
+<!-- Actions -->
+<div class="setting-section">
             <h4>🔧 Actions</h4>
             <button class="setting-action-btn" onclick="window.mioraResetSettings()">
               <i class="fa-solid fa-rotate-left"></i> Réinitialiser
@@ -13712,8 +14259,20 @@ elements.sendBtn.disabled = false;
             <button class="setting-action-btn" onclick="window.mioraExportConversation()">
               <i class="fa-solid fa-download"></i> Exporter conversation
             </button>
+            <button class="setting-action-btn" onclick="
+              const info = window.mioraGetCacheInfo();
+              if (info.cached) {
+                alert('💾 Cache: ' + info.count + ' produits\\n⏱️ Âge: ' + info.age + 's\\n⏳ Restant: ' + info.remaining + 's');
+              } else {
+                alert('📭 Aucun cache');
+              }
+            ">
+              <i class="fa-solid fa-database"></i> Info Cache
+            </button>
+            <button class="setting-action-btn" onclick="window.mioraClearCache()">
+              <i class="fa-solid fa-trash"></i> Vider Cache
+            </button>
           </div>
-        </div>
         
         <div class="miora-settings-footer">
           <small>Miora AI Assistant v2.1 Fixed</small>
@@ -13857,7 +14416,18 @@ window.mioraSwitchLanguage = function(lang) {
   function createAdditionalUI() {
     const header = elements.chatWindow.querySelector('.miora-header');
     if (!header) return;
-
+// ✅✅✅ AJOUTER ICI ✅✅✅
+    // Add assistant switch
+    const switchUI = createAssistantSwitch();
+    header.insertAdjacentElement('afterend', switchUI);
+    
+    // Add click handlers
+    switchUI.querySelectorAll('.assistant-option').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const assistantType = this.dataset.assistant;
+        window.mioraSwitchAssistant(assistantType);
+      });
+    });
     // Settings Button
     const settingsBtn = document.createElement('button');
     settingsBtn.className = 'miora-header-btn';
@@ -14037,6 +14607,14 @@ elements.sendBtn.addEventListener('keypress', (e) => {
 
   // Setup voice
   setupVoiceRecognition();
+// Initialize assistant avatar
+  if (state.currentAssistant === 'agent') {
+    window.currentAssistantAvatar = 'https://i.ibb.co/fVfNcLv9/file-000000008188722fb075911ad3cee715.png';
+  } else {
+    window.currentAssistantAvatar = 'https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg';
+  }
+  console.log('[Miora] 👤 Current assistant:', state.currentAssistant);
+  // ⬆️⬆️⬆️ FIN AJOUT ⬆️⬆️⬆️
 
   // Create UI
   createAdditionalUI();
@@ -14047,65 +14625,92 @@ elements.sendBtn.addEventListener('keypress', (e) => {
   } else {
     applyTheme(state.currentTheme);
   }
-
-  // Add welcome message if no history
-if (state.conversationHistory.length === 0) {
+// ✅ VAOVAO: Agent Miora Welcome
+function addAgentWelcome() {
+  const agentMessages = document.getElementById('agent-messages');
+  if (!agentMessages) return;
+  
   const welcomeMessages = {
-    'mg': `👋 **Salama e!** Izaho dia **Miora**, assistant AI-nao eto @ **Mijoro Boutique** 🇲🇬
+    'mg': `🌍 **Tongasoa eto amin'ny Agent Miora** 👋 🇲🇬
 
-🏪 **Afaka manampy anao aho:**
-• 🔍 **Mitady produit** (ebook, video, app, akanjo, elektronika...)
-• 🎁 **Mahita maimaim-poana** (produits gratuits)
-• 💬 **Manontany** momba ny boutique
-• 🛒 **Manazava** ny fomba fividianana
-• 📞 **Manome** ny contact
+Afaka manampy anao aho amin'ny zavatra rehetra:
+• 📚 **Culture générale** (tantara, siansa, kolontsaina...)
+• 💼 **Marketing & Business** (stratégie, copywriting...)
+• 🤖 **Prompt Engineering** (AI prompts, optimization...)
+• 🌐 **Multilingual** (Malagasy, Français, English...)
+• ✍️ **Creative Tasks** (écriture, design, idées...)
+• 💻 **Technical Help** (code, web, apps...)
 
 💡 **Ohatra:**
-- "Mitady ebook motivation"
-- "Inona avy ireo maimaim-poana?"
-- "Ahoana ny fividianana?"
-- "Misy video ve?"
+- "Manazava ahy ny photosynthèse"
+- "Prompt tsara ho an'ny image AI"
+- "Copywriting ho an'ny produit Instagram"
+- "Comment fonctionne le blockchain?"
 
-**Inona no tadiavinao androany?** 😊`,
+⚠️ **Fa raha te-hahalala ny momba ny Mijoro Boutique ianao na hitady vokatra dia afaka mamaly tsara izay ilainao i Miora** 😊
+
+**Inona no afaka ampiako anao androany?** 🚀`,
     
-    'fr': `👋 **Bonjour !** Je suis **Miora**, votre assistante IA chez **Mijoro Boutique** 🇫🇷
+    'fr': `🌍 **Bienvenue avec Agent Miora** 👋 🇫🇷
 
-🏪 **Je peux vous aider à:**
-• 🔍 **Chercher des produits** (ebooks, vidéos, apps, vêtements, électronique...)
-• 🎁 **Trouver des gratuits** (produits offerts)
-• 💬 **Répondre** à vos questions
-• 🛒 **Expliquer** comment commander
-• 📞 **Donner** les contacts
+Je peux vous aider avec tout:
+• 📚 **Culture générale** (histoire, sciences, culture...)
+• 💼 **Marketing & Business** (stratégie, copywriting...)
+• 🤖 **Prompt Engineering** (prompts IA, optimisation...)
+• 🌐 **Multilingue** (Malagasy, Français, Anglais...)
+• ✍️ **Créativité** (écriture, design, idées...)
+• 💻 **Technique** (code, web, apps...)
 
 💡 **Exemples:**
-- "Cherche ebook motivation"
-- "Quels sont les produits gratuits?"
-- "Comment acheter?"
-- "Y a-t-il des vidéos?"
+- "Explique-moi la photosynthèse"
+- "Bon prompt pour image IA"
+- "Copywriting pour produit Instagram"
+- "Comment fonctionne la blockchain?"
 
-**Comment puis-je vous aider aujourd'hui ?** 😊`,
+⚠️ **Mais si vous cherchez des infos sur Mijoro Boutique ou des produits, Miora pourra mieux vous aider** 😊
+
+**Comment puis-je vous aider aujourd'hui?** 🚀`,
     
-    'en': `👋 **Hello!** I'm **Miora**, your AI assistant at **Mijoro Boutique** 🇬🇧
+    'en': `🌍 **Welcome to Agent Miora** 👋 🇬🇧
 
-🏪 **I can help you:**
-• 🔍 **Search products** (ebooks, videos, apps, clothing, electronics...)
-• 🎁 **Find freebies** (free products)
-• 💬 **Answer** your questions
-• 🛒 **Explain** how to order
-• 📞 **Provide** contacts
+I can help you with everything:
+• 📚 **General knowledge** (history, science, culture...)
+• 💼 **Marketing & Business** (strategy, copywriting...)
+• 🤖 **Prompt Engineering** (AI prompts, optimization...)
+• 🌐 **Multilingual** (Malagasy, French, English...)
+• ✍️ **Creative** (writing, design, ideas...)
+• 💻 **Technical** (code, web, apps...)
 
 💡 **Examples:**
-- "Search motivation ebook"
-- "What free products available?"
-- "How to buy?"
-- "Any videos?"
+- "Explain photosynthesis"
+- "Good prompt for AI image"
+- "Copywriting for Instagram product"
+- "How does blockchain work?"
 
-**What can I do for you today?** 😊`
+⚠️ **But if you need info about Mijoro Boutique or products, Miora can help you better** 😊
+
+**What can I help you with today?** 🚀`
   };
   
-  const welcomeMsg = welcomeMessages[state.currentLanguage] || welcomeMessages.mg;
-  addMessage(welcomeMsg, false, null, false);
+  const currentLang = localStorage.getItem('miora-language') || 'mg';
+  const welcomeMsg = welcomeMessages[currentLang] || welcomeMessages.mg;
+  
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'miora-message miora-bot';
+  msgDiv.innerHTML = `
+    <div class="miora-message-avatar">
+      <img src="https://i.ibb.co/DgbXkmNh/file-00000000f1bc720cb2d18989240fb66e.png" alt="Agent Miora" class="miora-msg-avatar">
+    </div>
+    <div class="miora-message-content">
+      <div class="miora-message-text">${formatText(welcomeMsg)}</div>
+    </div>
+  `;
+  
+  agentMessages.appendChild(msgDiv);
 }
+
+
+
 
   console.log('[Miora Core] ✅ Fully initialized!');
   console.log('[Miora Core] 📊 Stats:', state.stats);
@@ -14220,28 +14825,186 @@ async function generateSmartSuggestions(failedQuery) {
     console.error('[Suggestions] ❌ Error:', error);
     return { similar: [], trending: [], categories: [] };
   }
-}
-  function waitReady() {
-    return new Promise((resolve) => {
-      let attempts = 0;
-      const check = setInterval(() => {
-        attempts++;
-        
-        if (typeof window.mioraCallAI === 'function' &&
-          typeof window.mioraAddMessage === 'function' &&
-          window.MioraSearch &&
-          window.detectQueryType) {
-          clearInterval(check);
-          console.log('[Miora Handler] ✅ Dependencies ready');
-          resolve(true);
-        } else if (attempts >= 100) {
-          clearInterval(check);
-          console.error('[Miora Handler] ❌ Timeout');
-          resolve(false);
-        }
-      }, 100);
-    });
+}// ==========================================
+// PRODUCT DETAILS MODAL
+// ==========================================
+window.mioraShowProductModal = function(productId, productData) {
+  console.log('[Modal] 📦 Opening:', productId);
+  
+  // Parse if string
+  if (typeof productData === 'string') {
+    try {
+      productData = JSON.parse(productData);
+    } catch (err) {
+      console.error('[Modal] ❌ Parse error:', err);
+      return;
+    }
   }
+  
+  const p = productData;
+  
+  // Build image URL
+  let imageUrl = 'https://via.placeholder.com/400x300?text=No+Image';
+  if (p.thumbnail_url) {
+    if (p.thumbnail_url.startsWith('http')) {
+      imageUrl = p.thumbnail_url;
+    } else {
+      const cleanPath = p.thumbnail_url.startsWith('images/') || p.thumbnail_url.startsWith('gallery/') ?
+        p.thumbnail_url : `images/${p.thumbnail_url}`;
+      imageUrl = `https://zogohkfzplcuonkkfoov.supabase.co/storage/v1/object/public/products/${cleanPath}`;
+    }
+  }
+  
+  // Detect badge
+  let badgeHTML = '';
+  if (p.is_free === true || p.price === 0) {
+    badgeHTML = `<div style="display:inline-block; padding:6px 14px; background:#f59e0b; color:#fff; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:10px;">✨ GRATUIT</div>`;
+  } else if (p.badge) {
+    badgeHTML = `<div style="display:inline-block; padding:6px 14px; background:#3b82f6; color:#fff; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:10px;">⭐ ${p.badge.toUpperCase()}</div>`;
+  } else if (p.price > 0) {
+    badgeHTML = `<div style="display:inline-block; padding:6px 14px; background:#10b981; color:#fff; border-radius:8px; font-size:13px; font-weight:700; margin-bottom:10px;">💵 PAYANT</div>`;
+  }
+  
+  // Detect if new (created within 30 days)
+  const isNew = p.created_at && new Date(p.created_at) > new Date(Date.now() - 30*24*60*60*1000);
+  if (isNew) {
+    badgeHTML += `<div style="display:inline-block; padding:6px 14px; background:#ec4899; color:#fff; border-radius:8px; font-size:13px; font-weight:700; margin-left:8px; margin-bottom:10px;">🆕 NOUVEAU</div>`;
+  }
+  
+  const price = p.price > 0 ? `${Number(p.price).toLocaleString()} AR` : '✨ MAIMAIM-POANA';
+  const priceColor = p.price > 0 ? '#10b981' : '#f59e0b';
+  
+  // WhatsApp link
+  const whatsappNumber = "261333106055";
+  const productName = encodeURIComponent(p.title);
+  const productPrice = p.price > 0 ? `${Number(p.price).toLocaleString()} AR` : 'MAIMAIM-POANA';
+  const whatsappMessage = encodeURIComponent(
+    `Salama! 👋\n\nTe-hanafatra aho:\n\n📦 *${p.title}*\n💰 Prix: ${productPrice}\n🆔 ID: ${p.id}\n\nMisaotra! 😊`
+  );
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+  
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'miora-product-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+  `;
+  
+  modal.innerHTML = `
+    <div style="background:#1e293b; border-radius:16px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.5); animation: slideUp 0.3s ease;">
+      <div style="position:relative;">
+        <button onclick="this.closest('.miora-product-modal').remove()" 
+          style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.7); color:#fff; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; cursor:pointer; z-index:10; transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(239,68,68,0.9)'; this.style.transform='rotate(90deg)'"
+          onmouseout="this.style.background='rgba(0,0,0,0.7)'; this.style.transform='rotate(0)'"
+          aria-label="Fermer">
+          ✕
+        </button>
+        <img src="${imageUrl}" alt="${p.title}" 
+          style="width:100%; height:300px; object-fit:cover; border-radius:16px 16px 0 0;"
+          onerror="this.src='https://via.placeholder.com/600x300?text=Image+Indisponible'">
+      </div>
+      
+      <div style="padding:24px; color:#fff;">
+        ${badgeHTML}
+        
+        <h2 style="font-size:22px; font-weight:700; margin-bottom:12px; line-height:1.3;">${p.title}</h2>
+        
+        <div style="font-size:20px; font-weight:700; color:${priceColor}; margin-bottom:16px;">
+          💰 ${price}
+        </div>
+        
+        ${p.subtitle ? `<div style="font-size:15px; color:#94a3b8; margin-bottom:12px; font-weight:600;">${p.subtitle}</div>` : ''}
+        
+        ${p.description ? `<div style="color:#cbd5e1; font-size:14px; line-height:1.7; margin-bottom:16px;">${p.description}</div>` : ''}
+        
+        ${p.category ? `<div style="margin-bottom:12px;">
+          <span style="display:inline-block; padding:6px 12px; background:rgba(96,165,250,0.2); color:#60a5fa; border-radius:6px; font-size:12px; font-weight:600;">
+            🏷️ ${p.category}
+          </span>
+        </div>` : ''}
+        
+        ${p.product_type ? `<div style="margin-bottom:16px;">
+          <span style="display:inline-block; padding:6px 12px; background:rgba(139,92,246,0.2); color:#a78bfa; border-radius:6px; font-size:12px; font-weight:600;">
+            📦 ${p.product_type}
+          </span>
+        </div>` : ''}
+        
+        ${isNew ? `<div style="padding:12px; background:rgba(236,72,153,0.1); border-left:3px solid #ec4899; border-radius:6px; margin-bottom:16px;">
+          <div style="color:#f9a8d4; font-size:13px; font-weight:600;">🆕 Produit ajouté le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</div>
+        </div>` : ''}
+        
+        <a href="${whatsappUrl}" 
+          target="_blank"
+          rel="noopener noreferrer"
+          style="display:block; padding:14px; background:linear-gradient(135deg, #25D366, #128C7E); color:white; text-align:center; border-radius:10px; font-weight:700; font-size:15px; text-decoration:none; transition:all 0.2s; margin-top:20px;"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(37,211,102,0.4)'"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+          📞 Commander via WhatsApp
+        </a>
+      </div>
+    </div>
+  `;
+  
+  // Add CSS animations if not exists
+  if (!document.getElementById('miora-modal-animations')) {
+    const style = document.createElement('style');
+    style.id = 'miora-modal-animations';
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Close on overlay click
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      modal.remove();
+    }
+  });
+  
+  document.body.appendChild(modal);
+  console.log('[Modal] ✅ Opened');
+};
+  function waitReady() {
+  return new Promise((resolve) => {
+    let attempts = 0;
+    const check = setInterval(() => {
+      attempts++;
+      
+      if (typeof window.mioraCallAI === 'function' &&
+        typeof window.mioraAddMessage === 'function' &&
+        window.MioraSearch &&
+        window.detectQueryType) {
+        clearInterval(check);
+        console.log('[Miora Handler] ✅ Dependencies ready');
+        resolve(true);
+      } else if (attempts >= 100) {
+        clearInterval(check);
+        console.error('[Miora Handler] ❌ Timeout');
+        resolve(false);
+      }
+    }, 100);
+  });
+}
   
   // ✅ FUNCTION: Add to cart
   // ==========================================
@@ -14417,49 +15180,381 @@ if (!document.getElementById('miora-cart-styles')) {
   };
   
   waitReady().then(async (ready) => {
-    if (!ready) {
-      console.error('[Miora Handler] ❌ Cannot initialize');
-      return;
-    }
+        if (!ready) {
+          console.error('[Miora Handler] ❌ Cannot initialize');
+          return;
+        }
+        
+        console.log('[Miora Handler] 🔧 Patching callAI...');
+        
+        const originalCallAI = window.mioraCallAI;
+        
+        window.mioraCallAI = async function(userMessage, addToHistory = true) {
+              console.log('[Handler] 📨 Processing query:', userMessage);
+              
+              // ✅ FIX: Get assistant safely from localStorage
+              let currentAssistant = 'miora';
+              try {
+                currentAssistant = localStorage.getItem('miora-current-assistant') || 'miora';
+              } catch (err) {
+                console.warn('[Handler] ⚠️ localStorage access error:', err);
+              }
+              console.log('[Handler] 👤 Current assistant:', currentAssistant);
+              
+       // ✅ VAOVAO: Agent Miora with Mijoro Boutique detection
+if (currentAssistant === 'agent') {
+  console.log('[Handler] 🌍 Agent Miora - Checking query...');
+  
+  // ✅ FIX: Get language safely BEFORE using it
+  let currentLanguage = 'mg';
+  try {
+    currentLanguage = localStorage.getItem('miora-language') || 'mg';
+  } catch (err) {
+    console.warn('[Handler] Language access error:', err);
+    currentLanguage = 'mg';
+  }
+  
+  console.log('[Handler] 🌐 Using language:', currentLanguage);
+  
+  // Check if asking about Mijoro Boutique or products
+  const isMijoroQuery = /mijoro\s*boutique|produits?\s+mijoro|boutique\s+mijoro|zavatra\s+ao\s+@\s*mijoro|produits?\s/i.test(userMessage);
+  
+  if (isMijoroQuery) {
+    console.log('[Handler] 🏪 Mijoro Boutique query detected - Redirecting to Miora');
     
-    console.log('[Miora Handler] 🔧 Patching callAI...');
-    
-    const originalCallAI = window.mioraCallAI;
-    
-    // ✅ FIXED: Async function with proper product handling + IMAGES + CART
-   window.mioraCallAI = async function(userMessage, addToHistory = true) {
-      console.log('[Handler] 📨 Processing query:', userMessage);
+    const redirectMessages = {
+      'mg': `🏪 **Momba ny Mijoro Boutique sy ny produits-ny aho kosa...**
+
+Tsy mahafehy tsara ny momban'ny boutique sy ny produits aho fa **Miora no spécialiste** momba izany! 😊
+
+🔄 **Tsara raha manantona an'i Miora ianao:**
+1. Tsindrio "Miora (Boutique AI)" etsy ambony
+2. Manontania azy momba ny produits, prix, commande...
+3. Mahay kokoa izy noho izaho momba izany!
+
+💡 **Izaho kosa afaka manampy anao amin'ny:**
+- Culture générale 📚
+- Marketing & Business 💼
+- Prompt Engineering 🤖
+- Creative tasks ✍️
+- Technical help 💻
+
+**Mila fanampiana amin'ny zavatra hafa ve ianao?** 😊`,
       
-      // ✅ FIX: Safely get current language
-      let currentLanguage = 'mg';
-      try {
-        currentLanguage = localStorage.getItem('miora-language') || 'mg';
-      } catch (err) {
-        console.warn('[Handler] ⚠️ localStorage access error:', err);
-      }
-      console.log('[Handler] 🌐 Current language:', currentLanguage);
+      'fr': `🏪 **Concernant Mijoro Boutique et ses produits...**
+
+Je ne maîtrise pas bien les détails de la boutique et des produits, mais **Miora est la spécialiste** de ça! 😊
+
+🔄 **Je vous recommande de contacter Miora:**
+1. Cliquez sur "Miora (Boutique AI)" en haut
+2. Posez-lui vos questions sur les produits, prix, commandes...
+3. Elle connaît bien mieux que moi!
+
+💡 **Moi je peux vous aider avec:**
+- Culture générale 📚
+- Marketing & Business 💼
+- Prompt Engineering 🤖
+- Tâches créatives ✍️
+- Aide technique 💻
+
+**Besoin d'aide sur autre chose?** 😊`,
       
-      // Detect query type
-      const detection = window.detectQueryType(userMessage);
+      'en': `🏪 **About Mijoro Boutique and its products...**
+
+I don't know the boutique and products details well, but **Miora is the specialist** for that! 😊
+
+🔄 **I recommend contacting Miora:**
+1. Click "Miora (Boutique AI)" above
+2. Ask her about products, prices, orders...
+3. She knows much better than me!
+
+💡 **I can help you with:**
+- General knowledge 📚
+- Marketing & Business 💼
+- Prompt Engineering 🤖
+- Creative tasks ✍️
+- Technical help 💻
+
+**Need help with something else?** 😊`
+    };
+    
+    const msg = redirectMessages[currentLanguage] || redirectMessages['mg'];
+    
+    // Don't add to history, just display
+    return msg;
+  }
+  
+  console.log('[Handler] 🌍 General query - Using AI directly');
+  return await originalCallAI.call(this, userMessage, addToHistory);
+}              
+              // ✅ FIX: Get language safely
+              let currentLanguage = 'mg';
+              try {
+                currentLanguage = localStorage.getItem('miora-language') || 'mg';
+              } catch (err) {
+                console.warn('[Handler] ⚠️ localStorage access error:', err);
+              }
+              console.log('[Handler] 🌐 Current language:', currentLanguage);
+              
+              // Detect query type
+              const detection = window.detectQueryType(userMessage);
+// ========================================
+// IMAGE GENERATION HANDLER (AGENT MIORA ONLY)
+// ========================================
+if (detection && detection.type === 'image' && detection.prompt) {
+  console.log('[Handler] 🎨 Image generation requested:', detection.prompt);
+  
+  // ✅ CHECK: Only Agent Miora can generate images
+  if (currentAssistant !== 'agent') {
+    console.log('[Handler] ⚠️ Image generation only available with Agent Miora');
+    
+    const redirectMessages = {
+      'mg': `🎨 **Momba ny sary...**
+
+Ny **Agent Miora** ihany no afaka mamorona sary! 😊
+
+🔄 **Miverina any @ Agent Miora:**
+1. Tsindrio "Agent Miora (Culture Générale)" etsy ambony
+2. Manontania azy indray: "${detection.prompt}"
+3. Hamorona sary tsara izy!
+
+💡 **Izaho kosa (Miora Boutique) afaka manampy anao amin'ny:**
+- 🔍 Mitady produit
+- 🎁 Mahita produits gratuits
+- 🛒 Fividianana sy commande
+- 📞 Contact & info boutique
+
+**Mila zavatra hafa ve ianao?** 😊`,
+      
+      'fr': `🎨 **Concernant la génération d'images...**
+
+Seul **Agent Miora** peut générer des images! 😊
+
+🔄 **Retournez vers Agent Miora:**
+1. Cliquez sur "Agent Miora (Culture Générale)" en haut
+2. Redemandez-lui: "${detection.prompt}"
+3. Il créera une belle image pour vous!
+
+💡 **Moi (Miora Boutique) je peux vous aider avec:**
+- 🔍 Recherche de produits
+- 🎁 Produits gratuits
+- 🛒 Commandes & achats
+- 📞 Contact & info boutique
+
+**Besoin d'autre chose?** 😊`,
+      
+      'en': `🎨 **About image generation...**
+
+Only **Agent Miora** can generate images! 😊
+
+🔄 **Switch to Agent Miora:**
+1. Click "Agent Miora (General Culture)" above
+2. Ask him again: "${detection.prompt}"
+3. He'll create a nice image for you!
+
+💡 **I (Miora Boutique) can help you with:**
+- 🔍 Product search
+- 🎁 Free products
+- 🛒 Orders & purchases
+- 📞 Contact & boutique info
+
+**Need something else?** 😊`
+    };
+    
+    const msg = redirectMessages[currentLanguage] || redirectMessages['mg'];
+    
+    // Display redirect message (don't add to history)
+    const msgDiv = window.mioraAddMessage('', false);
+    const textDiv = msgDiv.querySelector('.miora-message-text');
+    
+    textDiv.innerHTML = `
+      <div style="color:#fff; padding:16px; background:rgba(245,158,11,0.1); border-radius:10px; border-left:4px solid #f59e0b;">
+        <div style="white-space:pre-line;">${msg.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</div>
+      </div>
+    `;
+    
+    return null; // Stop processing
+  }
+  
+  // ✅ CONTINUE: Agent Miora can generate
+  console.log('[Handler] ✅ Agent Miora confirmed - proceeding with image generation');
+  
+  try {
+    // Show loading message
+    const msgDiv = window.mioraAddMessage('', false);
+    const textDiv = msgDiv.querySelector('.miora-message-text');
+    
+    textDiv.innerHTML = `
+      <div style="color:#fff; padding:16px; background:rgba(139,92,246,0.1); border-radius:10px; border-left:4px solid #8b5cf6;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="font-size:32px; animation: spin 2s linear infinite;">🎨</div>
+          <div>
+            <div style="font-size:15px; font-weight:700; margin-bottom:4px;">Mamorona sary...</div>
+            <div style="font-size:12px; opacity:0.8;">"${detection.prompt}"</div>
+          </div>
+        </div>
+      </div>
+      <style>
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      </style>
+    `;
+    
+    // Generate image
+    const imageUrl = await window.mioraGenerateImage(
+      detection.prompt,
+      state.imageStyle || 'professional',
+      state.imageSize || 'square'
+    );
+    
+    // Update message with result
+    const successMessages = {
+      'mg': '🎨 Sary voaforona',
+      'fr': '🎨 Image générée',
+      'en': '🎨 Image generated'
+    };
+    
+    textDiv.innerHTML = `
+      <div style="color:#fff;">
+        <div style="padding:12px; background:linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius:10px; margin-bottom:12px; text-align:center;">
+          <div style="font-size:16px; font-weight:700;">${successMessages[currentLanguage] || successMessages['mg']}</div>
+          <div style="font-size:13px; opacity:0.9; margin-top:4px;">📝 "${detection.prompt}"</div>
+        </div>
+        
+        <div style="position:relative; border-radius:10px; overflow:hidden; margin-bottom:12px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+          <img src="${imageUrl}" alt="${detection.prompt}" 
+            style="width:100%; height:auto; display:block; cursor:pointer; transition:transform 0.3s;"
+            onclick="window.mioraViewImage('${imageUrl}')"
+            onmouseover="this.style.transform='scale(1.02)'"
+            onmouseout="this.style.transform='scale(1)'"
+            loading="lazy">
+        </div>
+        
+        <div style="display:flex; gap:8px;">
+          <a href="${imageUrl}" download="agent-miora-${Date.now()}.png" 
+            style="flex:1; padding:10px; background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid #10b981; border-radius:8px; text-align:center; text-decoration:none; font-weight:600; font-size:13px; transition:all 0.2s;"
+            onmouseover="this.style.background='rgba(16,185,129,0.3)'"
+            onmouseout="this.style.background='rgba(16,185,129,0.2)'">
+            💾 Download
+          </a>
+          <button onclick="
+            const prompt = '${detection.prompt.replace(/'/g, "\\'")}';
+            const lang = '${currentLanguage}';
+            const msgs = {mg:'🔄 Mamorona indray...', fr:'🔄 Régénération...', en:'🔄 Regenerating...'};
+            this.textContent = msgs[lang] || msgs.mg;
+            this.disabled = true;
+            window.mioraGenerateImage(prompt, '${state.imageStyle || 'professional'}', '${state.imageSize || 'square'}')
+              .then(url => {
+                this.closest('.miora-message-content').querySelector('img').src = url;
+                this.closest('.miora-message-content').querySelector('a').href = url;
+                this.textContent = '✅ Vita!';
+                setTimeout(() => { this.textContent = '🔄 Regenerate'; this.disabled = false; }, 2000);
+              })
+              .catch(err => {
+                this.textContent = '❌ Tsy afaka';
+                setTimeout(() => { this.textContent = '🔄 Regenerate'; this.disabled = false; }, 2000);
+              });
+          "
+            style="flex:1; padding:10px; background:rgba(139,92,246,0.2); color:#a78bfa; border:1px solid #8b5cf6; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; transition:all 0.2s;"
+            onmouseover="if(!this.disabled) this.style.background='rgba(139,92,246,0.3)'"
+            onmouseout="this.style.background='rgba(139,92,246,0.2)'">
+            🔄 Regenerate
+          </button>
+        </div>
+        
+        <div style="margin-top:12px; padding:10px; background:rgba(59,130,246,0.1); border-radius:8px; text-align:center; border:1px dashed rgba(59,130,246,0.3);">
+          <div style="color:#60a5fa; font-size:11px;">
+            💡 Powered by <strong>Pollinations AI</strong> via <strong>Agent Miora</strong> • Style: ${state.imageStyle || 'professional'} • Size: ${state.imageSize || 'square'}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    console.log('[Handler] ✅ Image generated successfully by Agent Miora');
+    return null; // Stop AI processing
+    
+  } catch (error) {
+    console.error('[Handler] ❌ Image generation error:', error);
+    
+    const errorMessages = {
+      'mg': '⚠️ Tsy afaka mamorona sary. Manandrama indray.',
+      'fr': '⚠️ Impossible de générer l\'image. Réessayez.',
+      'en': '⚠️ Failed to generate image. Try again.'
+    };
+    
+    const msgDiv = window.mioraAddMessage('', false);
+    const textDiv = msgDiv.querySelector('.miora-message-text');
+    
+    textDiv.innerHTML = `
+      <div style="padding:16px; background:rgba(239,68,68,0.1); border-radius:10px; border-left:4px solid #ef4444; color:#fca5a5;">
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">${errorMessages[currentLanguage] || errorMessages['mg']}</div>
+        <div style="font-size:12px; opacity:0.8;">Error: ${error.message}</div>
+        <button onclick="document.getElementById('miora-input').value='${detection.prompt}'; document.getElementById('miora-send').click();"
+          style="margin-top:12px; padding:8px 16px; background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid #ef4444; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px;">
+          🔄 Retry
+        </button>
+      </div>
+    `;
+    
+    return null; // Stop AI processing
+  }
+}
       if (detection) {
         console.log('[Handler] 🎯 Detected:', detection.type, detection.query || '');
         
         let products = [];
         
-        try {
-          // Handle query types
-          if (detection.type === 'search' && detection.query) {
-            console.log('[Handler] 🔍 Searching for:', detection.query);
-            products = await window.MioraSearch.search(detection.query);
-            
-          } else if (detection.type === 'free') {
-            console.log('[Handler] 🎁 Getting free products');
-            products = await window.MioraSearch.getFree();
-            
-          } else if (detection.type === 'category' && detection.category) {
-            console.log('[Handler] 📂 Getting category:', detection.category);
-            products = await window.MioraSearch.getCategory(detection.category);
-          }
+      try {
+  // ✅ VAOVAO: Enhanced query handling with price filters
+  if (detection.type === 'search' && detection.query) {
+    console.log('[Handler] 🔍 Searching for:', detection.query);
+    products = await window.MioraSearch.search(detection.query);
+    
+  } else if (detection.type === 'free') {
+    console.log('[Handler] 🎁 Getting free products');
+    products = await window.MioraSearch.getFree();
+    
+} else if (detection.type === 'nouveaute') {
+  console.log('[Handler] 🆕 Getting recent products (7 days)');
+  const allProducts = await window.MioraSearch.getAll(50);
+  // ✅ VAOVAO: Filter - Created within last 7 days ONLY
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  products = allProducts.filter(p => {
+    return p.created_at && new Date(p.created_at) > sevenDaysAgo;
+  }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10);
+  } else if (detection.type === 'mora') {
+    console.log('[Handler] 💰 Getting cheap products');
+    const allProducts = await window.MioraSearch.getAll(100);
+    // Filter: Price < 5000 AR
+    products = allProducts.filter(p => {
+      return p.price > 0 && p.price < 5000;
+    }).sort((a, b) => a.price - b.price).slice(0, 10);
+    
+  } else if (detection.type === 'lafo') {
+    console.log('[Handler] 💎 Getting expensive products');
+    const allProducts = await window.MioraSearch.getAll(100);
+    // Filter: Price > 20000 AR
+    products = allProducts.filter(p => {
+      return p.price >= 20000;
+    }).sort((a, b) => b.price - a.price).slice(0, 10);
+    
+  } else if (detection.type === 'promo') {
+    console.log('[Handler] 🎉 Getting promotions');
+    const allProducts = await window.MioraSearch.getAll(100);
+    // Filter: Has "promo", "promotion", or "réduction" badge/tag
+    products = allProducts.filter(p => {
+      const badge = (p.badge || '').toLowerCase();
+      const tags = Array.isArray(p.tags) ? p.tags.join(' ').toLowerCase() : '';
+      return badge.includes('promo') || badge.includes('réduction') ||
+        tags.includes('promo') || tags.includes('réduction');
+    }).slice(0, 10);
+    
+  } else if (detection.type === 'category' && detection.category) {
+    console.log('[Handler] 📂 Getting category:', detection.category);
+    products = await window.MioraSearch.getCategory(detection.category);
+  }
           
           console.log('[Handler] 📊 Results:', products.length, 'products');
           
@@ -14471,7 +15566,13 @@ if (!document.getElementById('miora-cart-styles')) {
           // Check if query is too broad (asking for category overview)
           // ✅ IMPROVED: Detect broad queries
 const isBroadQuery = /produits?\s+(numérique|physique|digital|physical|rehetra|tous|all)|categor(?:ie|y)|types?\s+de\s+produit|inona\s+(?:avy\s+)?(?:ny\s+)?produits?|quels?\s+produits?|what\s+products?/i.test(userMessage);
-          
+          // ✅ Get current language safely
+let msgLanguage = 'mg';
+try {
+  msgLanguage = localStorage.getItem('miora-language') || 'mg';
+} catch (err) {
+  msgLanguage = 'mg';
+}
           if (isBroadQuery && (!products || products.length === 0)) {
             console.log('[Handler] 💡 Broad query detected - showing category suggestions');
             
@@ -14683,6 +15784,10 @@ const headers = {
   free: detection.query ? 
     `🎁 Produits Gratuits <span style="color:#fbbf24; font-size:14px; font-weight:400;">(${detection.query})</span>` : 
     `🎁 Produits Gratuits`,
+  nouveaute: `🆕 Produits Nouveaux <span style="opacity:0.9; font-size:14px;">(60 derniers jours)</span>`,
+  mora: `💰 Produits Bon Marché <span style="opacity:0.9; font-size:14px;">(&lt; 5000 AR)</span>`,
+  lafo: `💎 Produits Premium <span style="opacity:0.9; font-size:14px;">(&gt; 20000 AR)</span>`,
+  promo: `🎉 Promotions & Réductions`,
   category: detection.query ?
     `📦 ${detection.query.charAt(0).toUpperCase() + detection.query.slice(1)}` :
     `📦 Catégorie: <strong>${detection.category}</strong>`
@@ -14741,7 +15846,37 @@ if (imageUrl && !imageUrl.includes('placeholder')) {
 
 console.log('[Display] 🖼️ Gallery:', galleryImages.length, 'images');
 
+// ✅ VAOVAO: Enhanced badge & price detection
 const isFree = p.is_free === true || p.price === 0;
+const isNew = p.created_at && new Date(p.created_at) > new Date(Date.now() - 60 * 24 * 60 * 60 * 1000); // ⬅️ 30 → 60 jours
+const isPromo = p.badge && /promo|promotion|réduction/i.test(p.badge);
+const isCheap = p.price > 0 && p.price < 5000;
+const isExpensive = p.price >= 20000;
+
+let mainBadgeHTML = '';
+let newBadgeHTML = '';
+
+// Detect main badge
+if (isFree) {
+  mainBadgeHTML = `<div style="background:#f59e0b; color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.3);">✨ GRATUIT</div>`;
+} else if (p.badge) {
+  const badgeColors = {
+    'vip': '#8b5cf6',
+    'promotion': '#ec4899',
+    'populaire': '#3b82f6',
+    'nouveau': '#10b981'
+  };
+  const badgeLower = p.badge.toLowerCase();
+  const badgeColor = badgeColors[badgeLower] || '#3b82f6';
+  mainBadgeHTML = `<div style="background:${badgeColor}; color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.3);">⭐ ${p.badge.toUpperCase()}</div>`;
+} else if (p.price > 0) {
+  mainBadgeHTML = `<div style="background:#10b981; color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; box-shadow:0 2px 6px rgba(0,0,0,0.3);">💵 PAYANT</div>`;
+}
+
+// Detect if new
+if (isNew) {
+  newBadgeHTML = `<div style="background:#ec4899; color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; margin-top:4px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">🆕 NOUVEAU</div>`;
+}
 
 html += `<div style="margin-bottom:16px; padding:0; background:rgba(30,41,59,0.4); border-radius:12px; overflow:hidden; border:1px solid rgba(148,163,184,0.2); transition: all 0.3s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">`;
 
@@ -14790,14 +15925,10 @@ html += `<img
   
   html += `<div style="position:absolute; top:10px; right:10px; display:flex; flex-direction:column; gap:6px; align-items:flex-end;">`;
   
-  if (isFree) {
-    html += `<div style="background:#f59e0b; color:#fff; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.4);">✨ MAIMAIM-POANA</div>`;
-  }
-  
-  if (p.badge) {
-    html += `<div style="background:rgba(59,130,246,0.9); color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.3);">${p.badge}</div>`;
-  }
-  
+  html += `${mainBadgeHTML}`;
+  html += `${newBadgeHTML}`;
+
+
   if (galleryImages.length > 1) {
     html += `<div style="background:rgba(0,0,0,0.7); color:#fff; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:600;">📸 ${galleryImages.length}</div>`;
   }
@@ -14836,39 +15967,37 @@ html += `<img
 // ========================================
 html += `<div style="display:flex; gap:8px; margin-top:12px;" role="group" aria-label="Actions pour ${p.title}">`;
 
-// Add to cart button
+// ✅ VAOVAO: WhatsApp Order Button
 if (p.price >= 0) {
-  html += `<button 
-    onclick="window.mioraAddToCart('${p.id}', '${p.title.replace(/'/g, "\\'")}', ${p.price})" 
-    onkeypress="if(event.key==='Enter'||event.key===' '){window.mioraAddToCart('${p.id}', '${p.title.replace(/'/g, "\\'")}', ${p.price});event.preventDefault();}"
-    aria-label="Ajouter ${p.title} au panier pour ${p.price} Ariary"
+  const whatsappNumber = "261333106055"; // ⬅️ 0333106055
+  const productName = encodeURIComponent(p.title);
+  const productPrice = p.price > 0 ? `${Number(p.price).toLocaleString()} AR` : 'MAIMAIM-POANA';
+  const whatsappMessage = encodeURIComponent(
+    `Salama! 👋\n\nTe-hanafatra aho:\n\n📦 *${p.title}*\n💰 Prix: ${productPrice}\n🆔 ID: ${p.id}\n\nMisaotra! 😊`
+  );
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+  
+  html += `<a 
+    href="${whatsappUrl}" 
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Commander ${p.title} via WhatsApp"
     role="button"
     tabindex="0"
-    style="flex:1; padding:10px 16px; background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; transition:all 0.2s;"
-    onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(16,185,129,0.4)'"
+    style="flex:1; padding:10px 16px; background:linear-gradient(135deg, #25D366, #128C7E); color:white; border:none; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; transition:all 0.2s; text-decoration:none; text-align:center; display:block;"
+    onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(37,211,102,0.4)'"
     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'"
-    onfocus="this.style.outline='2px solid #10b981'; this.style.outlineOffset='2px'"
+    onfocus="this.style.outline='2px solid #25D366'; this.style.outlineOffset='2px'"
     onblur="this.style.outline='none'">
-    🛒 Ajouter au panier
-  </button>`;
+    📞 Commander via WhatsApp
+  </a>`;
 }
 
-// View details button
-html += `<button 
-  onclick="window.mioraViewProduct('${p.id}')" 
-  onkeypress="if(event.key==='Enter'||event.key===' '){window.mioraViewProduct('${p.id}');event.preventDefault();}"
-  aria-label="Voir les détails de ${p.title}"
-  role="button"
-  tabindex="0"
-  style="flex:1; padding:10px 16px; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid #3b82f6; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; transition:all 0.2s;"
-  onmouseover="this.style.background='rgba(59,130,246,0.3)'"
-  onmouseout="this.style.background='rgba(59,130,246,0.2)'"
-  onfocus="this.style.outline='2px solid #3b82f6'; this.style.outlineOffset='2px'"
-  onblur="this.style.outline='none'">
-  👁️ Voir détails
-</button>`;
 
-html += `</div>`; // Close buttons
+
+// ✅ VAOVAO: Button "Voir détails" removed - WhatsApp only
+
+html += `</div>`; // Close buttons (WhatsApp fotsiny)
               html += `</div>`; // Close product info
               html += `</div>`; // Close product card
             });
@@ -14914,52 +16043,9 @@ html += `</div>`; // Close buttons
       Fa misy suggestions ho anao...
     </div>
   </div>`;
-  const noResultsMessages = {
-  'mg': {
-    title: '🔍 Tsy nahita zavatra',
-    subtitle: 'Fa misy suggestions tsara ho anao...',
-    similar: '💡 Zavatra mety mifanaraka:',
-    trending: '🔥 Malaza ankehitriny:',
-    categories: '📂 Hijery ireo catégories ireto?',
-    help: '💬 Mila fanampiana bebe kokoa?',
-    helpText: `Afaka miresaka amin'i Miora ianao!<br>
-      <strong>Ohatra:</strong><br>
-      • "Mila ebook momba ny motivation"<br>
-      • "Mitady formation business"<br>
-      • "Ahoana ny fividianana?"<br>
-      • "Misy produit maimaim-poana ve?"`
-  },
-  'fr': {
-    title: '🔍 Aucun résultat',
-    subtitle: 'Mais voici d\'excellentes suggestions...',
-    similar: '💡 Produits similaires:',
-    trending: '🔥 Tendances actuelles:',
-    categories: '📂 Parcourir ces catégories?',
-    help: '💬 Besoin d\'aide supplémentaire?',
-    helpText: `Vous pouvez discuter avec Miora!<br>
-      <strong>Exemples:</strong><br>
-      • "Je cherche un ebook sur la motivation"<br>
-      • "Formation business disponible?"<br>
-      • "Comment commander?"<br>
-      • "Produits gratuits?"`
-  },
-  'en': {
-    title: '🔍 No results found',
-    subtitle: 'But here are great suggestions...',
-    similar: '💡 Similar products:',
-    trending: '🔥 Trending now:',
-    categories: '📂 Browse these categories?',
-    help: '💬 Need more help?',
-    helpText: `You can chat with Miora!<br>
-      <strong>Examples:</strong><br>
-      • "I need a motivation ebook"<br>
-      • "Business training available?"<br>
-      • "How to order?"<br>
-      • "Free products?"`
-  }
-};
+  // ✅ NO MORE state.currentLanguage references below!
+// All messages are hardcoded or use currentLanguage variable
 
-const msgs = noResultsMessages[state.currentLanguage] || noResultsMessages.mg;
   // ========================================
   // SECTION 1: Similar Products
   // ========================================
@@ -15094,48 +16180,84 @@ const msgs = noResultsMessages[state.currentLanguage] || noResultsMessages.mg;
   let messagesObserver = null;
   
   // ✅ VAOVAO: Create observer only once
-  function createImageObserver() {
-    if (imageObserver) return imageObserver;
-    
-    imageObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const img = entry.target;
-          const src = img.getAttribute('data-src');
+function createImageObserver() {
+  if (imageObserver) return imageObserver;
+  
+  imageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        const src = img.getAttribute('data-src');
+        
+        if (src) {
+          console.log('[Lazy Load] 📥 Loading:', src.substring(0, 50) + '...');
           
-          if (src) {
-            console.log('[Lazy Load] 📥 Loading:', src.substring(0, 50) + '...');
+          img.style.opacity = '0';
+          img.style.transition = 'opacity 0.3s ease';
+          
+          // ✅ VAOVAO: Timeout protection (10 seconds max)
+          const loadTimeout = setTimeout(() => {
+            console.warn('[Lazy Load] ⏱️ Timeout for:', src.substring(0, 50));
+            img.src = 'https://via.placeholder.com/300x200?text=Timeout';
+            img.style.opacity = '0.6';
+            img.removeAttribute('data-src');
+          }, 10000);
+          
+          // ✅ Preload image
+          const tempImg = new Image();
+          
+          tempImg.onload = () => {
+            clearTimeout(loadTimeout); // ⬅️ Cancel timeout
+            img.src = src;
+            img.style.opacity = '1';
+            img.removeAttribute('data-src');
+            console.log('[Lazy Load] ✅ Loaded successfully');
+          };
+          
+          tempImg.onerror = () => {
+            clearTimeout(loadTimeout); // ⬅️ Cancel timeout
+            console.error('[Lazy Load] ❌ Failed:', src);
+            img.src = 'https://via.placeholder.com/300x200?text=Image+Error';
+            img.style.opacity = '0.5';
+            img.removeAttribute('data-src');
+          };
+          
+          // ✅ VAOVAO: Try loading with retry logic
+          let retryCount = 0;
+          const maxRetries = 2;
+          
+          const tryLoad = () => {
+            tempImg.src = src + (retryCount > 0 ? `?retry=${retryCount}` : '');
+          };
+          
+          tempImg.onerror = () => {
+            clearTimeout(loadTimeout);
             
-            img.style.opacity = '0';
-            img.style.transition = 'opacity 0.3s ease';
-            
-            // ✅ VAOVAO: Preload image
-            const tempImg = new Image();
-            tempImg.onload = () => {
-              img.src = src;
-              img.style.opacity = '1';
-              img.removeAttribute('data-src');
-              console.log('[Lazy Load] ✅ Loaded');
-            };
-            tempImg.onerror = () => {
-              console.error('[Lazy Load] ❌ Failed:', src);
+            if (retryCount < maxRetries) {
+              retryCount++;
+              console.log(`[Lazy Load] 🔄 Retry ${retryCount}/${maxRetries}:`, src.substring(0, 50));
+              setTimeout(tryLoad, 1000 * retryCount); // Wait 1s, 2s...
+            } else {
+              console.error('[Lazy Load] ❌ Failed after retries:', src);
               img.src = 'https://via.placeholder.com/300x200?text=Image+Error';
               img.style.opacity = '0.5';
-            };
-            tempImg.src = src;
-            
-            imageObserver.unobserve(img);
-          }
+              img.removeAttribute('data-src');
+            }
+          };
+          
+          tryLoad(); // Start loading
+          
+          imageObserver.unobserve(img);
         }
-      });
-    }, {
-      rootMargin: '100px',
-      threshold: 0.01
+      }
     });
-    
-    return imageObserver;
-  }
+  }, {
+    rootMargin: '50px', // ⬅️ Reduced from 100px (more aggressive)
+    threshold: 0.1 // ⬅️ Increased from 0.01 (better detection)
+  });
   
+  return imageObserver;
+}
   function observeImages() {
     const observer = createImageObserver();
     const images = document.querySelectorAll('.miora-lazy-image[data-src]');
