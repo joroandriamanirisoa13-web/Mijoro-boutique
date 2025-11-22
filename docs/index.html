@@ -825,7 +825,98 @@
       </span>
     </div>
   </div>
+<!-- ========================================
+     MIORA AI ASSISTANT SETTINGS (OWNER ONLY)
+     ======================================== -->
+<div class="param-section owner-tool" id="miora-settings-section" style="display:none">
+  <h4 style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+         alt="Miora" 
+         style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(102,126,234,.3)">
+    <span>Miora AI Assistant</span>
+    <span style="font-size:11px;padding:2px 8px;background:rgba(102,126,234,.2);border-radius:6px;color:#667eea;font-weight:700">PRO</span>
+  </h4>
+  
+  <p style="margin-bottom:16px;color:#94a3b8;font-size:13px;line-height:1.5">
+    Configuration complète de votre assistant IA avec support multi-modèles et fallback automatique.
+  </p>
 
+  <!-- Status Badge -->
+  <div id="miora-status-badge" style="margin-bottom:16px;padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;display:flex;align-items:center;gap:10px;font-size:13px">
+    <i class="fa-solid fa-exclamation-triangle" style="color:#ef4444;font-size:18px"></i>
+    <div>
+      <div style="color:#ef4444;font-weight:700;margin-bottom:2px">⚠️ Aucune API configurée</div>
+      <div style="color:#94a3b8;font-size:12px">Configurez au moins un modèle AI pour activer Miora</div>
+    </div>
+  </div>
+
+  <!-- Quick Config Button -->
+  <button type="button" 
+          class="param-btn" 
+          onclick="window.mioraOpenSettings()"
+          style="width:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border:none;color:#fff;font-weight:700;padding:14px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(102,126,234,.3);margin-bottom:12px">
+    <i class="fa-solid fa-sliders"></i>
+    <span>Configurer Miora AI</span>
+  </button>
+
+  <!-- Stats Grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+    <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:4px">Messages</div>
+      <div style="color:#fff;font-size:20px;font-weight:800" id="miora-stats-messages">0</div>
+    </div>
+    <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px">
+      <div style="color:#94a3b8;font-size:11px;margin-bottom:4px">Modèle actif</div>
+      <div style="color:#10b981;font-size:14px;font-weight:700" id="miora-stats-model">-</div>
+    </div>
+  </div>
+
+  <!-- Features Info -->
+  <div style="padding:12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <i class="fa-solid fa-sparkles" style="color:#10b981"></i>
+      <strong style="color:#10b981;font-size:14px">Fonctionnalités disponibles</strong>
+    </div>
+    <ul style="margin:0;padding-left:20px;color:#94a3b8;font-size:12px;line-height:1.8">
+      <li>Multi-AI: Groq, Gemini, OpenAI, Claude, etc.</li>
+      <li>Fallback automatique si modèle indisponible</li>
+      <li>Génération d'images (Pollinations AI)</li>
+      <li>Reconnaissance vocale & synthèse</li>
+      <li>Thèmes personnalisables (6 thèmes)</li>
+      <li>Mode sombre automatique</li>
+      <li>Export/Import conversations</li>
+      <li>Statistiques détaillées</li>
+    </ul>
+  </div>
+
+  <!-- Quick Actions -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <button type="button" 
+            class="param-btn" 
+            onclick="window.mioraOpenAnalytics()"
+            style="font-size:13px;padding:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);color:#3b82f6">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Statistiques</span>
+    </button>
+    <button type="button" 
+            class="param-btn" 
+            onclick="exportConversation()"
+            style="font-size:13px;padding:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:#10b981">
+      <i class="fa-solid fa-download"></i>
+      <span>Exporter</span>
+    </button>
+  </div>
+
+  <!-- Documentation Link -->
+  <div style="margin-top:12px;text-align:center">
+    <a href="#" 
+       onclick="alert('📚 Documentation Miora AI:\n\n1. Configurez vos clés API\n2. Activez les modèles souhaités\n3. Testez avec Quick Actions\n4. Activez le fallback pour fiabilité\n\n💡 Les modèles GRATUITS: Groq, Gemini, Cohere'); return false;"
+       style="color:#667eea;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+      <i class="fa-solid fa-book"></i>
+      <span>Documentation & Aide</span>
+    </a>
+  </div>
+</div>
   <!-- ========================================
        ACTION BUTTONS
        ======================================== -->
@@ -870,16 +961,7 @@
 <div id="miora-chat" class="miora-chat" aria-hidden="true" role="dialog" aria-labelledby="miora-title">
   <!-- Header -->
   <div class="miora-header">
-    <div class="miora-avatar">
-      <!-- ✅ NOUVELLE URL -->
-      <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
-           alt="Miora" 
-           class="miora-header-avatar">
-    </div>
-    <div class="miora-title">
-      <div class="miora-name" id="miora-title">Miora</div>
-      <div class="miora-status">Assistant AI • En ligne</div>
-    </div>
+   
     <button class="miora-close" id="miora-close" aria-label="Fermer">
       <i class="fa-solid fa-xmark"></i>
     </button>
@@ -887,61 +969,39 @@
 
   <!-- Messages Container -->
   <div class="miora-messages" id="miora-messages">
-    <!-- Welcome Message -->
     <div class="miora-message miora-bot">
       <div class="miora-message-avatar">
         <!-- ✅ NOUVELLE URL -->
-        <img src="https://i.ibb.co/5xkSKtLt/IMG-20251116-WA0000.jpg" 
+        <img src="https://i.ibb.co/Fks6hW82/Small-Tile-scale-400.png" 
              alt="Miora" 
-             class="miora-msg-avatar">
-      </div>
-      <div class="miora-message-content">
+             class="miora-msg-avatar"
+      </div> 
+      
+    
+<div class="miora-message-content">
   <div class="miora-message-text">
-    👋 Bienvenue ! Je suis Miora, l'assistant IA de Mijoro Boutique.<br><br>
-    Je peux vous aider avec :<br>
-    • Marketing digital & Design<br>
-    • Questions de culture générale<br>
-    • Gestion & Management<br>
-     <br><br>
-    Posez-moi une question ! 😊
+    👋 Salama tompoko ô! tongasoa ato amin'ny chat ☺.<br>
+    afaka misafady izay tianao hiresahana ianao ,afaka mandray anao avokoa na i Miora na i Agent Miora,fa alohan'ny hanoratanao dia mila mipotsika ianao ny bouton safidinao amin'izy roa (Miora(boutique) na Agent miora(culture générale) <br><br>
+ 
+    mazotoa miresaka dia mazahoa izay tadiavinao ! 😊
   </div>
 </div>
 </div>
 </div>
 
-  <!-- Quick Actions -->
-  <div class="miora-quick-actions">
-    <button class="miora-quick-btn" data-prompt="Create a professional logo design">
-      🎨 Logo Design
-    </button>
-    <button class="miora-quick-btn" data-prompt="Design a social media post">
-      📱 Social Post
-    </button>
-    <button class="miora-quick-btn" data-prompt="Create an advertisement poster">
-      📢 Ad Poster
-    </button>
-    <button class="miora-quick-btn" data-prompt="Design an eBook cover">
-      📚 eBook Cover
-    </button>
-    <button class="miora-quick-btn" data-prompt="Create a YouTube thumbnail">
-      🎬 Thumbnail
-    </button>
-  </div>
+
 
   <!-- Input Area -->
   <div class="miora-input-area">
-    <button class="miora-upload-btn" id="miora-upload-btn" aria-label="Upload image">
-      <i class="fa-solid fa-image"></i>
-    </button>
+    
     <input type="file" id="miora-file-input" accept="image/*" style="display:none">
     
-    <input 
-      type="text" 
-      id="miora-input" 
-      class="miora-input" 
-      placeholder="Type your message..."
-      autocomplete="off"
-      aria-label="Message">
+   <textarea 
+  id="miora-input" 
+  placeholder="soraty..." 
+  class="miora-input"
+  rows="1"
+  maxlength="2000"></textarea>
     
     <button class="miora-send" id="miora-send" aria-label="Send">
       <i class="fa-solid fa-paper-plane"></i>
