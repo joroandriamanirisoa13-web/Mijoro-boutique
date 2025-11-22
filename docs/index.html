@@ -961,8 +961,7 @@
 <div id="miora-chat" class="miora-chat" aria-hidden="true" role="dialog" aria-labelledby="miora-title">
   <!-- Header -->
   <div class="miora-header">
-    <div class="miora-avatar">
-
+  
     </div>
     <button class="miora-close" id="miora-close" aria-label="Fermer">
       <i class="fa-solid fa-xmark"></i>
@@ -980,52 +979,24 @@
              class="miora-msg-avatar">
       </div>
       <div class="miora-message-content">
-  <div class="miora-message-text">
-    👋 Bienvenue ! Je suis Miora, l'assistant IA de Mijoro Boutique.<br><br>
-    Je peux vous aider avec :<br>
-    • Marketing digital & Design<br>
-    • Questions de culture générale<br>
-    • Gestion & Management<br>
-     <br><br>
-    Posez-moi une question ! 😊
-  </div>
+
 </div>
 </div>
 </div>
 
-  <!-- Quick Actions -->
-  <div class="miora-quick-actions">
-    <button class="miora-quick-btn" data-prompt="Create a professional logo design">
-      🎨 Logo Design
-    </button>
-    <button class="miora-quick-btn" data-prompt="Design a social media post">
-      📱 Social Post
-    </button>
-    <button class="miora-quick-btn" data-prompt="Create an advertisement poster">
-      📢 Ad Poster
-    </button>
-    <button class="miora-quick-btn" data-prompt="Design an eBook cover">
-      📚 eBook Cover
-    </button>
-    <button class="miora-quick-btn" data-prompt="Create a YouTube thumbnail">
-      🎬 Thumbnail
-    </button>
-  </div>
+
 
   <!-- Input Area -->
   <div class="miora-input-area">
-    <button class="miora-upload-btn" id="miora-upload-btn" aria-label="Upload image">
-      <i class="fa-solid fa-image"></i>
-    </button>
+    
     <input type="file" id="miora-file-input" accept="image/*" style="display:none">
     
-    <input 
-      type="text" 
-      id="miora-input" 
-      class="miora-input" 
-      placeholder="Type your message..."
-      autocomplete="off"
-      aria-label="Message">
+   <textarea 
+  id="miora-input" 
+  placeholder="soraty..." 
+  class="miora-input"
+  rows="1"
+  maxlength="2000"></textarea>
     
     <button class="miora-send" id="miora-send" aria-label="Send">
       <i class="fa-solid fa-paper-plane"></i>
@@ -1186,8 +1157,7 @@ window.addEventListener('DOMContentLoaded', () => {
 <div class="touch-edge-bottom" aria-hidden="true"></div>
 
 <!-- App bundle -->
-
-<script src="app.js"></script>
-
+<script src="app.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
