@@ -13627,7 +13627,7 @@ function toggleVoiceRecognition() {
 - "Inona no Mijoro Boutique?" → Boutique officielle vente digital + physique, tsara indrindra @ Madagascar
 
 **2️⃣ Founder & Histoire:**
-- "Iza no namorona Mijoro Boutique?" → **ANDRIAMIADANARISON Miora** no namorona
+- "Iza no namorona Mijoro Boutique?" → **ANDRIAMANIRISOA** no namorona
 - "Nahoana no antsoina hoe Mijoro?" → Tsy voahofana amin'io fanontaniana io aho, tsara kokoa manontany an'i Miora @ WhatsApp: 0333106055
 
 **3️⃣ Asa sy Fampiofanana:**
@@ -13666,7 +13666,7 @@ function toggleVoiceRecognition() {
 ⚠️ **TSY HADINO:**
 - WhatsApp = 0333106055 (IMPORTANTE!)
 - Panier = ambany ankavanana (🛒)
-- Founder = ANDRIAMIADANARISON Miora
+- Founder =ANDRIAMANIRISOA
 - BALANCE: Conversation vs Search
 
 Valio amin'ny **Malagasy**.`,
